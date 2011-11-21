@@ -17,7 +17,6 @@ class ExonObj:
         self.end = end
         self.terminal = None
         self.nextExons = set([])
-        self.clusters = []
         self.introns = set([])
 
     def __str__(self):
@@ -87,13 +86,9 @@ def addIntrons(exons, intronDb, exonDb, clusters, clusterNo):
             g.add_path([str(i) for i in introns])
             for intron in introns:
                 intron.cluster = clusterNo
-                for exon in intron.exons:
-                    exonDb[exon].clusters.append(clusterNo)
         else:
             g.add_node(str(introns[0]))
             introns[0].cluster = clusterNo
-            for exon in introns[0].exons:
-                exonDb[exon].clusters.append(clusterNo)
 
     else:
         g = nx.DiGraph(exons=set([]))
@@ -103,21 +98,15 @@ def addIntrons(exons, intronDb, exonDb, clusters, clusterNo):
 
         for intron in g.nodes():
             intronDb[intron].cluster = clusterNo
-            for exon in intronDb[intron].exons:
-                exonDb[exon].clusters.append(clusterNo)
 
         if len(introns) > 1:
             g.add_path([str(i) for i in introns])
 
             for intron in introns:
                 intron.cluster = clusterNo
-                for exon in intron.exons:
-                    exonDb[exon].clusters.append(clusterNo)
         else:
             g.add_node(str(introns[0]))
             introns[0].cluster = clusterNo
-            for exon in introns[0].exons:
-                exonDb[exon].clusters.append(clusterNo)
 
     clusters[clusterNo] = g
 
@@ -325,6 +314,42 @@ def printBedGraph(transcript, geneId, tranId):
                     blockStarts))
 
 
+def buildGeneModels1(exonDb, intronDb, clusters):
+    print >> stderr, 'Building gene models...'
+    print >> stderr, 'Step 1...'
+
+    removedClusters = set([])
+    passedExons = set([])
+    numTranscripts = 0
+    geneId = 0
+    
+    for cl in clusters:
+        cluster = clusters[cl]
+        g = nx.DiGraph()
+        for intron in cluster.nodes():
+            for exon in intronDb[intron].exons:
+                for nextExon in exonDb[exon].nextExons:
+                    if nextExon not in passedExons\
+                            and intron in exonDb[nextExon].introns:
+                        g.add_edge(exon, nextExon)
+
+        removedClusters.add(cl)
+
+        if g.nodes():
+            geneId += 1
+            transId = 1
+            passedExons = passedExons.union(collapseExons(g, exonDb, intronDb))
+
+            for transcript in getPath(g):
+                printBedGraph(transcript, geneId, transId)
+                numTranscripts += 1
+                transId += 1
+
+            for exon in g.nodes():
+                passedExons.add(exon)
+
+    return geneId, numTranscripts
+
 def buildGeneModels(exonDb, intronDb, clusters):
     print >> stderr, 'Building gene models...'
     removedClusters = set([])
@@ -386,7 +411,7 @@ if __name__=='__main__':
         if n % 1000 == 0:
             print >> stderr, '...', n
 
-    geneId, numTranscripts = buildGeneModels(exonDb, intronDb, clusters)
+    geneId, numTranscripts = buildGeneModels1(exonDb, intronDb, clusters)
     print >> stderr, '\nTotal exons = %d' % len(exonDb)
     print >> stderr, 'Total genes = %d' % geneId
     print >> stderr, 'Total transcripts = %d' % (numTranscripts)
