@@ -60,61 +60,61 @@ def addIntrons(exons, intronDb, exonDb, clusters, clusterNo):
             intronStart = currExon.end + 1
             intronEnd = nextExon.start - 1
 
-            intron = ExonObj(currExon.chrom, intronStart, intronEnd)
+            intronName = '%s:%d-%d' % (currExon.chrom, intronStart, intronEnd)
+            intron = nx.DiGraph(name=intronName, cluster=None)
 
             try:
-                intron_ = intronDb[str(intron)]
+                intron_ = intronDb[intron.graph['name']]
             except KeyError:
 
-                intronDb[str(intron)] = intron
-                intron.exons = set([str(currExon), str(nextExon)])
+                intronDb[intron.graph['name']] = intron
+                intron.add_edge(str(currExon), str(nextExon))
                 introns.append(intron)
+                currExon.introns.add(intron.graph['name'])
+                nextExon.introns.add(intron.graph['name'])
             else:
+                intron_.add_edge(str(currExon), str(nextExon))
                 introns.append(intron_)
-                intron_.exons.add(str(currExon))
-                intron_.exons.add(str(nextExon))
-                existingClusters.add(intron_.cluster)
-
-            currExon.introns.add(str(intron))
-            nextExon.introns.add(str(intron))
+                existingClusters.add(intron_.graph['cluster'])
+                currExon.introns.add(intron_.graph['name'])
+                nextExon.introns.add(intron_.graph['name'])
 
     assert len(introns) == len(exons) - 1
 
     if not existingClusters:
-        g = nx.DiGraph()
+        cluster = nx.DiGraph()
         if len(introns) > 1:
-            g.add_path([str(i) for i in introns])
+            cluster.add_path([i.graph['name'] for i in introns])
             for intron in introns:
-                intron.cluster = clusterNo
+                intron.graph['cluster'] = clusterNo
         else:
-            g.add_node(str(introns[0]))
-            introns[0].cluster = clusterNo
+            cluster.add_node(introns[0].graph['name'])
+            introns[0].graph['cluster'] = clusterNo
 
     else:
-        g = nx.DiGraph(exons=set([]))
+        cluster = nx.DiGraph(exons=set([]))
         for cl in existingClusters:
-            g.add_edges_from(clusters[cl].edges())
+            cluster.add_edges_from(clusters[cl].edges())
             k = clusters.pop(cl)
 
-        for intron in g.nodes():
-            intronDb[intron].cluster = clusterNo
+        for intron in cluster.nodes():
+            intronDb[intron].graph['cluster'] = clusterNo
 
         if len(introns) > 1:
-            g.add_path([str(i) for i in introns])
+            cluster.add_path([i.graph['name'] for i in introns])
 
             for intron in introns:
-                intron.cluster = clusterNo
+                intron.graph['cluster'] = clusterNo
         else:
-            g.add_node(str(introns[0]))
-            introns[0].cluster = clusterNo
+            cluster.add_node(introns[0].graph['name'])
+            introns[0].graph['cluster'] = clusterNo
 
-    clusters[clusterNo] = g
+    clusters[clusterNo] = cluster
 
     return clusterNo
 
 
-def collapseExons(g, exonDb, intronDb):
-    mergedExons = set([])
+def collapseExons(g, exonDb):
     exons = [exonDb[e] for e in g.nodes()]
     sortedExons = sorted(exons, key=lambda x: (x.end, x.start))
 
@@ -130,15 +130,14 @@ def collapseExons(g, exonDb, intronDb):
                 if nextExon.terminal == 1:
                     g.add_edges_from([(str(currExon), n)\
                             for n in g.neighbors(str(nextExon))])
+
                     g.remove_node(str(nextExon))
-                    mergedExons.add(str(nextExon))
                 else:
                     if currExon.terminal == 1:
                         if nextExon.start - currExon.start <= MIN_UTR:
                             g.add_edges_from([(str(nextExon), n)\
                                     for n in g.neighbors(str(currExon))])
                             g.remove_node(str(currExon))
-                            mergedExons.add(str(currExon))
 
                     currExon = nextExon
             else:
@@ -161,7 +160,6 @@ def collapseExons(g, exonDb, intronDb):
                             for n in g.neighbors(str(currExon))])
 
                     g.remove_node(str(currExon))
-                    mergedExons.add(str(currExon))
                     currExon = nextExon
                 else:
                     if nextExon.terminal == 2:
@@ -170,7 +168,6 @@ def collapseExons(g, exonDb, intronDb):
                                     for n in g.neighbors(str(nextExon))])
 
                             g.remove_node(str(nextExon))
-                            mergedExons.add(str(nextExon))
                         else:
                             currExon = nextExon
                     else:
@@ -178,7 +175,6 @@ def collapseExons(g, exonDb, intronDb):
             else:
                 currExon = nextExon
         i += 1
-    return mergedExons
 
 
 def deleteGap(exons):
@@ -218,9 +214,6 @@ def addExon(db, exons):
     '''
     exons[0].terminal = 1
     exons[-1].terminal = 2
-    if str(exons[0]) == "chrZ:23487400-23487466":
-        print >> stderr, [str(exon) for exon in exons]
-        print >> stderr, '%s:%d-%d' % (exons[0].chrom, exons[0].end + 1, exons[-1].start - 1)
 
     for exon in exons:
         try:
@@ -230,6 +223,18 @@ def addExon(db, exons):
         else:
             if not exon.terminal and exon_.terminal:
                 exon_.terminal = None
+
+
+def mergeClusters(exonDb):
+    bigCluster = nx.Graph()
+    for exon in exonDb.itervalues():
+        path = []
+        for intron in exon.introns:
+            path.append(intronDb[intron].graph['cluster'])
+
+        bigCluster.add_path(path)
+
+    return bigCluster
 
 
 def walkDown(intronCoord, path, allPath, cluster):
@@ -314,77 +319,39 @@ def printBedGraph(transcript, geneId, tranId):
                     blockStarts))
 
 
-def buildGeneModels1(exonDb, intronDb, clusters):
+def buildGeneModels1(exonDb, intronDb, clusters, bigCluster):
     print >> stderr, 'Building gene models...'
     print >> stderr, 'Step 1...'
 
     removedClusters = set([])
-    passedExons = set([])
     numTranscripts = 0
     geneId = 0
     
-    for cl in clusters:
-        cluster = clusters[cl]
-        g = nx.DiGraph()
-        for intron in cluster.nodes():
-            for exon in intronDb[intron].exons:
-                for nextExon in exonDb[exon].nextExons:
-                    if nextExon not in passedExons\
-                            and intron in exonDb[nextExon].introns:
-                        g.add_edge(exon, nextExon)
-
-        removedClusters.add(cl)
-
-        if g.nodes():
-            geneId += 1
-            transId = 1
-            passedExons = passedExons.union(collapseExons(g, exonDb, intronDb))
-
-            for transcript in getPath(g):
-                printBedGraph(transcript, geneId, transId)
-                numTranscripts += 1
-                transId += 1
-
-            for exon in g.nodes():
-                passedExons.add(exon)
-
-    return geneId, numTranscripts
-
-def buildGeneModels(exonDb, intronDb, clusters):
-    print >> stderr, 'Building gene models...'
-    removedClusters = set([])
-    passedExons = set([])
-    numTranscripts = 0
-    geneId = 0
-
-    for n, exon in enumerate(exonDb.itervalues(), start=1):
-        if exon.clusters and str(exon) not in passedExons:
+    for cl in bigCluster.nodes():
+        if cl not in removedClusters:
             g = nx.DiGraph()
-            for cl in set(exon.clusters):
-                if cl not in removedClusters and cl in clusters:
-                    for intron in clusters[cl].nodes():
-                        for exon in intronDb[intron].exons:
-                            for nextExon in exonDb[exon].nextExons:
-                                if nextExon not in passedExons:
-                                    g.add_edge(exon, nextExon)
+            for intron in clusters[cl].nodes():
+                g.add_edges_from(intronDb[intron].edges())
 
-                    removedClusters.add(cl)
+            for neighbor in bigCluster.neighbors(cl):
+                if neighbor != cl: # chances are node connects to itself.
+                    neighborCluster = clusters[neighbor]
+                    for intron in neighborCluster.nodes():
+                        g.add_edges_from(intronDb[intron].edges())
+
+                removedClusters.add(neighbor)
+            removedClusters.add(cl)
 
             if g.nodes():
                 geneId += 1
                 transId = 1
-                passedExons = passedExons.union(collapseExons(g, exonDb, intronDb))
+                collapseExons(g, exonDb)
 
                 for transcript in getPath(g):
                     printBedGraph(transcript, geneId, transId)
                     numTranscripts += 1
                     transId += 1
 
-                for exon in g.nodes():
-                    passedExons.add(exon)
-
-        if n % 1000 == 0:
-            print >> stderr, '...', n
     return geneId, numTranscripts
 
 
@@ -411,8 +378,9 @@ if __name__=='__main__':
         if n % 1000 == 0:
             print >> stderr, '...', n
 
-    geneId, numTranscripts = buildGeneModels1(exonDb, intronDb, clusters)
-    print >> stderr, '\nTotal exons = %d' % len(exonDb)
-    print >> stderr, 'Total genes = %d' % geneId
-    print >> stderr, 'Total transcripts = %d' % (numTranscripts)
-    print >> stderr, 'Isoform/gene = %.2f' % (float(numTranscripts) / len(clusters))
+    bigCluster = mergeClusters(exonDb)
+    geneId, numTranscripts = buildGeneModels1(exonDb, intronDb, clusters, bigCluster)
+    #print >> stderr, '\nTotal exons = %d' % len(exonDb)
+    #print >> stderr, 'Total genes = %d' % geneId
+    #print >> stderr, 'Total transcripts = %d' % (numTranscripts)
+    #print >> stderr, 'Isoform/gene = %.2f' % (float(numTranscripts) / len(clusters))
