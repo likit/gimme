@@ -319,7 +319,7 @@ def printBedGraph(transcript, geneId, tranId):
                     blockStarts))
 
 
-def buildGeneModels1(exonDb, intronDb, clusters, bigCluster):
+def buildGeneModels(exonDb, intronDb, clusters, bigCluster):
     print >> stderr, 'Building gene models...'
     print >> stderr, 'Step 1...'
 
@@ -379,7 +379,7 @@ if __name__=='__main__':
             print >> stderr, '...', n
 
     bigCluster = mergeClusters(exonDb)
-    geneId, numTranscripts = buildGeneModels1(exonDb, intronDb, clusters, bigCluster)
+    geneId, numTranscripts = buildGeneModels(exonDb, intronDb, clusters, bigCluster)
     #print >> stderr, '\nTotal exons = %d' % len(exonDb)
     #print >> stderr, 'Total genes = %d' % geneId
     #print >> stderr, 'Total transcripts = %d' % (numTranscripts)
