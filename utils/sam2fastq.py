@@ -73,12 +73,14 @@ def writeReads(sequence, opts):
 
 if __name__=='__main__':
 
-    import os
+    import os, sys
+
     printOutput = printFastq if opts.output==1 else printFasta
     if os.path.isfile(opts.sequence):
         for line in open(opts.sequence):
             sequence = line.strip()
             writeReads(opts, sequence)
+            print >> sys.stderr, '...' + sequence + ' done.'
     else:
         sequence = None if opts.sequence=='all' else opts.sequence
         writeReads(opts, sequence)
