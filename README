@@ -1,0 +1,36 @@
+Gimme: an ESTs assembler program based on alignments.
+Author: Likit Preeyanon
+Email: preeyano@msu.edu
+
+Prerequisite package
+====================
+
+Gimme requires Networkx package to manipulate a graph data structure.
+You can download Networkx from http://networkx.lanl.gov/download.html.
+Please make sure networkx is in your PYTHONPATH or standard Python libraries
+on your computer.
+
+Installation
+============
+
+No installation required.
+
+Running Gimme
+=============
+Gimme should be able to run on any platform with Python interpreter.
+You can simply run:
+
+$ python gimme.py [input file].
+
+Gimme now support input file in PSL format (BLAT and GMAP support this format).
+
+Output is written to standard output.
+
+Parameters
+==========
+
+This version of Gimme fills up all small gaps in alignments.
+The default gap is 21bp and is specified in MIN_INTRON in a source code.
+
+You can also modify a length of minimal UTR by editing MIN_UTR value.
+The default is 100 bp.
