@@ -117,7 +117,7 @@ def addIntrons(exons, intronDb, exonDb, clusters, clusterNo):
 
 
 def collapseExons(g, exonDb):
-    # g : exon graph.
+    # g = an exon graph.
 
     exons = [exonDb[e] for e in g.nodes()]
     sortedExons = sorted(exons, key=lambda x: (x.end, x.start))
@@ -290,6 +290,7 @@ def buildSpliceGraph(cluster, intronDb, exonDb, mergedExons):
 
 def printBedGraph(transcript, geneId, tranId):
     '''Print a splice graph in BED format.'''
+
     exons = sorted([exonDb[e] for e in transcript],
                             key=lambda x: (x.start, x.end))
 
@@ -325,7 +326,6 @@ def printBedGraph(transcript, geneId, tranId):
 
 def buildGeneModels(exonDb, intronDb, clusters, bigCluster):
     print >> stderr, 'Building gene models...'
-    print >> stderr, 'Step 1...'
 
     removedClusters = set([])
     numTranscripts = 0
@@ -364,9 +364,18 @@ def main(inputFile):
 
     print >> stderr, 'Parsing alignments from %s...' % inputFile
     for n, exons in enumerate(parsePSL(inputFile), start=1):
-        exons = deleteGap(exons)  # delete small intron (<= MIN_INTRON)
+
+        '''Alignments may contain small gaps.
+        The program fill up the gaps for simplicity's sake. 
+        A minimum size of a gap can be adjusted by assigning a new
+        value to MIN_INTRON in line 8.
+
+        '''
+
+        exons = deleteGap(exons)  # delete intron <= MIN_INTRON
 
         if len(exons) > 1:
+            ''' The program ignore all single exons.'''
             addExon(exonDb, exons)
             addIntrons(exons, intronDb, exonDb, clusters, clusterNo)
             clusterNo += 1
@@ -377,7 +386,9 @@ def main(inputFile):
             print >> stderr, '...', n
 
     bigCluster = mergeClusters(exonDb)
-    geneId, numTranscripts = buildGeneModels(exonDb, intronDb, clusters, bigCluster)
+    geneId, numTranscripts = buildGeneModels(exonDb,
+                                    intronDb, clusters, bigCluster)
+
     print >> stderr, '\nTotal exons = %d' % len(exonDb)
     print >> stderr, 'Total genes = %d' % geneId
     print >> stderr, 'Total transcripts = %d' % (numTranscripts)
@@ -385,6 +396,5 @@ def main(inputFile):
 
 
 if __name__=='__main__':
-
     inputFile = sys.argv[1]
     main(inputFile)
