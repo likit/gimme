@@ -8,6 +8,10 @@ from utils import pslparser
 MIN_INTRON = 21
 MIN_UTR = 100
 
+exonDb = {}
+intronDb = {}
+clusters = {}
+
 class ExonObj:
     def __init__(self, chrom, start, end):
         self.chrom = chrom
@@ -353,13 +357,7 @@ def buildGeneModels(exonDb, intronDb, clusters, bigCluster):
     return geneId, numTranscripts
 
 
-if __name__=='__main__':
-
-    inputFile = sys.argv[1]
-
-    exonDb = {}
-    intronDb = {}
-    clusters = {}
+def main(inputFile):
     clusterNo = 0
 
     print >> stderr, 'Parsing alignments from %s...' % inputFile
@@ -378,7 +376,13 @@ if __name__=='__main__':
 
     bigCluster = mergeClusters(exonDb)
     geneId, numTranscripts = buildGeneModels(exonDb, intronDb, clusters, bigCluster)
-    #print >> stderr, '\nTotal exons = %d' % len(exonDb)
-    #print >> stderr, 'Total genes = %d' % geneId
-    #print >> stderr, 'Total transcripts = %d' % (numTranscripts)
-    #print >> stderr, 'Isoform/gene = %.2f' % (float(numTranscripts) / len(clusters))
+    print >> stderr, '\nTotal exons = %d' % len(exonDb)
+    print >> stderr, 'Total genes = %d' % geneId
+    print >> stderr, 'Total transcripts = %d' % (numTranscripts)
+    print >> stderr, 'Isoform/gene = %.2f' % (float(numTranscripts) / len(clusters))
+
+
+if __name__=='__main__':
+
+    inputFile = sys.argv[1]
+    main(inputFile)
