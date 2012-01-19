@@ -205,16 +205,12 @@ def deleteGap(exons):
 
 
 def addExon(db, exons):
-    '''Adds exons to a given dictionary.
-    db      : a dictionary to which exons will be added.
-    exons   : a list of exon objects.
+    '''1.Change a terminal attribute of a leftmost exon
+    and a rightmost exon to 1 and 2 respectively.
+    A terminal attribute has a value 'None' by default.
 
-    '''
+    2.Add exons to the exon database (db).
 
-    '''Change a terminal attribute of a left end exon
-    and a right end exon to True. For a middile exon,
-    a terminal attribute has value 'None' by default.
-    
     '''
     exons[0].terminal = 1
     exons[-1].terminal = 2
@@ -242,9 +238,7 @@ def mergeClusters(exonDb):
 
 
 def walkDown(intronCoord, path, allPath, cluster):
-    '''Returns all downstream exons from a given exon.
-    
-    '''
+    '''Returns all downstream exons from a given exon.'''
 
     if cluster.successors(intronCoord) == []:
         allPath.append(path[:])
@@ -366,7 +360,7 @@ def main(inputFile):
     for n, exons in enumerate(parsePSL(inputFile), start=1):
 
         '''Alignments may contain small gaps.
-        The program fill up the gaps for simplicity's sake. 
+        The program fills up the gaps for simplicity's sake. 
         A minimum size of a gap can be adjusted by assigning a new
         value to MIN_INTRON in line 8.
 
@@ -375,7 +369,7 @@ def main(inputFile):
         exons = deleteGap(exons)  # delete intron <= MIN_INTRON
 
         if len(exons) > 1:
-            ''' The program ignore all single exons.'''
+            ''' The program ignores all single exons.'''
             addExon(exonDb, exons)
             addIntrons(exons, intronDb, exonDb, clusters, clusterNo)
             clusterNo += 1
