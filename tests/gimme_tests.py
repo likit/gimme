@@ -1,3 +1,5 @@
+'''Please run nosetests from a program main directory.'''
+
 import sys, os
 
 source_path = os.path.abspath('src')
