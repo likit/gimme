@@ -117,6 +117,8 @@ def addIntrons(exons, intronDb, exonDb, clusters, clusterNo):
 
 
 def collapseExons(g, exonDb):
+    # g : exon graph.
+
     exons = [exonDb[e] for e in g.nodes()]
     sortedExons = sorted(exons, key=lambda x: (x.end, x.start))
 
