@@ -1,3 +1,12 @@
+''' The program searches for a minimum set of paths in a graph
+that contains all edges. It is designed to work with gene models
+in BED format. The output is written to stdout.
+
+Author: Likit Preeyanon
+Email : preeyano@msu.edu
+
+'''
+
 import sys, csv
 from sys import stderr
 
@@ -214,4 +223,5 @@ def main(filename):
         transId += 1
 
 if __name__=='__main__':
-    main(sys.argv[1])
+    inputFile = sys.argv[1]
+    main(inputFile)
