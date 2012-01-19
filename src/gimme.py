@@ -1,11 +1,9 @@
-import sys
-import csv
+import sys, csv
+from sys import stderr, stdout
 
 import networkx as nx
-import psl_parser
-import matplotlib.pyplot as plot
+from utils import pslparser
 
-from sys import stderr, stdout
 
 MIN_INTRON = 21
 MIN_UTR = 100
@@ -29,7 +27,7 @@ def parsePSL(filename):
 
     '''
 
-    for pslObj in psl_parser.read(open(filename)):
+    for pslObj in pslparser.read(open(filename)):
         exons = []
         for i in range(len(pslObj.attrib['tStarts'])):
             exonStart = pslObj.attrib['tStarts'][i]
