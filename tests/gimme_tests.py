@@ -125,11 +125,19 @@ class TestCollapseExons(TestCase):
         self.assertEqual(len(self.exon_graph.nodes()), 7)
         self.assertEqual(len(self.exon_graph.edges()), 6)
 
+        self.assertItemsEqual(self.exon_graph.edges(),
+                [('chr1:700-800', 'chr1:900-1100'),
+                    ('chr1:900-1100', 'chr1:1300-1400'),
+                    ('chr1:1300-1400', 'chr1:1600-1700'),
+                    ('chr1:1600-1700', 'chr1:1900-2000'),
+                    ('chr1:1900-2000', 'chr1:2200-2300'),
+                    ('chr1:2200-2300', 'chr1:2500-2600')])
+
     def test_collapse_right_terminal_exon_with_other_exons(self):
         '''
             before
             L----|=====|--------|======|R
-                                   L|==|--------|===|R
+                                   L|==|-----------|===|R
 
             after
             L----|=====|--------|======|-----------|===|R
@@ -153,6 +161,15 @@ class TestCollapseExons(TestCase):
 
         self.assertEqual(len(self.exon_graph.nodes()), 7)
         self.assertEqual(len(self.exon_graph.edges()), 6)
+
+        self.assertItemsEqual(self.exon_graph.edges(),
+                [('chr1:1000-1100', 'chr1:1300-1400'),
+                    ('chr1:1300-1400', 'chr1:1600-1700'),
+                    ('chr1:1600-1700', 'chr1:1900-2000'),
+                    ('chr1:1900-2000', 'chr1:2200-2300'),
+                    ('chr1:2200-2300', 'chr1:2500-2600'),
+                    ('chr1:2500-2600', 'chr1:2800-2900'),
+                    ])
 
     def test_collapse_right_terminal_exon_with_skipped_exon(self):
         '''
@@ -189,6 +206,15 @@ class TestCollapseExons(TestCase):
         self.assertEqual(len(self.exon_graph.nodes()), 6)
         self.assertEqual(len(self.exon_graph.edges()), 6)
 
+        self.assertItemsEqual(self.exon_graph.edges(),
+                [('chr1:1000-1100', 'chr1:1300-1400'),
+                    ('chr1:1300-1400', 'chr1:1600-1700'),
+                    ('chr1:1600-1700', 'chr1:1900-2000'),
+                    ('chr1:1900-2000', 'chr1:2200-2300'),
+                    ('chr1:1900-2000', 'chr1:2500-2600'),
+                    ('chr1:2200-2300', 'chr1:2500-2600'),
+                    ])
+
     def test_collapse_left_terminal_exon_with_skipped_exon(self):
         '''
             before
@@ -196,8 +222,8 @@ class TestCollapseExons(TestCase):
             L|=====|------|=====|--------|======|R
 
             after
-            L|=====|------|=====|--------|======|R
             L|=====|---------------------|======|R
+            L|=====|------|=====|--------|======|R
 
         '''
 
@@ -218,6 +244,15 @@ class TestCollapseExons(TestCase):
         self.assertEqual(len(self.exon_graph.nodes()), 6)
         self.assertEqual(len(self.exon_graph.edges()), 6)
 
+        self.assertItemsEqual(self.exon_graph.edges(),
+                [('chr1:1000-1100', 'chr1:1300-1400'),
+                    ('chr1:1000-1100', 'chr1:1600-1700'),
+                    ('chr1:1300-1400', 'chr1:1600-1700'),
+                    ('chr1:1600-1700', 'chr1:1900-2000'),
+                    ('chr1:1900-2000', 'chr1:2200-2300'),
+                    ('chr1:2200-2300', 'chr1:2500-2600'),
+                    ])
+
     def test_collapse_left_right_terminal_exon_with_skipped_exon(self):
         '''
             before
@@ -225,8 +260,8 @@ class TestCollapseExons(TestCase):
             L|=====|------|=====|--------|======|----|======|R
 
             after
-            L|=====|------|=====|--------|======|----|======|R
             L|=====|---------------------|======|----|======|R
+            L|=====|------|=====|--------|======|----|======|R
 
         '''
 
@@ -251,6 +286,15 @@ class TestCollapseExons(TestCase):
 
         self.assertEqual(len(self.exon_graph.nodes()), 6)
         self.assertEqual(len(self.exon_graph.edges()), 6)
+
+        self.assertItemsEqual(self.exon_graph.edges(),
+                [('chr1:1000-1100', 'chr1:1300-1400'),
+                    ('chr1:1000-1100', 'chr1:1600-1700'),
+                    ('chr1:1300-1400', 'chr1:1600-1700'),
+                    ('chr1:1600-1700', 'chr1:1900-2000'),
+                    ('chr1:1900-2000', 'chr1:2200-2300'),
+                    ('chr1:2200-2300', 'chr1:2500-2600'),
+                    ])
 
     def test_collapse_left_utr_longer_than_100(self):
         '''
@@ -285,6 +329,14 @@ class TestCollapseExons(TestCase):
 
         self.assertEqual(len(self.exon_graph.nodes()), 7)
         self.assertEqual(len(self.exon_graph.edges()), 6)
+        self.assertItemsEqual(self.exon_graph.edges(),
+                [('chr1:1000-1100', 'chr1:1300-1400'),
+                    ('chr1:1190-1400', 'chr1:1600-1700'),
+                    ('chr1:1300-1400', 'chr1:1600-1700'),
+                    ('chr1:1600-1700', 'chr1:1900-2000'),
+                    ('chr1:1900-2000', 'chr1:2200-2300'),
+                    ('chr1:2200-2300', 'chr1:2500-2600'),
+                    ])
 
     def test_collapse_left_utr_shorter_than_100(self):
         '''
@@ -353,6 +405,15 @@ class TestCollapseExons(TestCase):
         self.assertEqual(len(self.exon_graph.nodes()), 7)
         self.assertEqual(len(self.exon_graph.edges()), 6)
 
+        self.assertItemsEqual(self.exon_graph.edges(),
+                [('chr1:1000-1100', 'chr1:1300-1400'),
+                    ('chr1:1300-1400', 'chr1:1600-1700'),
+                    ('chr1:1300-1400', 'chr1:1600-1850'),
+                    ('chr1:1600-1700', 'chr1:1900-2000'),
+                    ('chr1:1900-2000', 'chr1:2200-2300'),
+                    ('chr1:2200-2300', 'chr1:2500-2600'),
+                    ])
+
     def test_collapse_left_and_right_utr_longer_than_100(self):
         '''
             before
@@ -382,6 +443,14 @@ class TestCollapseExons(TestCase):
 
         self.assertEqual(len(self.exon_graph.nodes()), 8)
         self.assertEqual(len(self.exon_graph.edges()), 6)
+        self.assertItemsEqual(self.exon_graph.edges(),
+                [('chr1:1000-1100', 'chr1:1300-1400'),
+                    ('chr1:1300-1400', 'chr1:1600-1700'),
+                    ('chr1:1150-1400', 'chr1:1600-1850'),
+                    ('chr1:1600-1700', 'chr1:1900-2000'),
+                    ('chr1:1900-2000', 'chr1:2200-2300'),
+                    ('chr1:2200-2300', 'chr1:2500-2600'),
+                    ])
 
     def test_collapse_left_and_right_utr_shorter_than_100(self):
         '''
