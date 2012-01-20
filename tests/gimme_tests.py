@@ -283,7 +283,7 @@ class TestCollapseExons(TestCase):
         self.assertEqual(len(self.exon_graph.edges()), 7)
 
         collapseExons(self.exon_graph, self.exonDb)
-
+        
         self.assertEqual(len(self.exon_graph.nodes()), 6)
         self.assertEqual(len(self.exon_graph.edges()), 6)
 
@@ -542,36 +542,3 @@ class TestCollapseExons(TestCase):
 
         self.assertEqual(len(self.exon_graph.nodes()), 6)
         self.assertEqual(len(self.exon_graph.edges()), 5)
-
-
-from gimme import walkUpExonGraph
-
-
-class TestWalkUpExonGraph(TestCase):
-    def setUp(self):
-        self.graph = nx.DiGraph()
-        self.graph.add_path([1,2,3,4,5,6])
-
-    def test_simple_walk(self):
-        edges = set([])
-        walkUpExonGraph(self.graph, 4, edges)
-        self.assertEqual(len(edges), 3)
-        self.assertEqual(edges, set([(1,2), (2,3), (3,4)]))
-
-    def test_a_simple_branch_walk(self):
-        self.graph.add_edge(3,5)
-        edges = set([])
-        walkUpExonGraph(self.graph, 5, edges)
-        self.assertEqual(len(edges), 5)
-        self.assertEqual(edges, set([(1,2), (2,3),
-                                        (3,4), (3,5),
-                                        (4,5)]))
-
-    def test_two_branches_at_the_top(self):
-        self.graph.add_edge(0,1)
-        self.graph.add_edge(9,1)
-        edges = set([])
-        walkUpExonGraph(self.graph, 5, edges)
-        self.assertEqual(len(edges), 6)
-        self.assertEqual(edges, set([(0,1), (9,1), (1,2),
-                                        (2,3), (3,4), (4,5)]))
