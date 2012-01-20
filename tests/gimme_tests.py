@@ -32,8 +32,6 @@ class TestCollapseExons(TestCase):
         self.exon_graph = nx.DiGraph()
         self.exon_graph.add_path(exons)
 
-        print >> sys.stderr, exons
-
     def test_building_base_exon_db_and_exon_graph(self):
         self.assertEqual(len(self.exonDb), 6)
         self.assertEqual(len(self.exon_graph.nodes()), 6)
@@ -190,9 +188,22 @@ class TestWalkUpExonGraph(TestCase):
         edges = set([])
         walkUpExonGraph(self.graph, 4, edges)
         self.assertEqual(len(edges), 3)
+        self.assertEqual(edges, set([(1,2), (2,3), (3,4)]))
 
     def test_a_simple_branch_walk(self):
         self.graph.add_edge(3,5)
         edges = set([])
         walkUpExonGraph(self.graph, 5, edges)
         self.assertEqual(len(edges), 5)
+        self.assertEqual(edges, set([(1,2), (2,3),
+                                        (3,4), (3,5),
+                                        (4,5)]))
+
+    def test_two_branches_at_the_top(self):
+        self.graph.add_edge(0,1)
+        self.graph.add_edge(9,1)
+        edges = set([])
+        walkUpExonGraph(self.graph, 5, edges)
+        self.assertEqual(len(edges), 6)
+        self.assertEqual(edges, set([(0,1), (9,1), (1,2),
+                                        (2,3), (3,4), (4,5)]))
