@@ -176,6 +176,200 @@ class TestCollapseExons(TestCase):
         self.assertEqual(len(self.exon_graph.nodes()), 6)
         self.assertEqual(len(self.exon_graph.edges()), 6)
 
+    def test_collapse_left_terminal_exon_with_skipped_exon(self):
+        '''
+            before
+              L|===|---------------------|======|R
+            L|=====|------|=====|--------|======|R
+
+            after
+            L|=====|------|=====|--------|======|R
+            L|=====|---------------------|======|R
+
+        '''
+
+        e1 = ExonObj('chr1', 1050, 1100)
+        e1.terminal = 1
+        self.exonDb[str(e1)] = e1
+
+        e2 = ExonObj('chr1', 1600, 1700)
+        e2.terminal = 2
+        self.exonDb[str(e2)] = e2
+        self.exon_graph.add_edge(str(e1), str(e2))
+
+        self.assertEqual(len(self.exon_graph.nodes()), 7)
+        self.assertEqual(len(self.exon_graph.edges()), 6)
+
+        collapseExons(self.exon_graph, self.exonDb)
+
+        self.assertEqual(len(self.exon_graph.nodes()), 6)
+        self.assertEqual(len(self.exon_graph.edges()), 6)
+
+    def test_collapse_left_right_terminal_exon_with_skipped_exon(self):
+        '''
+            before
+              L|===|---------------------|======|----|===|R
+            L|=====|------|=====|--------|======|----|======|R
+
+            after
+            L|=====|------|=====|--------|======|----|======|R
+            L|=====|---------------------|======|----|======|R
+
+        '''
+
+        e1 = ExonObj('chr1', 1050, 1100)
+        e1.terminal = 1
+        self.exonDb[str(e1)] = e1
+
+        e2 = ExonObj('chr1', 1600, 1700)
+        self.exonDb[str(e2)] = e2
+
+        e3 = ExonObj('chr1', 1900, 1950)
+        e3.terminal = 2
+        self.exonDb[str(e3)] = e3
+
+        self.exon_graph.add_edge(str(e1), str(e2))
+        self.exon_graph.add_edge(str(e2), str(e3))
+
+        self.assertEqual(len(self.exon_graph.nodes()), 8)
+        self.assertEqual(len(self.exon_graph.edges()), 7)
+
+        collapseExons(self.exon_graph, self.exonDb)
+
+        self.assertEqual(len(self.exon_graph.nodes()), 6)
+        self.assertEqual(len(self.exon_graph.edges()), 6)
+
+    def test_collapse_left_utr_longer_than_100(self):
+        '''
+            before
+                      L|========|--------|======|----|===|R
+            L|=====|------|=====|--------|======|----|======|R
+
+            after
+            L|=====|------|=====|--------|======|----|======|R
+                      L|========|--------|======|----|======|R
+
+        '''
+
+        e1 = ExonObj('chr1', 1190, 1400)
+        e1.terminal = 1
+        self.exonDb[str(e1)] = e1
+
+        e2 = ExonObj('chr1', 1600, 1700)
+        self.exonDb[str(e2)] = e2
+
+        e3 = ExonObj('chr1', 1900, 1950)
+        e3.terminal = 2
+        self.exonDb[str(e3)] = e3
+
+        self.exon_graph.add_edge(str(e1), str(e2))
+        self.exon_graph.add_edge(str(e2), str(e3))
+
+        self.assertEqual(len(self.exon_graph.nodes()), 8)
+        self.assertEqual(len(self.exon_graph.edges()), 7)
+
+        collapseExons(self.exon_graph, self.exonDb)
+
+        self.assertEqual(len(self.exon_graph.nodes()), 7)
+        self.assertEqual(len(self.exon_graph.edges()), 6)
+
+    def test_collapse_left_utr_shorter_than_100(self):
+        '''
+            before
+                      L|========|--------|======|----|===|R
+            L|=====|------|=====|--------|======|----|======|R
+
+            after
+            L|=====|------|=====|--------|======|----|======|R
+
+        '''
+
+        e1 = ExonObj('chr1', 1250, 1400)
+        e1.terminal = 1
+        self.exonDb[str(e1)] = e1
+
+        e2 = ExonObj('chr1', 1600, 1700)
+        self.exonDb[str(e2)] = e2
+
+        e3 = ExonObj('chr1', 1900, 1950)
+        e3.terminal = 2
+        self.exonDb[str(e3)] = e3
+
+        self.exon_graph.add_edge(str(e1), str(e2))
+        self.exon_graph.add_edge(str(e2), str(e3))
+
+        self.assertEqual(len(self.exon_graph.nodes()), 8)
+        self.assertEqual(len(self.exon_graph.edges()), 7)
+
+        collapseExons(self.exon_graph, self.exonDb)
+
+        self.assertEqual(len(self.exon_graph.nodes()), 6)
+        self.assertEqual(len(self.exon_graph.edges()), 5)
+
+    def test_collapse_right_utr_longer_than_100(self):
+        '''
+            before
+              L|===|------|=====|--------|=========|R
+            L|=====|------|=====|--------|======|-------|======|R
+
+            after
+            L|=====|------|=====|--------|======|-------|======|R
+
+        '''
+
+        e1 = ExonObj('chr1', 1050, 1100)
+        e1.terminal = 1
+        self.exonDb[str(e1)] = e1
+
+        e2 = ExonObj('chr1', 1300, 1400)
+        self.exonDb[str(e2)] = e2
+
+        e3 = ExonObj('chr1', 1600, 1850)
+        e3.terminal = 2
+        self.exonDb[str(e3)] = e3
+
+        self.exon_graph.add_edge(str(e1), str(e2))
+        self.exon_graph.add_edge(str(e2), str(e3))
+
+        self.assertEqual(len(self.exon_graph.nodes()), 8)
+        self.assertEqual(len(self.exon_graph.edges()), 7)
+
+        collapseExons(self.exon_graph, self.exonDb)
+
+        self.assertEqual(len(self.exon_graph.nodes()), 7)
+        self.assertEqual(len(self.exon_graph.edges()), 6)
+    def test_collapse_right_utr_shorter_than_100(self):
+        '''
+            before
+              L|===|------|=====|--------|=========|R
+            L|=====|------|=====|--------|======|-------|======|R
+
+            after
+            L|=====|------|=====|--------|======|-------|======|R
+
+        '''
+
+        e1 = ExonObj('chr1', 1050, 1100)
+        e1.terminal = 1
+        self.exonDb[str(e1)] = e1
+
+        e2 = ExonObj('chr1', 1300, 1400)
+        self.exonDb[str(e2)] = e2
+
+        e3 = ExonObj('chr1', 1600, 1750)
+        e3.terminal = 2
+        self.exonDb[str(e3)] = e3
+
+        self.exon_graph.add_edge(str(e1), str(e2))
+        self.exon_graph.add_edge(str(e2), str(e3))
+
+        self.assertEqual(len(self.exon_graph.nodes()), 8)
+        self.assertEqual(len(self.exon_graph.edges()), 7)
+
+        collapseExons(self.exon_graph, self.exonDb)
+
+        self.assertEqual(len(self.exon_graph.nodes()), 6)
+        self.assertEqual(len(self.exon_graph.edges()), 5)
 
 from gimme import walkUpExonGraph
 
