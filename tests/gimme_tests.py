@@ -187,6 +187,12 @@ class TestWalkUpExonGraph(TestCase):
         self.graph.add_path([1,2,3,4,5,6])
 
     def test_simple_walk(self):
-        edges = []
+        edges = set([])
         walkUpExonGraph(self.graph, 4, edges)
         self.assertEqual(len(edges), 3)
+
+    def test_a_simple_branch_walk(self):
+        self.graph.add_edge(3,5)
+        edges = set([])
+        walkUpExonGraph(self.graph, 5, edges)
+        self.assertEqual(len(edges), 5)
