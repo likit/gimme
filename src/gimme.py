@@ -134,15 +134,15 @@ def collapseExons(g, exonDb):
             if currExon.end == nextExon.end:
                 if nextExon.terminal == 1:
                     g.add_edges_from([(str(currExon), n)\
-                            for n in g.neighbors(str(nextExon))])
-                    addPreviousEdges(str(nextExon), str(currExon), g)
+                            for n in g.successors(str(nextExon))])
+                    #addPreviousEdges(str(nextExon), str(currExon), g)
                     g.remove_node(str(nextExon))
                 else:
                     if currExon.terminal == 1:
                         if nextExon.start - currExon.start <= MIN_UTR:
                             g.add_edges_from([(str(nextExon), n)\
-                                    for n in g.neighbors(str(currExon))])
-                            addPreviousEdges(str(currExon), str(nextExon), g)
+                                    for n in g.successors(str(currExon))])
+                            #addPreviousEdges(str(currExon), str(nextExon), g)
                             g.remove_node(str(currExon))
 
                     currExon = nextExon
@@ -162,19 +162,18 @@ def collapseExons(g, exonDb):
         else:
             if currExon.start == nextExon.start:
                 if currExon.terminal == 2:
-                    g.add_edges_from([(str(nextExon), n)\
-                            for n in g.neighbors(str(currExon))])
-                    addPreviousEdges(str(currExon), str(nextExon), g)
+                    g.add_edges_from([(n, str(nextExon))\
+                            for n in g.predecessors(str(currExon))])
+                    #addPreviousEdges(str(currExon), str(nextExon), g)
 
                     g.remove_node(str(currExon))
                     currExon = nextExon
                 else:
                     if nextExon.terminal == 2:
                         if nextExon.end - currExon.end <= MIN_UTR:
-                            g.add_edges_from([(str(currExon), n)\
-                                    for n in g.neighbors(str(nextExon))])
-                            addPreviousEdges(str(nextExon), str(currExon), g)
-
+                            g.add_edges_from([(n, str(currExon))\
+                                    for n in g.predecessors(str(nextExon))])
+                            #addPreviousEdges(str(nextExon), str(currExon), g)
                             g.remove_node(str(nextExon))
                         else:
                             currExon = nextExon
@@ -251,7 +250,7 @@ def addPreviousEdges(currExon, newExon, graph):
     edges = set([])
     for upper_node in graph.predecessors(currExon):
         edges.add((upper_node, newExon))
-        walkUpExonGraph(graph, upper_node, edges)
+        #walkUpExonGraph(graph, upper_node, edges)
     graph.add_edges_from(edges)
 
 
@@ -353,7 +352,7 @@ def buildGeneModels(exonDb, intronDb, clusters, bigCluster):
     numTranscripts = 0
     geneId = 0
 
-    for cl in bigCluster.nodes():
+    for cl_num, cl in enumerate(bigCluster.nodes(), start=1):
         if cl not in removedClusters:
             g = nx.DiGraph()
             for intron in clusters[cl].nodes():
@@ -377,6 +376,8 @@ def buildGeneModels(exonDb, intronDb, clusters, bigCluster):
                     printBedGraph(transcript, geneId, transId)
                     numTranscripts += 1
                     transId += 1
+        if cl_num % 1000 == 0:
+            print >> sys.stderr, '...', cl_num
 
     return geneId, numTranscripts
 
