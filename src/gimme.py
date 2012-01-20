@@ -2,6 +2,7 @@ import sys, csv
 from sys import stderr, stdout
 
 import networkx as nx
+import matplotlib.pyplot as plot
 from utils import pslparser
 
 
@@ -235,7 +236,12 @@ def mergeClusters(exonDb):
         for intron in exon.introns:
             path.append(intronDb[intron].graph['cluster'])
 
-        bigCluster.add_path(path)
+        if len(path) > 1:
+            bigCluster.add_path(path)
+        elif len(path) == 1:
+            bigCluster.add_node(path[0])
+        else:
+            raise ValueError, 'Cannot merge empty path'
 
     return bigCluster
 
@@ -346,7 +352,7 @@ def buildGeneModels(exonDb, intronDb, clusters, bigCluster):
     removedClusters = set([])
     numTranscripts = 0
     geneId = 0
-    
+
     for cl in bigCluster.nodes():
         if cl not in removedClusters:
             g = nx.DiGraph()
