@@ -313,6 +313,7 @@ class TestCollapseExons(TestCase):
             L|=====|------|=====|--------|======|-------|======|R
 
             after
+            L|=====|------|=====|--------|=========|R
             L|=====|------|=====|--------|======|-------|======|R
 
         '''
@@ -346,6 +347,7 @@ class TestCollapseExons(TestCase):
             L|=====|------|=====|--------|======|-------|======|R
 
             after
+                    L|==========|--------|=========|R
             L|=====|------|=====|--------|======|-------|======|R
 
         '''
@@ -367,6 +369,35 @@ class TestCollapseExons(TestCase):
 
         self.assertEqual(len(self.exon_graph.nodes()), 8)
         self.assertEqual(len(self.exon_graph.edges()), 6)
+
+    def test_collapse_left_and_right_utr_shorter_than_100(self):
+        '''
+            before
+                    L|==========|--------|=========|R
+            L|=====|------|=====|--------|======|-------|======|R
+
+            after
+            L|=====|------|=====|--------|======|-------|======|R
+
+        '''
+
+        e1 = ExonObj('chr1', 1250, 1400)
+        e1.terminal = 1
+        self.exonDb[str(e1)] = e1
+
+        e2 = ExonObj('chr1', 1600, 1750)
+        e2.terminal = 2
+        self.exonDb[str(e2)] = e2
+
+        self.exon_graph.add_edge(str(e1), str(e2))
+
+        self.assertEqual(len(self.exon_graph.nodes()), 8)
+        self.assertEqual(len(self.exon_graph.edges()), 6)
+
+        collapseExons(self.exon_graph, self.exonDb)
+
+        self.assertEqual(len(self.exon_graph.nodes()), 6)
+        self.assertEqual(len(self.exon_graph.edges()), 5)
 
     def test_collapse_right_utr_shorter_than_100(self):
         '''
