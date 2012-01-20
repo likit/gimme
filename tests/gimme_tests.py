@@ -31,11 +31,18 @@ class TestCollapseExons(TestCase):
 
         self.exon_graph = nx.DiGraph()
         self.exon_graph.add_path(exons)
+        print >> sys.stderr, exons
 
     def test_building_base_exon_db_and_exon_graph(self):
         self.assertEqual(len(self.exonDb), 6)
         self.assertEqual(len(self.exon_graph.nodes()), 6)
         self.assertEqual(len(self.exon_graph.edges()), 5)
+        self.assertItemsEqual(self.exon_graph.nodes(), ['chr1:1000-1100',
+                                                    'chr1:1300-1400',
+                                                    'chr1:1600-1700',
+                                                    'chr1:1900-2000',
+                                                    'chr1:2200-2300',
+                                                    'chr1:2500-2600'])
 
     def test_collapse_left_terminal_exon(self):
         '''
