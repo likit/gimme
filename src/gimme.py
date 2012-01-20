@@ -237,6 +237,15 @@ def mergeClusters(exonDb):
     return bigCluster
 
 
+def walkUpExonGraph(graph, exon, edges):
+    if graph.predecessors(exon) == []:
+        return
+
+    for upper_node in graph.predecessors(exon):
+        edges.append((upper_node, exon))
+        walkUpExonGraph(graph, upper_node, edges)
+
+
 def walkDown(intronCoord, path, allPath, cluster):
     '''Returns all downstream exons from a given exon.'''
 
