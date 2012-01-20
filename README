@@ -17,17 +17,27 @@ No installation required.
 
 Running Gimme
 =============
+
 Gimme should be able to run on any platform with Python interpreter.
 You can simply run:
 
 $ python gimme.py [input file].
 
+Example: assemble transcripts from sample data
+
+$ python ./src/gimme.py sample_data/sample.psl > sample.bed
+
 Gimme now support input file in PSL format (BLAT and GMAP support this format).
 
-Output is written to standard output.
+Output is written to standard output, which can be redirected to a file.
 
-Parameters
-==========
+Testing Gimme
+=============
+
+Run nosetests in the main directory to run all tests in tests directory.
+
+Configuration
+=============
 
 This version of Gimme fills up all small gaps in alignments.
 The default gap is 21bp and is specified in MIN_INTRON in a source code.
