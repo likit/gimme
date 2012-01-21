@@ -1,3 +1,10 @@
+'''The program converts alignments from PSL format to BED format.
+
+Author: Likit Preeyanon
+Email: preeyano@msu.edu
+
+'''
+
 import sys
 import csv
 import pslparser
