@@ -16,9 +16,7 @@ Email: preeyano@msu.edu
 '''
 
 
-import csv, os.path
-
-from sys import argv, stderr
+import csv, os.path, sys
 from collections import namedtuple
 
 import pslparser
@@ -109,7 +107,7 @@ def addIntron(exons, intronDb):
             try:
                 assert currExon.end < nextExon.start, '%s %s %s' % (currExon, nextExon, intron)
             except AssertionError:
-                print >> stderr, '%s skipped ' % intron
+                print >> sys.stderr, '%s skipped ' % intron
             else:
                 if nextExon.start - currExon.end > MIN_INTRON:
                     intronDb.add(intron)
@@ -180,11 +178,14 @@ def main(args):
                                         secondFile, 'psl',
                                         db1,
                                         db2)
-    else:
-        raise SystemExit, 'invalid input files'
+    elif len(args.bed) + len(args.psl) < 2:
+        raise ValueError, 'Need two input files to compare.'
+
+    elif len(args.bed) + len(args.psl) > 2:
+        raise ValueError, 'Too many input files.'
 
     for filename, parser, db in ((first), (second)):
-        print >> stderr, "Parsing alignment from %s ..." % (filename)
+        print >> sys.stderr, "Parsing alignment from %s ..." % (filename)
         for n, exons in enumerate(parser(filename), start=1):
 
             if len(exons) > 1:
@@ -196,17 +197,17 @@ def main(args):
                     addIntronBed(exons, db)
 
             if n % 1000 == 0:
-                print >> stderr, '...', n
+                print >> sys.stderr, '...', n
 
-    print >> stderr, "Total introns in %s = %d\n" % (firstFile, len(db1))
-    print >> stderr, "Total introns in %s = %d\n" % (secondFile, len(db2))
+    print >> sys.stderr, "Total introns in %s = %d\n" % (firstFile, len(db1))
+    print >> sys.stderr, "Total introns in %s = %d\n" % (secondFile, len(db2))
 
     firstDiff = db1.difference(db2)
     secondDiff = db2.difference(db1)
 
-    print >> stderr, "Total introns not in %s = %d" % \
+    print >> sys.stderr, "Total introns not in %s = %d" % \
                                 (secondFile, len(firstDiff))
-    print >> stderr, "Total introns not in %s = %d" % \
+    print >> sys.stderr, "Total introns not in %s = %d" % \
                                 (firstFile, len(secondDiff))
 
     inputFileName1 = os.path.basename(firstFile)
