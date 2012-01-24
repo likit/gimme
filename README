@@ -2,9 +2,13 @@ Gimme: a transcripts assembler based on alignments.
 Author: Likit Preeyanon
 Email: preeyano@msu.edu
 
+Copyright and license
+=====================
+The prgram is Copyright Michigan State University.
+The code is freely available for use and re-use under GNU GPL license.
+
 Prerequisite package
 ====================
-
 Gimme requires Networkx package to manipulate a graph data structure.
 You can download Networkx from http://networkx.lanl.gov/download.html.
 Please make sure networkx is in your PYTHONPATH or standard Python libraries
@@ -38,7 +42,7 @@ Gene models built by Gimme contain a maximum number of isoforms.
 You can use a program in utils to find a minimum set of transcripts.
 See Utilities for more detail.
 
-Testing Gimme
+Running Tests
 =============
 
 Run nosetests in the main directory to run all tests in tests directory.
