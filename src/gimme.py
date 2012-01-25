@@ -3,11 +3,11 @@ import argparse
 from sys import stderr, stdout
 
 import networkx as nx
-from utils import pslparser
+from utils import pslparser, get_min_path
 
 
-MIN_INTRON = 30
-MAX_INTRON = 20000
+GAP_SIZE = 21
+MAX_INTRON = 50000
 MIN_UTR = 100
 
 exonDb = {}
@@ -194,7 +194,7 @@ def deleteGap(exons):
         except IndexError:
             break
         else:
-            if nextExon.start - currExon.end <= MIN_INTRON:
+            if nextExon.start - currExon.end <= GAP_SIZE:
                 currExon.end = nextExon.end
             else:
                 newExon.append(currExon)
@@ -324,14 +324,14 @@ def printBedGraph(transcript, geneId, tranId):
                     blockStarts))
 
 
-def buildGeneModels(exonDb, intronDb, clusters, bigCluster):
+def buildGeneModels(exonDb, intronDb, clusters, bigCluster, isMax=False):
     print >> stderr, 'Building gene models...'
 
     removedClusters = set([])
     numTranscripts = 0
     geneId = 0
 
-    for cl in bigCluster.nodes():
+    for cl_num, cl in enumerate(bigCluster.nodes(), start=1):
         if cl not in removedClusters:
             g = nx.DiGraph()
             for intron in clusters[cl].nodes():
@@ -350,12 +350,25 @@ def buildGeneModels(exonDb, intronDb, clusters, bigCluster):
                 geneId += 1
                 transId = 1
                 collapseExons(g, exonDb)
+                if isMax:
+                    for transcript in getPath(g):
+                        printBedGraph(transcript, geneId, transId)
+                        numTranscripts += 1
+                        transId += 1
 
-                for transcript in getPath(g):
-                    print >> sys.stderr, '>transcript %d.%d' % (geneId, transId)
-                    printBedGraph(transcript, geneId, transId)
-                    numTranscripts += 1
-                    transId += 1
+                else:
+                    max_paths = getPath(g)
+                    paths = []
+                    for pth in max_paths:
+                        paths.append(get_min_path.getEdges(pth))
+
+                    for transcript in get_min_path.getMinPaths(paths):
+                        printBedGraph(transcript, geneId, transId)
+                        numTranscripts += 1
+                        transId += 1
+
+        if cl_num % 1000 == 0:
+            print >> stderr, '...', cl_num
 
     return geneId, numTranscripts
 
@@ -363,20 +376,18 @@ def buildGeneModels(exonDb, intronDb, clusters, bigCluster):
 def main(inputFiles):
     clusterNo = 0
 
-    print >> stderr, MIN_INTRON, MAX_INTRON, MIN_UTR
-
     for inputFile in inputFiles:
         print >> stderr, 'Parsing alignments from %s...' % inputFile
         for n, exons in enumerate(parsePSL(inputFile), start=1):
 
             '''Alignments may contain small gaps.
-            The program fills up the gaps for simplicity's sake. 
+            The program fills up the gaps to obtain a complete exon. 
             A minimum size of a gap can be adjusted by assigning a new
-            value to MIN_INTRON in line 8.
+            value to GAP_SIZE parameter on a command line.
 
             '''
 
-            exons = deleteGap(exons)  # delete intron <= MIN_INTRON
+            exons = deleteGap(exons)  # delete intron <= GAP_SIZE
 
             if len(exons) > 1:
                 ''' The program ignores all single exons.'''
@@ -391,7 +402,8 @@ def main(inputFiles):
 
     bigCluster = mergeClusters(exonDb)
     geneId, numTranscripts = buildGeneModels(exonDb,
-                                    intronDb, clusters, bigCluster)
+                                    intronDb, clusters,
+                                    bigCluster, args.max)
 
     print >> stderr, '\nTotal exons = %d' % len(exonDb)
     print >> stderr, 'Total genes = %d' % geneId
@@ -400,13 +412,16 @@ def main(inputFiles):
 
 
 if __name__=='__main__':
+
     parser = argparse.ArgumentParser(prog='Gimme')
-    parser.add_argument('--MIN_UTR', type=int, default=100,
+    parser.add_argument('--MIN_UTR', type=int, default=MIN_UTR,
             help='a cutoff size of alternative UTRs (bp) (default: %(default)s)')
-    parser.add_argument('--MIN_INTRON', type=int, default=21,
+    parser.add_argument('--GAP_SIZE', type=int, default=GAP_SIZE,
             help='a minimum intron size (bp) (default: %(default)s)')
-    parser.add_argument('--MAX_INTRON', type=int, default=20000,
+    parser.add_argument('--MAX_INTRON', type=int, default=MAX_INTRON,
             help='a minimum intron size (bp) (default: %(default)s)')
+    parser.add_argument('-x', '--max', action='store_true',
+            help='find a maximum set of isoforms')
     parser.add_argument('input', type=str, nargs='+',
                         help='input file(s) in PSL format')
     parser.add_argument('--version', action='version',
@@ -415,27 +430,32 @@ if __name__=='__main__':
     args = parser.parse_args()
     if args.MIN_UTR <=0:
         raise SystemExit, 'Invalid UTRs size (<=0)'
-    elif args.MIN_UTR != 100:
+    elif args.MIN_UTR != MIN_UTR:
         MIN_UTR = args.MIN_UTR
         print >> sys.stderr, 'User defined MIN_UTR = %d' % MIN_UTR
     else:
         print >> sys.stderr, 'Default MIN_UTR = %d' % MIN_UTR
 
-    if args.MIN_INTRON <= 0:
+    if args.GAP_SIZE <= 0:
         raise SystemExit, 'Invalid intron size (<=0)'
-    elif args.MIN_INTRON != 21:
-        MIN_INTRON = args.MIN_INTRON
-        print >> sys.stderr, 'User defined MIN_INTRON = %d' % MIN_INTRON
+    elif args.GAP_SIZE != GAP_SIZE:
+        GAP_SIZE = args.GAP_SIZE
+        print >> sys.stderr, 'User defined GAP_SIZE = %d' % GAP_SIZE
     else:
-        print >> sys.stderr, 'Default MIN_INTRON = %d' % MIN_INTRON
+        print >> sys.stderr, 'Default GAP_SIZE = %d' % GAP_SIZE
 
     if args.MAX_INTRON <= 0:
         raise SystemExit, 'Invalid intron size (<=0)'
-    elif args.MAX_INTRON != 20000:
+    elif args.MAX_INTRON != MAX_INTRON:
         MAX_INTRON = args.MAX_INTRON
         print >> sys.stderr, 'User defined MAX_INTRON = %d' % MAX_INTRON
     else:
         print >> sys.stderr, 'Default MAX_INTRON = %d' % MAX_INTRON
+
+    if args.max:
+        print >> sys.stderr, 'Search for a maximum set of isoforms = yes'
+    else:
+        print >> sys.stderr, 'Search for a minimum set of isoforms = yes'
 
     if args.input:
         main(args.input)
