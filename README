@@ -27,9 +27,8 @@ You can simply run:
 
 $ python gimme.py [input file].
 
-Example: assemble transcripts from sample data
-
-$ python ./src/gimme.py sample_data/sample.psl > sample.bed
+Input
+=====
 
 Gimme now support input file in PSL format (BLAT and GMAP support this format).
 
@@ -38,23 +37,52 @@ Output
 
 Output is written to standard output in BED format, which can be visualized
 on UCSC genome browser or other browsers directly.
-Gene models built by Gimme contain a maximum number of isoforms.
-You can use a program in utils to find a minimum set of transcripts.
+By default, gene models built by Gimme contain a maximum number of isoforms.
+Use --min to force Gimme to report a minimum number of isoforms.
+You can also use a script in utils to find a minimum set of transcripts.
 See Utilities for more detail.
+
+Example
+=======
+
+Assemble transcripts from sample data:
+
+$ python ./src/gimme.py sample_data/sample.psl > sample.bed
+
+
+Obtain a minimum number of isoforms:
+
+$ python ./src/gimme.py --min sample_data/sample.psl > sample.bed
+
+Run Gimme with multiple input files:
+
+$ python ./src/gimme.py sample1.psl sample2.psl sample3.psl > sample.all.bed
+
+Run Gimme with user defined parameters:
+
+$ python ./src/gimme.py --MIN_UTR=200 --MAX_INTRON=100000 --GAP_SIZE=15 sample.psl > sample.all.bed
+
+See a program's help or Parameters section for more detail.
+
+See a program's help:
+
+$ python ./src/gimme.py -h or --help
+
+Parameters
+==========
+
+This version of Gimme fills up all small gaps in alignments.
+The default gap is 21bp and is specified in GAP_SIZE parameter.
+
+You can also modify a length of minimal UTR by specifying a MIN_UTR value.
+The default is 100 bp.
+
+MAX_INTRON is a maximum size of an intron.
 
 Running Tests
 =============
 
 Run nosetests in the main directory to run all tests in tests directory.
-
-Configuration
-=============
-
-This version of Gimme fills up all small gaps in alignments.
-The default gap is 21bp and is specified in MIN_INTRON in a source code.
-
-You can also modify a length of minimal UTR by editing MIN_UTR value.
-The default is 100 bp.
 
 Utilities
 =========
@@ -70,4 +98,5 @@ The program finds a minimal set of transcripts that contains all edges from
 an exon graph.
 
 Example:
+
 $ python ./src/utils/get_min_path.py models.bed > models.min.bed
