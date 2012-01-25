@@ -1,12 +1,13 @@
 import sys, csv
+import argparse
 from sys import stderr, stdout
 
 import networkx as nx
-import matplotlib.pyplot as plot
 from utils import pslparser
 
 
-MIN_INTRON = 21
+MIN_INTRON = 30
+MAX_INTRON = 20000
 MIN_UTR = 100
 
 exonDb = {}
@@ -63,6 +64,9 @@ def addIntrons(exons, intronDb, exonDb, clusters, clusterNo):
             intronStart = currExon.end + 1
             intronEnd = nextExon.start - 1
 
+            if intronEnd - intronStart > 20000:
+                continue
+
             intronName = '%s:%d-%d' % (currExon.chrom, intronStart, intronEnd)
             intron = nx.DiGraph(name=intronName, cluster=None)
 
@@ -82,37 +86,36 @@ def addIntrons(exons, intronDb, exonDb, clusters, clusterNo):
                 currExon.introns.add(intron_.graph['name'])
                 nextExon.introns.add(intron_.graph['name'])
 
-    assert len(introns) == len(exons) - 1
+    if introns:
+        if not existingClusters:
+            cluster = nx.DiGraph()
+            if len(introns) > 1:
+                cluster.add_path([i.graph['name'] for i in introns])
+                for intron in introns:
+                    intron.graph['cluster'] = clusterNo
+            else:
+                cluster.add_node(introns[0].graph['name'])
+                introns[0].graph['cluster'] = clusterNo
 
-    if not existingClusters:
-        cluster = nx.DiGraph()
-        if len(introns) > 1:
-            cluster.add_path([i.graph['name'] for i in introns])
-            for intron in introns:
-                intron.graph['cluster'] = clusterNo
         else:
-            cluster.add_node(introns[0].graph['name'])
-            introns[0].graph['cluster'] = clusterNo
+            cluster = nx.DiGraph(exons=set([]))
+            for cl in existingClusters:
+                cluster.add_edges_from(clusters[cl].edges())
+                k = clusters.pop(cl)
 
-    else:
-        cluster = nx.DiGraph(exons=set([]))
-        for cl in existingClusters:
-            cluster.add_edges_from(clusters[cl].edges())
-            k = clusters.pop(cl)
+            for intron in cluster.nodes():
+                intronDb[intron].graph['cluster'] = clusterNo
 
-        for intron in cluster.nodes():
-            intronDb[intron].graph['cluster'] = clusterNo
+            if len(introns) > 1:
+                cluster.add_path([i.graph['name'] for i in introns])
 
-        if len(introns) > 1:
-            cluster.add_path([i.graph['name'] for i in introns])
+                for intron in introns:
+                    intron.graph['cluster'] = clusterNo
+            else:
+                cluster.add_node(introns[0].graph['name'])
+                introns[0].graph['cluster'] = clusterNo
 
-            for intron in introns:
-                intron.graph['cluster'] = clusterNo
-        else:
-            cluster.add_node(introns[0].graph['name'])
-            introns[0].graph['cluster'] = clusterNo
-
-    clusters[clusterNo] = cluster
+        clusters[clusterNo] = cluster
 
     return clusterNo
 
@@ -235,7 +238,7 @@ def mergeClusters(exonDb):
         elif len(path) == 1:
             bigCluster.add_node(path[0])
         else:
-            raise ValueError, 'Cannot merge empty path'
+            pass
 
     return bigCluster
 
@@ -328,7 +331,7 @@ def buildGeneModels(exonDb, intronDb, clusters, bigCluster):
     numTranscripts = 0
     geneId = 0
 
-    for cl_num, cl in enumerate(bigCluster.nodes(), start=1):
+    for cl in bigCluster.nodes():
         if cl not in removedClusters:
             g = nx.DiGraph()
             for intron in clusters[cl].nodes():
@@ -349,40 +352,42 @@ def buildGeneModels(exonDb, intronDb, clusters, bigCluster):
                 collapseExons(g, exonDb)
 
                 for transcript in getPath(g):
+                    print >> sys.stderr, '>transcript %d.%d' % (geneId, transId)
                     printBedGraph(transcript, geneId, transId)
                     numTranscripts += 1
                     transId += 1
-        if cl_num % 1000 == 0:
-            print >> sys.stderr, '...', cl_num
 
     return geneId, numTranscripts
 
 
-def main(inputFile):
+def main(inputFiles):
     clusterNo = 0
 
-    print >> stderr, 'Parsing alignments from %s...' % inputFile
-    for n, exons in enumerate(parsePSL(inputFile), start=1):
+    print >> stderr, MIN_INTRON, MAX_INTRON, MIN_UTR
 
-        '''Alignments may contain small gaps.
-        The program fills up the gaps for simplicity's sake. 
-        A minimum size of a gap can be adjusted by assigning a new
-        value to MIN_INTRON in line 8.
+    for inputFile in inputFiles:
+        print >> stderr, 'Parsing alignments from %s...' % inputFile
+        for n, exons in enumerate(parsePSL(inputFile), start=1):
 
-        '''
+            '''Alignments may contain small gaps.
+            The program fills up the gaps for simplicity's sake. 
+            A minimum size of a gap can be adjusted by assigning a new
+            value to MIN_INTRON in line 8.
 
-        exons = deleteGap(exons)  # delete intron <= MIN_INTRON
+            '''
 
-        if len(exons) > 1:
-            ''' The program ignores all single exons.'''
-            addExon(exonDb, exons)
-            addIntrons(exons, intronDb, exonDb, clusters, clusterNo)
-            clusterNo += 1
-        else:
-            exons[0].single = True
+            exons = deleteGap(exons)  # delete intron <= MIN_INTRON
 
-        if n % 1000 == 0:
-            print >> stderr, '...', n
+            if len(exons) > 1:
+                ''' The program ignores all single exons.'''
+                addExon(exonDb, exons)
+                addIntrons(exons, intronDb, exonDb, clusters, clusterNo)
+                clusterNo += 1
+            else:
+                exons[0].single = True
+
+            if n % 1000 == 0:
+                print >> stderr, '...', n
 
     bigCluster = mergeClusters(exonDb)
     geneId, numTranscripts = buildGeneModels(exonDb,
@@ -395,5 +400,42 @@ def main(inputFile):
 
 
 if __name__=='__main__':
-    inputFile = sys.argv[1]
-    main(inputFile)
+    parser = argparse.ArgumentParser(prog='Gimme')
+    parser.add_argument('--MIN_UTR', type=int, default=100,
+            help='a cutoff size of alternative UTRs (bp) (default: %(default)s)')
+    parser.add_argument('--MIN_INTRON', type=int, default=21,
+            help='a minimum intron size (bp) (default: %(default)s)')
+    parser.add_argument('--MAX_INTRON', type=int, default=20000,
+            help='a minimum intron size (bp) (default: %(default)s)')
+    parser.add_argument('input', type=str, nargs='+',
+                        help='input file(s) in PSL format')
+    parser.add_argument('--version', action='version',
+                        version='%(prog)s version 0.8')
+
+    args = parser.parse_args()
+    if args.MIN_UTR <=0:
+        raise SystemExit, 'Invalid UTRs size (<=0)'
+    elif args.MIN_UTR != 100:
+        MIN_UTR = args.MIN_UTR
+        print >> sys.stderr, 'User defined MIN_UTR = %d' % MIN_UTR
+    else:
+        print >> sys.stderr, 'Default MIN_UTR = %d' % MIN_UTR
+
+    if args.MIN_INTRON <= 0:
+        raise SystemExit, 'Invalid intron size (<=0)'
+    elif args.MIN_INTRON != 21:
+        MIN_INTRON = args.MIN_INTRON
+        print >> sys.stderr, 'User defined MIN_INTRON = %d' % MIN_INTRON
+    else:
+        print >> sys.stderr, 'Default MIN_INTRON = %d' % MIN_INTRON
+
+    if args.MAX_INTRON <= 0:
+        raise SystemExit, 'Invalid intron size (<=0)'
+    elif args.MAX_INTRON != 20000:
+        MAX_INTRON = args.MAX_INTRON
+        print >> sys.stderr, 'User defined MAX_INTRON = %d' % MAX_INTRON
+    else:
+        print >> sys.stderr, 'Default MAX_INTRON = %d' % MAX_INTRON
+
+    if args.input:
+        main(args.input)
