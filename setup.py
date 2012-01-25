@@ -9,4 +9,8 @@ setup(
 
         packages=find_packages('src'),
         package_dir={'':'scr'},
+
+        install_requires = [
+                            'networkx',
+                            ],
         )
