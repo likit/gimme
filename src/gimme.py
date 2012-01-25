@@ -324,7 +324,7 @@ def printBedGraph(transcript, geneId, tranId):
                     blockStarts))
 
 
-def buildGeneModels(exonDb, intronDb, clusters, bigCluster, isMax=False):
+def buildGeneModels(exonDb, intronDb, clusters, bigCluster, isMin=False):
     print >> stderr, 'Building gene models...'
 
     removedClusters = set([])
@@ -350,7 +350,7 @@ def buildGeneModels(exonDb, intronDb, clusters, bigCluster, isMax=False):
                 geneId += 1
                 transId = 1
                 collapseExons(g, exonDb)
-                if isMax:
+                if not isMin:
                     for transcript in getPath(g):
                         printBedGraph(transcript, geneId, transId)
                         numTranscripts += 1
@@ -403,7 +403,7 @@ def main(inputFiles):
     bigCluster = mergeClusters(exonDb)
     geneId, numTranscripts = buildGeneModels(exonDb,
                                     intronDb, clusters,
-                                    bigCluster, args.max)
+                                    bigCluster, args.min)
 
     print >> stderr, '\nTotal exons = %d' % len(exonDb)
     print >> stderr, 'Total genes = %d' % geneId
@@ -420,8 +420,8 @@ if __name__=='__main__':
             help='a minimum intron size (bp) (default: %(default)s)')
     parser.add_argument('--MAX_INTRON', type=int, default=MAX_INTRON,
             help='a minimum intron size (bp) (default: %(default)s)')
-    parser.add_argument('-x', '--max', action='store_true',
-            help='find a maximum set of isoforms')
+    parser.add_argument('--min', action='store_true',
+            help='report a minimum set of isoforms')
     parser.add_argument('input', type=str, nargs='+',
                         help='input file(s) in PSL format')
     parser.add_argument('--version', action='version',
@@ -452,10 +452,10 @@ if __name__=='__main__':
     else:
         print >> sys.stderr, 'Default MAX_INTRON = %d' % MAX_INTRON
 
-    if args.max:
-        print >> sys.stderr, 'Search for a maximum set of isoforms = yes'
-    else:
+    if args.min:
         print >> sys.stderr, 'Search for a minimum set of isoforms = yes'
+    else:
+        print >> sys.stderr, 'Search for a maximum set of isoforms = yes'
 
     if args.input:
         main(args.input)
