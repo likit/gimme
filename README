@@ -13,7 +13,7 @@ Publication
 
 Gimme is unpublished. A manuscript is in preparation.
 
-Prerequisite package
+Required package
 ====================
 Gimme requires Networkx package to manipulate a graph data structure.
 You can download Networkx from http://networkx.lanl.gov/download.html.
