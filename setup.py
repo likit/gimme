@@ -10,6 +10,12 @@ setup(
         packages=find_packages('src'),
         package_dir={'':'src'},
 
+        entry_points = {
+            'console_scripts': [
+                        'gimme = gimme.gimme'
+                        ]
+                    },
+
         install_requires = [
                             'networkx',
                             ],
