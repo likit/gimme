@@ -144,7 +144,8 @@ def getMinPaths(paths):
     
     assert subPathEdges == set(uniqEdges), 'Cannot get all unique edges. %d %d' %\
                                             (len(subPathEdges), len(uniqEdges))
-    print >> stderr, ', %d minimal isoforms' % (len(subPaths))
+    if __name__=='__main__':
+        print >> stderr, ', %d minimal isoforms' % (len(subPaths))
 
     minPaths = []
     for p in subPaths:
