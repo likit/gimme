@@ -64,7 +64,7 @@ def addIntrons(exons, intronDb, exonDb, clusters, clusterNo):
             intronStart = currExon.end + 1
             intronEnd = nextExon.start - 1
 
-            if intronEnd - intronStart > 20000:
+            if intronEnd - intronStart > MAX_INTRON:
                 continue
 
             intronName = '%s:%d-%d' % (currExon.chrom, intronStart, intronEnd)
