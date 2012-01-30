@@ -6,7 +6,7 @@ Copyright and license
 =====================
 The prgram is Copyright Michigan State University.
 The code is freely available for use and re-use under GNU GPL license.
-Gimme is available on git://github.com/likit/gimme.git.
+See LICENSE.txt for more detail.
 
 Publication
 ===========
@@ -19,6 +19,11 @@ Gimme requires Networkx package to manipulate a graph data structure.
 You can download Networkx from http://networkx.lanl.gov/download.html.
 Please make sure networkx is in your PYTHONPATH or standard Python libraries
 on your computer.
+
+Download
+========
+
+Gimme is available on Github at git://github.com/likit/gimme.git.
 
 Installation
 ============
