@@ -23,12 +23,12 @@ on your computer.
 Installation
 ============
 
-No installation required.
+No installation is required. However, you need to have Python 2.7 installed.
 
 Running Gimme
 =============
 
-Gimme should be able to run on any platform with Python interpreter.
+Gimme should be able to run on any platform with Python 2.7 interpreter.
 You can simply run:
 
 $ python gimme.py [input file].
@@ -36,7 +36,7 @@ $ python gimme.py [input file].
 Input
 =====
 
-Gimme now supports input file in PSL format (BLAT and GMAP support this format).
+Gimme reads input file in PSL format (BLAT and GMAP support this format).
 
 Output
 ======
@@ -82,9 +82,9 @@ This version of Gimme fills up all small gaps in alignments.
 The default gap is 21bp and is specified in GAP_SIZE parameter.
 
 You can also modify a length of minimal UTR by specifying a MIN_UTR value.
-The default is 100 bp.
+The default is 100 bp. This value only is used as a cut off for alternative UTRs.
 
-MAX_INTRON is a maximum size of an intron.
+MAX_INTRON is a maximum size of an intron. Oversized introns will be excluded.
 
 Running Tests
 =============
