@@ -11,7 +11,7 @@ Copyright and license
 =====================
 The prgram is Copyright Michigan State University.
 The code is freely available for use and re-use under GNU GPL license.
-See LICENSE.txt for more detail.
+See LICENSE.txt or http://www.gnu.org/licenses/.
 
 Publication
 ===========
