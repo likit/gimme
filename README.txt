@@ -1,6 +1,11 @@
 Gimme: a transcripts assembler based on alignments.
-Author: Likit Preeyanon
-Email: preeyano@msu.edu
+
+The program is developed in laboratory of genomics, evolution
+and development (GED lab), Michigan State University.
+Web site: http://ged.msu.edu.
+
+Author: Likit Preeyanon, preeyano@msu.edu
+Supervisor: C. Titus Brown, ctb@msu.edu
 
 Copyright and license
 =====================
