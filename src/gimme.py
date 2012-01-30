@@ -382,7 +382,7 @@ def main(inputFiles):
 
             '''Alignments may contain small gaps.
             The program fills up the gaps to obtain a complete exon. 
-            A minimum size of a gap can be adjusted by assigning a new
+            A maximum size of a gap can be adjusted by assigning a new
             value to GAP_SIZE parameter on a command line.
 
             '''
