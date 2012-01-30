@@ -7,7 +7,7 @@ from utils import pslparser, get_min_path
 
 
 GAP_SIZE = 21
-MAX_INTRON = 50000
+MAX_INTRON = 1000000
 MIN_UTR = 100
 
 exonDb = {}
