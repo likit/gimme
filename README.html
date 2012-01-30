@@ -1,0 +1,422 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="Docutils 0.4: http://docutils.sourceforge.net/" />
+<title>Gimme: A transcripts assembler based on alignments.</title>
+<style type="text/css">
+
+/*
+:Author: David Goodger
+:Contact: goodger@users.sourceforge.net
+:Date: $Date: 2005-12-18 01:56:14 +0100 (Sun, 18 Dec 2005) $
+:Revision: $Revision: 4224 $
+:Copyright: This stylesheet has been placed in the public domain.
+
+Default cascading style sheet for the HTML output of Docutils.
+
+See http://docutils.sf.net/docs/howto/html-stylesheets.html for how to
+customize this style sheet.
+*/
+
+/* used to remove borders from tables and images */
+.borderless, table.borderless td, table.borderless th {
+  border: 0 }
+
+table.borderless td, table.borderless th {
+  /* Override padding for "table.docutils td" with "! important".
+     The right padding separates the table cells. */
+  padding: 0 0.5em 0 0 ! important }
+
+.first {
+  /* Override more specific margin styles with "! important". */
+  margin-top: 0 ! important }
+
+.last, .with-subtitle {
+  margin-bottom: 0 ! important }
+
+.hidden {
+  display: none }
+
+a.toc-backref {
+  text-decoration: none ;
+  color: black }
+
+blockquote.epigraph {
+  margin: 2em 5em ; }
+
+dl.docutils dd {
+  margin-bottom: 0.5em }
+
+/* Uncomment (and remove this text!) to get bold-faced definition list terms
+dl.docutils dt {
+  font-weight: bold }
+*/
+
+div.abstract {
+  margin: 2em 5em }
+
+div.abstract p.topic-title {
+  font-weight: bold ;
+  text-align: center }
+
+div.admonition, div.attention, div.caution, div.danger, div.error,
+div.hint, div.important, div.note, div.tip, div.warning {
+  margin: 2em ;
+  border: medium outset ;
+  padding: 1em }
+
+div.admonition p.admonition-title, div.hint p.admonition-title,
+div.important p.admonition-title, div.note p.admonition-title,
+div.tip p.admonition-title {
+  font-weight: bold ;
+  font-family: sans-serif }
+
+div.attention p.admonition-title, div.caution p.admonition-title,
+div.danger p.admonition-title, div.error p.admonition-title,
+div.warning p.admonition-title {
+  color: red ;
+  font-weight: bold ;
+  font-family: sans-serif }
+
+/* Uncomment (and remove this text!) to get reduced vertical space in
+   compound paragraphs.
+div.compound .compound-first, div.compound .compound-middle {
+  margin-bottom: 0.5em }
+
+div.compound .compound-last, div.compound .compound-middle {
+  margin-top: 0.5em }
+*/
+
+div.dedication {
+  margin: 2em 5em ;
+  text-align: center ;
+  font-style: italic }
+
+div.dedication p.topic-title {
+  font-weight: bold ;
+  font-style: normal }
+
+div.figure {
+  margin-left: 2em ;
+  margin-right: 2em }
+
+div.footer, div.header {
+  clear: both;
+  font-size: smaller }
+
+div.line-block {
+  display: block ;
+  margin-top: 1em ;
+  margin-bottom: 1em }
+
+div.line-block div.line-block {
+  margin-top: 0 ;
+  margin-bottom: 0 ;
+  margin-left: 1.5em }
+
+div.sidebar {
+  margin-left: 1em ;
+  border: medium outset ;
+  padding: 1em ;
+  background-color: #ffffee ;
+  width: 40% ;
+  float: right ;
+  clear: right }
+
+div.sidebar p.rubric {
+  font-family: sans-serif ;
+  font-size: medium }
+
+div.system-messages {
+  margin: 5em }
+
+div.system-messages h1 {
+  color: red }
+
+div.system-message {
+  border: medium outset ;
+  padding: 1em }
+
+div.system-message p.system-message-title {
+  color: red ;
+  font-weight: bold }
+
+div.topic {
+  margin: 2em }
+
+h1.section-subtitle, h2.section-subtitle, h3.section-subtitle,
+h4.section-subtitle, h5.section-subtitle, h6.section-subtitle {
+  margin-top: 0.4em }
+
+h1.title {
+  text-align: center }
+
+h2.subtitle {
+  text-align: center }
+
+hr.docutils {
+  width: 75% }
+
+img.align-left {
+  clear: left }
+
+img.align-right {
+  clear: right }
+
+ol.simple, ul.simple {
+  margin-bottom: 1em }
+
+ol.arabic {
+  list-style: decimal }
+
+ol.loweralpha {
+  list-style: lower-alpha }
+
+ol.upperalpha {
+  list-style: upper-alpha }
+
+ol.lowerroman {
+  list-style: lower-roman }
+
+ol.upperroman {
+  list-style: upper-roman }
+
+p.attribution {
+  text-align: right ;
+  margin-left: 50% }
+
+p.caption {
+  font-style: italic }
+
+p.credits {
+  font-style: italic ;
+  font-size: smaller }
+
+p.label {
+  white-space: nowrap }
+
+p.rubric {
+  font-weight: bold ;
+  font-size: larger ;
+  color: maroon ;
+  text-align: center }
+
+p.sidebar-title {
+  font-family: sans-serif ;
+  font-weight: bold ;
+  font-size: larger }
+
+p.sidebar-subtitle {
+  font-family: sans-serif ;
+  font-weight: bold }
+
+p.topic-title {
+  font-weight: bold }
+
+pre.address {
+  margin-bottom: 0 ;
+  margin-top: 0 ;
+  font-family: serif ;
+  font-size: 100% }
+
+pre.literal-block, pre.doctest-block {
+  margin-left: 2em ;
+  margin-right: 2em ;
+  background-color: #eeeeee }
+
+span.classifier {
+  font-family: sans-serif ;
+  font-style: oblique }
+
+span.classifier-delimiter {
+  font-family: sans-serif ;
+  font-weight: bold }
+
+span.interpreted {
+  font-family: sans-serif }
+
+span.option {
+  white-space: nowrap }
+
+span.pre {
+  white-space: pre }
+
+span.problematic {
+  color: red }
+
+span.section-subtitle {
+  /* font-size relative to parent (h1..h6 element) */
+  font-size: 80% }
+
+table.citation {
+  border-left: solid 1px gray;
+  margin-left: 1px }
+
+table.docinfo {
+  margin: 2em 4em }
+
+table.docutils {
+  margin-top: 0.5em ;
+  margin-bottom: 0.5em }
+
+table.footnote {
+  border-left: solid 1px black;
+  margin-left: 1px }
+
+table.docutils td, table.docutils th,
+table.docinfo td, table.docinfo th {
+  padding-left: 0.5em ;
+  padding-right: 0.5em ;
+  vertical-align: top }
+
+table.docutils th.field-name, table.docinfo th.docinfo-name {
+  font-weight: bold ;
+  text-align: left ;
+  white-space: nowrap ;
+  padding-left: 0 }
+
+h1 tt.docutils, h2 tt.docutils, h3 tt.docutils,
+h4 tt.docutils, h5 tt.docutils, h6 tt.docutils {
+  font-size: 100% }
+
+tt.docutils {
+  background-color: #eeeeee }
+
+ul.auto-toc {
+  list-style-type: none }
+
+</style>
+</head>
+<body>
+<div class="document" id="gimme-a-transcripts-assembler-based-on-alignments">
+<h1 class="title">Gimme: A transcripts assembler based on alignments.</h1>
+<div class="section">
+<h1><a id="credits" name="credits">Credits</a></h1>
+<p>The program is developed in laboratory of genomics, evolution
+and development (GED lab), Michigan State University.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Web site:</th><td class="field-body"><p class="first"><a class="reference" href="http://ged.msu.edu">http://ged.msu.edu</a>.</p>
+</td>
+</tr>
+<tr class="field"><th class="field-name">Author:</th><td class="field-body"><p class="first">Likit Preeyanon, <a class="reference" href="mailto:preeyano&#64;msu.edu">preeyano&#64;msu.edu</a></p>
+</td>
+</tr>
+<tr class="field"><th class="field-name">Supervisor:</th><td class="field-body"><ol class="first last upperalpha simple" start="3">
+<li>Titus Brown, <a class="reference" href="mailto:ctb&#64;msu.edu">ctb&#64;msu.edu</a></li>
+</ol>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section">
+<h1><a id="copyright-and-license" name="copyright-and-license">Copyright and license</a></h1>
+<p>The prgram is Copyright Michigan State University.
+The code is freely available for use and re-use under GNU GPL license.
+See LICENSE.txt or <a class="reference" href="http://www.gnu.org/licenses/">http://www.gnu.org/licenses/</a>.</p>
+</div>
+<div class="section">
+<h1><a id="publication" name="publication">Publication</a></h1>
+<p>Gimme is unpublished. A manuscript is in preparation.</p>
+</div>
+<div class="section">
+<h1><a id="required-package" name="required-package">Required package</a></h1>
+<p>Gimme requires Networkx package to manipulate a graph data structure.
+You can download Networkx from <a class="reference" href="http://networkx.lanl.gov/download.html">http://networkx.lanl.gov/download.html</a>.
+Please make sure networkx is in your PYTHONPATH or standard Python libraries
+on your computer.</p>
+</div>
+<div class="section">
+<h1><a id="download" name="download">Download</a></h1>
+<p>Gimme is available on Github at git://github.com/likit/gimme.git.</p>
+</div>
+<div class="section">
+<h1><a id="installation" name="installation">Installation</a></h1>
+<p>No installation is required. However, you need to have Python 2.7 installed.</p>
+</div>
+<div class="section">
+<h1><a id="running-gimme" name="running-gimme">Running Gimme</a></h1>
+<p>Gimme should be able to run on any platform with Python 2.7 interpreter.
+You can simply run:</p>
+<pre class="literal-block">
+$ python gimme.py [input file].
+</pre>
+</div>
+<div class="section">
+<h1><a id="input" name="input">Input</a></h1>
+<p>Gimme reads input file in PSL format (BLAT and GMAP support this format).</p>
+</div>
+<div class="section">
+<h1><a id="output" name="output">Output</a></h1>
+<p>Output is written to standard output in BED format, which can be visualized
+on UCSC genome browser or other browsers.</p>
+<p>By default, gene models built by Gimme contain a maximum number of isoforms.
+Use --min to force Gimme to report a minimum number of isoforms.
+You can also use a script in utils to find a minimum set of transcripts.
+See Utilities for more detail.</p>
+</div>
+<div class="section">
+<h1><a id="example" name="example">Example</a></h1>
+<ol class="arabic">
+<li><p class="first">Assemble transcripts from sample data:</p>
+<pre class="literal-block">
+$ python ./src/gimme.py sample_data/sample.psl &gt; sample.bed
+</pre>
+</li>
+<li><p class="first">Obtain a minimum number of isoforms:</p>
+<pre class="literal-block">
+$ python ./src/gimme.py --min sample_data/sample.psl &gt; sample.bed
+</pre>
+</li>
+<li><p class="first">Run Gimme with multiple input files:</p>
+<pre class="literal-block">
+$ python ./src/gimme.py sample1.psl sample2.psl sample3.psl &gt; sample.all.bed
+</pre>
+</li>
+<li><p class="first">Run Gimme with user defined parameters:</p>
+<pre class="literal-block">
+$ python ./src/gimme.py --MIN_UTR-200 --MAX_INTRON=100000 --GAP_SIZE=15 sample.psl &gt; sample.all.bed
+</pre>
+</li>
+<li><p class="first">See a program's help:</p>
+<pre class="literal-block">
+$ python ./src/gimme.py -h or --help
+</pre>
+</li>
+</ol>
+</div>
+<div class="section">
+<h1><a id="parameters" name="parameters">Parameters</a></h1>
+<p>This version of Gimme fills up all small gaps in alignments.
+The default gap is 21bp and is specified in GAP_SIZE parameter.</p>
+<p>You can also modify a length of minimal UTR by specifying a MIN_UTR value.
+The default is 100 bp.
+This value only is used as a cut off for alternative UTRs.</p>
+<p>MAX_INTRON is a maximum size of an intron.
+Oversized introns will be excluded.</p>
+<p>Running Tests</p>
+<p>Run nosetests in the main directory to run all tests in tests directory.</p>
+</div>
+<div class="section">
+<h1><a id="utilities" name="utilities">Utilities</a></h1>
+<p>Gimme contains many useful utilities that work with PSL, BED and SAM format.
+Some programs are useful for building gene models.
+Others are useful for working with reads, assembly sequences etc.</p>
+<div class="section">
+<h2><a id="get-min-path-py" name="get-min-path-py">get_min_path.py</a></h2>
+<p>The program finds a minimal set of transcripts that contains all edges from
+an exon graph.</p>
+<p>Example:</p>
+<pre class="literal-block">
+$ python ./src/utils/get_min_path.py models.bed &gt; models.min.bed
+</pre>
+</div>
+</div>
+</div>
+</body>
+</html>
