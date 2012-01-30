@@ -18,6 +18,7 @@
 
     Contact: Likit Preeyanon, preeyano@msu.edu
 '''
+#!/usr/bin/env python
 
 import sys, csv
 import argparse
