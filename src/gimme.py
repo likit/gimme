@@ -409,7 +409,7 @@ def main(inputFiles):
 
             '''
 
-            exons = deleteGap(exons)  # delete intron <= GAP_SIZE
+            exons = deleteGap(exons)  # fill up a gap <= GAP_SIZE
 
             if len(exons) > 1:
                 ''' The program ignores all single exons.'''
@@ -439,9 +439,9 @@ if __name__=='__main__':
     parser.add_argument('--MIN_UTR', type=int, default=MIN_UTR,
             help='a cutoff size of alternative UTRs (bp) (default: %(default)s)')
     parser.add_argument('--GAP_SIZE', type=int, default=GAP_SIZE,
-            help='a minimum intron size (bp) (default: %(default)s)')
+            help='a maximum gap size (bp) (default: %(default)s)')
     parser.add_argument('--MAX_INTRON', type=int, default=MAX_INTRON,
-            help='a minimum intron size (bp) (default: %(default)s)')
+            help='a maximum intron size (bp) (default: %(default)s)')
     parser.add_argument('--min', action='store_true',
             help='report a minimum set of isoforms')
     parser.add_argument('input', type=str, nargs='+',
