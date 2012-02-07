@@ -1,3 +1,11 @@
+'''
+    The script converts BED format to GFF format.
+    Output is written to standrad output.
+
+    Author: Likit Preeyanon
+    Email : preeyano@msu.edu
+'''
+
 import sys, csv
 
 def parseBED(filename):
