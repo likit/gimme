@@ -29,11 +29,11 @@ parser.add_option('-e', '--end', dest='end', type='int',
                     help='the end of the reference sequence',
                     default=None, metavar='<int>')
 
-parser.add_option('-t', '--type', dest='type',
+parser.add_option('-t', '--type', dest='read_type', type='string',
                     help='a type of reads; single- or paired-end [default=%default]',
                     default='single')
 
-parser.add_option('-o', '--output', dest='output', type='string',
+parser.add_option('-f', '--output_format', dest='output_format', type='string',
                     help='output format 1=fastq, 2=fasta [default=%default]',
                     default=1, metavar='<int>')
 
@@ -44,48 +44,101 @@ parser.add_option('-n', '--no-duplicate', dest='noDuplicate', default=False, act
 (opts, args) = parser.parse_args()
 
 
-def printFastq(name, seq, qual, outputFile):
+def printFastq(alignedRead, outputFile):
     '''
-        Print reads in FASTQ format to standard output.
+        Print reads in FASTQ format to a given output file.
     '''
-    print >> outputFile, '@%s\n%s\n+\n%s' % (name, seq, qual)
+    print >> outputFile, '@%s\n%s\n+\n%s' % (alignedRead.qname,
+                                                alignedRead.seq,
+                                                alignedRead.qual)
 
 
-def printFasta(name, seq, qual, outputFile):
+def printFasta(alignedRead, outputFile):
     '''
-        Print reads in FASTA format to standard output.
+        Print reads in FASTA format to a given output file.
     '''
-    print >> outputFile, '>%s\n%s' % (name, seq)
+    print >> outputFile, '>%s\n%s' % (alignedRead.qname, alignedRead.seq)
 
+def printFastqPaired(alignedRead, mate, outputFile1, outputFile2):
+    '''
+        Print reads in FASTQ format to a given output file.
+    '''
+    print >> outputFile1, '@%s\n%s\n+\n%s' % (alignedRead.qname,
+                                                alignedRead.seq,
+                                                alignedRead.qual)
+
+    print >> outputFile2, '@%s\n%s\n+\n%s' % (mate.qname,
+                                                mate.seq,
+                                                mate.qual)
+
+
+def printFastaPaired(alignedRead, mate, outputFile1, outputFile2):
+    '''
+        Print reads in FASTA format to a given output file.
+    '''
+    print >> outputFile1, '>%s\n%s' % (alignedRead.qname, alignedRead.seq)
+    print >> outputFile2, '>%s\n%s' % (mate.qname, mate.seq)
 
 def writeReads(sequence, opts):
     uniques = set([])
 
     samfile = pysam.Samfile(args[0], 'rb')
-    outputFilename = sequence+'.fq' if printOutput == printFastq else '.fa'
+    if opts.read_type == 'single':
+        outputFilename = sequence+'.fq' if printOutput == printFastq else sequence+'.fa'
 
-    with open(outputFilename, 'w') as outputFile:
+        with open(outputFilename, 'w') as outputFile:
+            for alignedRead in samfile.fetch(sequence, opts.begin, opts.end):
+                if not opts.noDuplicate:
+                    printOutput(alignedRead, outputFile)
+                else:
+                    if alignedRead.qname not in uniques:
+                        printOutput(alignedRead.qname, outputFile)
+
+                uniques.add(alignedRead.qname)
+    elif opts.read_type == 'paired':
+        outputFilename1 = sequence+'_1.fq' if printOutput == printFastqPaired else sequence+'_1.fa'
+        outputFilename2 = sequence+'_2.fq' if printOutput == printFastqPaired else sequence+'_2.fa'
+
+        outputFile1 = open(outputFilename1, 'w')
+        outputFile2 = open(outputFilename2, 'w')
         for alignedRead in samfile.fetch(sequence, opts.begin, opts.end):
-            if not opts.noDuplicate:
-                printOutput(alignedRead.qname,
-                                alignedRead.seq,
-                                alignedRead.qual,
-                                outputFile)
-            else:
-                if alignedRead.qname not in uniques:
-                    printOutput(alignedRead.qname,
-                                alignedRead.seq,
-                                alignedRead.qual,
-                                outputFile)
+            if not alignedRead.is_unmapped and alignedRead.is_read1:
+                if alignedRead.is_proper_pair:
+                    if not alignedRead.mate_is_unmapped and \
+                            alignedRead.mate_is_reverse:
+                        if not opts.noDuplicate:
+                            mate = samfile.mate(alignedRead)
+                            printOutput(alignedRead,
+                                            mate,
+                                            outputFile1,
+                                            outputFile2)
+                        else:
+                            if alignedRead.qname not in uniques:
+                                mate = samfile.mate(alignedRead)
+                                printOutput(alignedRead,
+                                            mate,
+                                            outputFile1,
+                                            outputFile2)
 
-            uniques.add(alignedRead.qname)
+                        uniques.add(alignedRead.qname)
+        outputFile1.close()
+        outputFile2.close()
+
+    else:
+        raise ValueError, 'Unsupported read type.'
 
 
 if __name__=='__main__':
 
     import os, sys
+    
+    if opts.read_type == 'single':
+        printOutput = printFastq if opts.output_format==1 else printFasta
+    elif opts.read_type == 'paired':
+        printOutput = printFastqPaired if opts.output_format==1 else printFastaPaired
+    else:
+        raise ValueError, 'Unsupported read type.'
 
-    printOutput = printFastq if opts.output==1 else printFasta
     if os.path.isfile(opts.sequence):
         for line in open(opts.sequence):
             sequence = line.strip()
@@ -93,4 +146,4 @@ if __name__=='__main__':
             print >> sys.stderr, '...' + sequence + ' done.'
     else:
         sequence = None if opts.sequence=='all' else opts.sequence
-        writeReads(opts, sequence)
+        writeReads(sequence, opts)
