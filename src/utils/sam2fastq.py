@@ -1,8 +1,12 @@
 #! /usr/local/bin/python
 
-'''
-    Author: Likit Preeyanon
-    Email: preeyano@msu.edu
+'''The script extracts read alignments in BAM format and
+writes them in FASTQ format. It works with both single- and
+paired-end reads.
+
+Author: Likit Preeyanon
+Email: preeyano@msu.edu
+
 '''
 
 import pysam
@@ -24,6 +28,10 @@ parser.add_option('-b', '--begin', dest='begin', type='int',
 parser.add_option('-e', '--end', dest='end', type='int',
                     help='the end of the reference sequence',
                     default=None, metavar='<int>')
+
+parser.add_option('-t', '--type', dest='type',
+                    help='a type of reads; single- or paired-end [default=%default]',
+                    default='single')
 
 parser.add_option('-o', '--output', dest='output', type='string',
                     help='output format 1=fastq, 2=fasta [default=%default]',
