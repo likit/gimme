@@ -87,7 +87,7 @@ def writeReads(sequence, opts):
         outputFilename = sequence+'.fq' if printOutput == printFastq else sequence+'.fa'
 
         with open(outputFilename, 'w') as outputFile:
-            for alignedRead in samfile.fetch(sequence, opts.begin, opts.end):
+            for n, alignedRead in enumerate(samfile.fetch(sequence, opts.begin, opts.end), start=1):
                 if not opts.noDuplicate:
                     printOutput(alignedRead, outputFile)
                 else:
@@ -95,13 +95,16 @@ def writeReads(sequence, opts):
                         printOutput(alignedRead.qname, outputFile)
 
                 uniques.add(alignedRead.qname)
+                if n % 1000 == 0:
+                    print >> sys.stderr, '...', sequence, n
+
     elif opts.read_type == 'paired':
         outputFilename1 = sequence+'_1.fq' if printOutput == printFastqPaired else sequence+'_1.fa'
         outputFilename2 = sequence+'_2.fq' if printOutput == printFastqPaired else sequence+'_2.fa'
 
         outputFile1 = open(outputFilename1, 'w')
         outputFile2 = open(outputFilename2, 'w')
-        for alignedRead in samfile.fetch(sequence, opts.begin, opts.end):
+        for n, alignedRead in enumerate(samfile.fetch(sequence, opts.begin, opts.end), start=1):
             if not alignedRead.is_unmapped and alignedRead.is_read1:
                 if alignedRead.is_proper_pair:
                     if not alignedRead.mate_is_unmapped and \
@@ -121,6 +124,8 @@ def writeReads(sequence, opts):
                                             outputFile2)
 
                         uniques.add(alignedRead.qname)
+            if n % 1000 == 0:
+                print >> sys.stderr, '...', sequence, n
         outputFile1.close()
         outputFile2.close()
 
