@@ -109,21 +109,25 @@ def writeReads(sequence, opts):
                 if alignedRead.is_proper_pair:
                     if not alignedRead.mate_is_unmapped and \
                             alignedRead.mate_is_reverse:
-                        if not opts.noDuplicate:
+                        try:
                             mate = samfile.mate(alignedRead)
-                            printOutput(alignedRead,
-                                            mate,
-                                            outputFile1,
-                                            outputFile2)
+                        except ValueError:
+                            print >> sys.stderr, alignedRead.qname, 'mate not found'
+                            continue
                         else:
-                            if alignedRead.qname not in uniques:
-                                mate = samfile.mate(alignedRead)
+                            if not opts.noDuplicate:
                                 printOutput(alignedRead,
-                                            mate,
-                                            outputFile1,
-                                            outputFile2)
+                                                mate,
+                                                outputFile1,
+                                                outputFile2)
+                            else:
+                                if alignedRead.qname not in uniques:
+                                    printOutput(alignedRead,
+                                                mate,
+                                                outputFile1,
+                                                outputFile2)
 
-                        uniques.add(alignedRead.qname)
+                            uniques.add(alignedRead.qname)
             if n % 1000 == 0:
                 print >> sys.stderr, '...', sequence, n
         outputFile1.close()
