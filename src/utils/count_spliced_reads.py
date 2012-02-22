@@ -1,3 +1,12 @@
+'''The script counts reads mapped across each splice junction
+from in gene models. It requires gene models in BED format
+and read alignments in BAM format. Note that reads must be
+mapped to transcripts derived from the same gene models.
+Transcripts can be obtained using get_transcript_seq.py provided
+in this package.
+
+'''
+
 import sys, csv
 import pysam
 
@@ -70,7 +79,7 @@ def get_junction(row):
 
 def main(bedfile, samfile):
     '''Parses splice junctions from gene models in BED format.
-
+    Then counts reads that mapped across a splice junction.
     Results are written to standard output.
 
     Arguments:
