@@ -457,7 +457,6 @@ def main(inputFiles):
                 print >> stderr, '...', n
 
     bigCluster = mergeClusters(exonDb)
-    print >> sys.stderr, 'Total merged clusters = %d' % (len(bigCluster))
     geneId, numTranscripts = buildGeneModels(exonDb,
                                     intronDb, clusters,
                                     bigCluster, args.min)
