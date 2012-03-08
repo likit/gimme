@@ -6,11 +6,9 @@ source_path = os.path.abspath('src')
 if source_path not in sys.path:
     sys.path.append(os.path.abspath('src'))
 
-import networkx as nx
-from matplotlib import pyplot
 from unittest import TestCase
-
-from gimme import ExonObj, collapseExons
+import networkx as nx
+from gimme import ExonObj, collapseExons, addIntrons
 
 class TestCollapseExons(TestCase):
     def setUp(self):
@@ -542,3 +540,29 @@ class TestCollapseExons(TestCase):
 
         self.assertEqual(len(self.exon_graph.nodes()), 6)
         self.assertEqual(len(self.exon_graph.edges()), 5)
+
+class TestAddIntrons(TestCase):
+    def setUp(self):
+        self.exonDb = {}
+        start = 1000
+        n = 1
+        self.exons = []
+
+        while n < 7:
+            e = ExonObj('chr1', start, start + 100)
+            self.exonDb[str(e)] = e
+            self.exons.append(str(e))
+            start += 300
+            n += 1
+
+        self.exonDb[self.exons[0]].terminal = 1 # mark a left terminal
+        self.exonDb[self.exons[-1]].terminal = 2 # mark a right terminal
+
+        self.intronDb = {}
+        self.clusters = {}
+        self.clusterNo = 0
+
+    def test_simple(self):
+        addIntrons(self.exons, self.intronDb, self.exonDb,
+                    self.clusters, self.clusterNo)
+        self.assertEqual(len(self.intronDb), 5)
