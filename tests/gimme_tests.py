@@ -1,14 +1,18 @@
 '''Please run nosetests from a program main directory.'''
 
-import sys, os
+import sys
+import os
+import StringIO
+import csv
+
+from unittest import TestCase
+import networkx as nx
 
 source_path = os.path.abspath('src')
 if source_path not in sys.path:
     sys.path.append(os.path.abspath('src'))
 
-from unittest import TestCase
-import networkx as nx
-from gimme import ExonObj, collapseExons, addIntrons
+from gimme import ExonObj, collapseExons, addIntrons, parsePSL
 
 class TestCollapseExons(TestCase):
     def setUp(self):
@@ -566,3 +570,208 @@ class TestAddIntrons(TestCase):
         addIntrons(self.exons, self.intronDb, self.exonDb,
                     self.clusters, self.clusterNo)
         self.assertEqual(len(self.intronDb), 5)
+
+class TestParseExons(TestCase):
+    def setUp(self):
+        self.input_file = StringIO.StringIO()
+
+    def test_simple(self):
+        fake_data = [
+                0, # matches
+                0, # misMatches
+                0, # repMatches
+                3, # nCount
+                9, # qNumInsert
+                9, # qBaseInsert
+                19,# tNumInsert
+                9, # tBaseInsert
+                '+', # strand
+                'transcript', # query sequence name
+                300, # qSize
+                0, # qStart
+                300, # qEnd
+                'chr1', # tName
+                3000, # tSize
+                1000, # tStart
+                1900, # tEnd
+                4, # blockCount
+                '100,100,100,100,', # blockSize, the last comma is needed
+                '0,300,600,800,', # qStarts, the last comma is needed
+                '0,300,600,800,', # tStarts, the last comma is needed
+                ]
+        writer = csv.writer(self.input_file, dialect='excel-tab')
+        writer.writerow(fake_data)
+        self.input_file.seek(0)
+
+        selected_exons = parsePSL(self.input_file, 20000).next()
+        self.assertEqual(len(selected_exons), 1)
+        self.assertEqual(len(selected_exons[0]), 4)
+
+    def test_remove_one_large_intron_one_exon_set(self):
+        fake_data = [
+                0, # matches
+                0, # misMatches
+                0, # repMatches
+                3, # nCount
+                9, # qNumInsert
+                9, # qBaseInsert
+                19,# tNumInsert
+                9, # tBaseInsert
+                '+', # strand
+                'transcript', # query sequence name
+                300, # qSize
+                0, # qStart
+                300, # qEnd
+                'chr1', # tName
+                3000, # tSize
+                1000, # tStart
+                31000, # tEnd
+                4, # blockCount
+                '100,100,100,100,', # blockSize, the last comma is needed
+                '0,300,600,30000,', # qStarts, the last comma is needed
+                '0,300,600,30000,', # tStarts, the last comma is needed
+                ]
+        writer = csv.writer(self.input_file, dialect='excel-tab')
+        writer.writerow(fake_data)
+        self.input_file.seek(0)
+
+        selected_exons = parsePSL(self.input_file, 20000).next()
+        self.assertEqual(len(selected_exons), 1)
+        self.assertEqual(len(selected_exons[0]), 3)
+
+    def test_remove_one_large_intron_two_exon_sets(self):
+        fake_data = [
+                0, # matches
+                0, # misMatches
+                0, # repMatches
+                3, # nCount
+                9, # qNumInsert
+                9, # qBaseInsert
+                19,# tNumInsert
+                9, # tBaseInsert
+                '+', # strand
+                'transcript', # query sequence name
+                300, # qSize
+                0, # qStart
+                300, # qEnd
+                'chr1', # tName
+                3000, # tSize
+                1000, # tStart
+                30400, # tEnd
+                5, # blockCount
+                '100,100,100,100,100,', # blockSize, the last comma is needed
+                '0,300,600,30000,30300,', # qStarts, the last comma is needed
+                '0,300,600,30000,30300,', # tStarts, the last comma is needed
+                ]
+        writer = csv.writer(self.input_file, dialect='excel-tab')
+        writer.writerow(fake_data)
+        self.input_file.seek(0)
+
+        selected_exons = parsePSL(self.input_file, 20000).next()
+        self.assertEqual(len(selected_exons), 2)
+        self.assertEqual(len(selected_exons[0]), 3)
+        self.assertEqual(len(selected_exons[1]), 2)
+
+    def test_remove_two_large_intron_two_exon_sets(self):
+        fake_data = [
+                0, # matches
+                0, # misMatches
+                0, # repMatches
+                3, # nCount
+                9, # qNumInsert
+                9, # qBaseInsert
+                19,# tNumInsert
+                9, # tBaseInsert
+                '+', # strand
+                'transcript', # query sequence name
+                300, # qSize
+                0, # qStart
+                300, # qEnd
+                'chr1', # tName
+                3000, # tSize
+                1000, # tStart
+                60100, # tEnd
+                6, # blockCount
+                '100,100,100,100,100,100,', # blockSize, the last comma is needed
+                '0,300,600,30000,30300,60000,', # qStarts, the last comma is needed
+                '0,300,600,30000,30300,60000,', # tStarts, the last comma is needed
+                ]
+        writer = csv.writer(self.input_file, dialect='excel-tab')
+        writer.writerow(fake_data)
+        self.input_file.seek(0)
+
+        selected_exons = parsePSL(self.input_file, 20000).next()
+        self.assertEqual(len(selected_exons), 2)
+        self.assertEqual(len(selected_exons[0]), 3)
+        self.assertEqual(len(selected_exons[1]), 2)
+
+    def test_remove_two_large_intron_two_exon_sets(self):
+        fake_data = [
+                0, # matches
+                0, # misMatches
+                0, # repMatches
+                3, # nCount
+                9, # qNumInsert
+                9, # qBaseInsert
+                19,# tNumInsert
+                9, # tBaseInsert
+                '+', # strand
+                'transcript', # query sequence name
+                300, # qSize
+                0, # qStart
+                300, # qEnd
+                'chr1', # tName
+                3000, # tSize
+                1000, # tStart
+                60400, # tEnd
+                7, # blockCount
+                '100,100,100,100,100,100,100,', # blockSize, the last comma is needed
+                '0,300,600,30000,30300,60000,60300,', # qStarts, the last comma is needed
+                '0,300,600,30000,30300,60000,60300,', # tStarts, the last comma is needed
+                ]
+        writer = csv.writer(self.input_file, dialect='excel-tab')
+        writer.writerow(fake_data)
+        self.input_file.seek(0)
+
+        selected_exons = parsePSL(self.input_file, 20000).next()
+        self.assertEqual(len(selected_exons), 3)
+        self.assertEqual(len(selected_exons[0]), 3)
+        self.assertEqual(len(selected_exons[1]), 2)
+        self.assertEqual(len(selected_exons[2]), 2)
+
+    def test_remove_two_large_intron_flanking_one_exon(self):
+        fake_data = [
+                0, # matches
+                0, # misMatches
+                0, # repMatches
+                3, # nCount
+                9, # qNumInsert
+                9, # qBaseInsert
+                19,# tNumInsert
+                9, # tBaseInsert
+                '+', # strand
+                'transcript', # query sequence name
+                300, # qSize
+                0, # qStart
+                300, # qEnd
+                'chr1', # tName
+                3000, # tSize
+                1000, # tStart
+                60400, # tEnd
+                6, # blockCount
+                '100,100,100,100,100,100,', # blockSize, the last comma is needed
+                '0,300,600,30000,60000,60300,', # qStarts, the last comma is needed
+                '0,300,600,30000,60000,60300,', # tStarts, the last comma is needed
+                ]
+        writer = csv.writer(self.input_file, dialect='excel-tab')
+        writer.writerow(fake_data)
+        self.input_file.seek(0)
+
+        selected_exons = parsePSL(self.input_file, 20000).next()
+        self.assertEqual(len(selected_exons), 3)
+        self.assertEqual(len(selected_exons[0]), 3)
+        self.assertEqual(len(selected_exons[1]), 1)
+        self.assertEqual(len(selected_exons[2]), 2)
+
+    def tearDown(self):
+        self.input_file.close()
