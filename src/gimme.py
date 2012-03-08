@@ -49,14 +49,15 @@ class ExonObj:
         return '%s:%d-%d' % (self.chrom, self.start, self.end)
 
 
-def parsePSL(filename):
+def parsePSL(psl_file, max_intron=MAX_INTRON):
     '''Reads alignments from PSL format and create
     exon objects from each transcript.
 
     '''
 
-    for pslObj in pslparser.read(open(filename)):
+    for pslObj in pslparser.read(psl_file):
         exons = []
+        selected_exons = []
         for i in range(len(pslObj.attrib['tStarts'])):
             exonStart = pslObj.attrib['tStarts'][i]
             exonEnd = exonStart + pslObj.attrib['blockSizes'][i]
@@ -64,10 +65,45 @@ def parsePSL(filename):
             exon = ExonObj(pslObj.attrib['tName'], exonStart, exonEnd)
             exons.append(exon)
 
-        yield exons
+        exon_set = []
+        for i in range(len(exons)):
+            curr_exon = exons[i]
+            try:
+                next_exon = exons[i + 1]
+            except IndexError:
+                '''if at the end of list,
+                add the last set of exons to a selected-exon list.
+
+                '''
+                if exon_set:
+                    selected_exons.append(exon_set)
+            else:
+                intron_start = curr_exon.end + 1
+                intron_end = next_exon.start - 1
+
+                exon_set.append(curr_exon)
+
+                if intron_end - intron_start < max_intron:
+                    '''if at the end of list, at the last exon
+                    to the exon set.
+
+                    '''
+                    if i + 1 == len(exons) - 1:
+                        exon_set.append(next_exon)
+                else:
+                    '''if intron size exceeds a max size,
+                    add a set of exons to a selected-exon list
+                    and start a new set.
+
+                    '''
+                    selected_exons.append(exon_set[:])
+                    exon_set = []
+
+        yield selected_exons
 
 
-def addIntrons(exons, intronDb, exonDb, clusters, clusterNo):
+def addIntrons(exons, intronDb, exonDb,
+                clusters, clusterNo, max_intron=MAX_INTRON):
     '''Get introns from a set of exons.'''
 
     existingClusters = set([])
@@ -81,13 +117,10 @@ def addIntrons(exons, intronDb, exonDb, clusters, clusterNo):
         except IndexError:
             pass
         else:
-            currExon.nextExons.add(str(nextExon))
-
             intronStart = currExon.end + 1
             intronEnd = nextExon.start - 1
 
-            if intronEnd - intronStart > MAX_INTRON:
-                continue
+            currExon.nextExons.add(str(nextExon))
 
             intronName = '%s:%d-%d' % (currExon.chrom, intronStart, intronEnd)
             intron = nx.DiGraph(name=intronName, cluster=None)
@@ -400,29 +433,31 @@ def main(inputFiles):
 
     for inputFile in inputFiles:
         print >> stderr, 'Parsing alignments from %s...' % inputFile
-        for n, exons in enumerate(parsePSL(inputFile), start=1):
+        for n, selected_exons in enumerate(parsePSL(open(inputFile)), start=1):
+            for exons in selected_exons:
 
-            '''Alignments may contain small gaps.
-            The program fills up the gaps to obtain a complete exon. 
-            A maximum size of a gap can be adjusted by assigning a new
-            value to GAP_SIZE parameter on a command line.
+                '''Alignments may contain small gaps.
+                The program fills up the gaps to obtain a complete exon. 
+                A maximum size of a gap can be adjusted by assigning a new
+                value to GAP_SIZE parameter on a command line.
 
-            '''
+                '''
 
-            exons = deleteGap(exons)  # fill up a gap <= GAP_SIZE
+                exons = deleteGap(exons)  # fill up a gap <= GAP_SIZE
 
-            if len(exons) > 1:
-                ''' The program ignores all single exons.'''
-                addExon(exonDb, exons)
-                addIntrons(exons, intronDb, exonDb, clusters, clusterNo)
-                clusterNo += 1
-            else:
-                exons[0].single = True
+                if len(exons) > 1:
+                    ''' The program ignores all single exons.'''
+                    addExon(exonDb, exons)
+                    addIntrons(exons, intronDb, exonDb, clusters, clusterNo)
+                    clusterNo += 1
+                else:
+                    exons[0].single = True
 
             if n % 1000 == 0:
                 print >> stderr, '...', n
 
     bigCluster = mergeClusters(exonDb)
+    print >> sys.stderr, 'Total merged clusters = %d' % (len(bigCluster))
     geneId, numTranscripts = buildGeneModels(exonDb,
                                     intronDb, clusters,
                                     bigCluster, args.min)
