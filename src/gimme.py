@@ -433,7 +433,9 @@ def main(inputFiles):
 
     for inputFile in inputFiles:
         print >> stderr, 'Parsing alignments from %s...' % inputFile
-        for n, selected_exons in enumerate(parsePSL(open(inputFile)), start=1):
+        for n, selected_exons in enumerate(
+                                            parsePSL(open(inputFile),
+                                            max_intron=20000), start=1):
             for exons in selected_exons:
 
                 '''Alignments may contain small gaps.
