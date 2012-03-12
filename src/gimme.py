@@ -32,7 +32,7 @@ GAP_SIZE = 70 # a minimum intron size (bp)
 MAX_INTRON = 20000 # a maximum intron size (bp)
 MIN_UTR = 100 # a minimum UTR size (bp)
 MIN_EXON = 40 # a minimum exon size (bp)
-SMALL_EXON_ALLOWED = 2 # number of small exons allowed in each transcript
+SMALL_EXON_ALLOWED = 1 # number of small exons allowed in each transcript
 
 exonDb = {}
 intronDb = {}
@@ -66,7 +66,7 @@ def parsePSL(psl_file, max_intron=MAX_INTRON, min_intron=MIN_EXON):
             if size < MIN_EXON:
                 small_exons += 1
 
-        if small_exons >= 2:
+        if small_exons > 2:
             removed += 1
             continue
 
@@ -366,7 +366,7 @@ def checkCriteria(transcript):
         if size < MIN_EXON:
             small_exons += 1
 
-    if small_exons >= SMALL_EXON_ALLOWED:
+    if small_exons > SMALL_EXON_ALLOWED:
         return False
     else:
         return True
@@ -494,15 +494,15 @@ def main(inputFiles):
             if n % 1000 == 0:
                 print >> stderr, '...', n, ': excluded', removed
 
-    bigCluster = mergeClusters(exonDb)
-    geneId, numTranscripts = buildGeneModels(exonDb,
-                                    intronDb, clusters,
-                                    bigCluster, args.min)
+    #bigCluster = mergeClusters(exonDb)
+    #geneId, numTranscripts = buildGeneModels(exonDb,
+    #                                intronDb, clusters,
+    #                                bigCluster, args.min)
 
-    print >> stderr, '\nTotal exons = %d' % len(exonDb)
-    print >> stderr, 'Total genes = %d' % geneId
-    print >> stderr, 'Total transcripts = %d' % (numTranscripts)
-    print >> stderr, 'Isoform/gene = %.2f' % (float(numTranscripts) / len(clusters))
+    #print >> stderr, '\nTotal exons = %d' % len(exonDb)
+    #print >> stderr, 'Total genes = %d' % geneId
+    #print >> stderr, 'Total transcripts = %d' % (numTranscripts)
+    #print >> stderr, 'Isoform/gene = %.2f' % (float(numTranscripts) / len(clusters))
 
 
 if __name__=='__main__':
