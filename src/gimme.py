@@ -66,7 +66,7 @@ def parsePSL(psl_file, max_intron=MAX_INTRON, min_intron=MIN_EXON):
             if size < MIN_EXON:
                 small_exons += 1
 
-        if small_exons > 2:
+        if small_exons > SMALL_EXON_ALLOWED:
             removed += 1
             continue
 
@@ -494,15 +494,15 @@ def main(inputFiles):
             if n % 1000 == 0:
                 print >> stderr, '...', n, ': excluded', removed
 
-    #bigCluster = mergeClusters(exonDb)
-    #geneId, numTranscripts = buildGeneModels(exonDb,
-    #                                intronDb, clusters,
-    #                                bigCluster, args.min)
+    bigCluster = mergeClusters(exonDb)
+    geneId, numTranscripts = buildGeneModels(exonDb,
+                                    intronDb, clusters,
+                                    bigCluster, args.min)
 
-    #print >> stderr, '\nTotal exons = %d' % len(exonDb)
-    #print >> stderr, 'Total genes = %d' % geneId
-    #print >> stderr, 'Total transcripts = %d' % (numTranscripts)
-    #print >> stderr, 'Isoform/gene = %.2f' % (float(numTranscripts) / len(clusters))
+    print >> stderr, '\nTotal exons = %d' % len(exonDb)
+    print >> stderr, 'Total genes = %d' % geneId
+    print >> stderr, 'Total transcripts = %d' % (numTranscripts)
+    print >> stderr, 'Isoform/gene = %.2f' % (float(numTranscripts) / len(clusters))
 
 
 if __name__=='__main__':
