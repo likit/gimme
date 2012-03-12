@@ -28,9 +28,11 @@ import networkx as nx
 from utils import pslparser, get_min_path
 
 
-GAP_SIZE = 21
-MAX_INTRON = 1000000
-MIN_UTR = 100
+GAP_SIZE = 70 # a minimum intron size (bp)
+MAX_INTRON = 20000 # a maximum intron size (bp)
+MIN_UTR = 100 # a minimum UTR size (bp)
+MIN_EXON = 40 # a minimum exon size (bp)
+SMALL_EXON_ALLOWED = 2 # number of small exons allowed in each transcript
 
 exonDb = {}
 intronDb = {}
@@ -49,16 +51,27 @@ class ExonObj:
         return '%s:%d-%d' % (self.chrom, self.start, self.end)
 
 
-def parsePSL(psl_file, max_intron=MAX_INTRON):
+def parsePSL(psl_file, max_intron=MAX_INTRON, min_intron=MIN_EXON):
     '''Reads alignments from PSL format and create
     exon objects from each transcript.
 
     '''
-
+    removed = 0
     for pslObj in pslparser.read(psl_file):
         exons = []
         selected_exons = []
+        small_exons = 0
+
+        for size in pslObj.attrib['blockSizes']:
+            if size < MIN_EXON:
+                small_exons += 1
+
+        if small_exons >= 2:
+            removed += 1
+            continue
+
         for i in range(len(pslObj.attrib['tStarts'])):
+
             exonStart = pslObj.attrib['tStarts'][i]
             exonEnd = exonStart + pslObj.attrib['blockSizes'][i]
 
@@ -99,7 +112,7 @@ def parsePSL(psl_file, max_intron=MAX_INTRON):
                     selected_exons.append(exon_set[:])
                     exon_set = []
 
-        yield selected_exons
+        yield selected_exons, removed
 
 
 def addIntrons(exons, intronDb, exonDb,
@@ -343,6 +356,22 @@ def buildSpliceGraph(cluster, intronDb, exonDb, mergedExons):
     return g
 
 
+def checkCriteria(transcript):
+    exons = sorted([exonDb[e] for e in transcript],
+                            key=lambda x: (x.start, x.end))
+
+    blockSizes = [exon.end - exon.start for exon in exons]
+    small_exons = 0
+    for size in blockSizes:
+        if size < MIN_EXON:
+            small_exons += 1
+
+    if small_exons >= SMALL_EXON_ALLOWED:
+        return False
+    else:
+        return True
+
+
 def printBedGraph(transcript, geneId, tranId):
     '''Print a splice graph in BED format.'''
 
@@ -385,6 +414,7 @@ def buildGeneModels(exonDb, intronDb, clusters, bigCluster, isMin=False):
     removedClusters = set([])
     numTranscripts = 0
     geneId = 0
+    excluded = 0
 
     for cl_num, cl in enumerate(bigCluster.nodes(), start=1):
         if cl not in removedClusters:
@@ -407,9 +437,12 @@ def buildGeneModels(exonDb, intronDb, clusters, bigCluster, isMin=False):
                 collapseExons(g, exonDb)
                 if not isMin:
                     for transcript in getPath(g):
-                        printBedGraph(transcript, geneId, transId)
-                        numTranscripts += 1
-                        transId += 1
+                        if checkCriteria(transcript):
+                            printBedGraph(transcript, geneId, transId)
+                            numTranscripts += 1
+                            transId += 1
+                        else:
+                            excluded += 1
 
                 else:
                     max_paths = getPath(g)
@@ -418,12 +451,15 @@ def buildGeneModels(exonDb, intronDb, clusters, bigCluster, isMin=False):
                         paths.append(get_min_path.getEdges(pth))
 
                     for transcript in get_min_path.getMinPaths(paths):
-                        printBedGraph(transcript, geneId, transId)
-                        numTranscripts += 1
-                        transId += 1
+                        if checkCriteria(transcript):
+                            printBedGraph(transcript, geneId, transId)
+                            numTranscripts += 1
+                            transId += 1
+                        else:
+                            excluded += 1
 
         if cl_num % 1000 == 0:
-            print >> stderr, '...', cl_num
+            print >> stderr, '...', cl_num, ': excluded', excluded, 'transcript(s)'
 
     return geneId, numTranscripts
 
@@ -433,7 +469,7 @@ def main(inputFiles):
 
     for inputFile in inputFiles:
         print >> stderr, 'Parsing alignments from %s...' % inputFile
-        for n, selected_exons in enumerate(
+        for n, (selected_exons, removed) in enumerate(
                                             parsePSL(open(inputFile),
                                             max_intron=20000), start=1):
             for exons in selected_exons:
@@ -456,7 +492,7 @@ def main(inputFiles):
                     exons[0].single = True
 
             if n % 1000 == 0:
-                print >> stderr, '...', n
+                print >> stderr, '...', n, ': excluded', removed
 
     bigCluster = mergeClusters(exonDb)
     geneId, numTranscripts = buildGeneModels(exonDb,
