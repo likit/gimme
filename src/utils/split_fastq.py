@@ -30,7 +30,7 @@ def split(fastq_file, output_file1, output_file2):
         if num_read % 10000 == 0:
             print >> sys.stderr, '...', num_read
 
-        read_name = fastq_file.readline()
+        read_name = fastq_file.readline().strip()
 
 
 if __name__=='__main__':
