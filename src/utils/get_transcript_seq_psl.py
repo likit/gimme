@@ -43,7 +43,7 @@ def parse_seq(filename, genome):
                         exon_ends[i])
                         for i in range(len(exon_starts))
                         ]
-        print >> sys.stderr, exons, gene_id
+        #print >> sys.stderr, exons, gene_id
         yield exons, gene_id
 
 
