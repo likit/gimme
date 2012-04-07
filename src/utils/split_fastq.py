@@ -21,7 +21,7 @@ def split(fastq_file, output_file1, output_file2):
 
         output = output_file1 if (num_read % 2 == 0) else output_file2
 
-        print >> output, '%s\n%s\n%s\n%s\n' % (
+        print >> output, '%s\n%s\n%s\n%s' % (
                                     read_name,
                                     read_seq,
                                     plus_sign,
