@@ -14,9 +14,13 @@ Exon = namedtuple('Exon', 'chrom, start, end')
 
 def get_sequence(genome, exons):
     seq = ''
-    for exon in exons:
-        s = genome[exon.chrom][exon.start:exon.end]
-        seq += str(s)
+    try:
+        for exon in exons:
+            s = genome[exon.chrom][exon.start:exon.end]
+            seq += str(s)
+    except IndexError as e:
+        print >> sys.stderr, exons
+        raise e
 
     return seq
 
@@ -25,9 +29,8 @@ def parse_seq(filename, genome):
 
     for line in reader:
         chrom = line[13]
-        chrom_start = int(line[15])
         gene_id = line[9]
-        exon_starts = [int(start) + chrom_start for
+        exon_starts = [int(start) for
                         start in line[-1].split(',')[:-1]]
 
         exon_sizes = [int(size) for size in line[-3].split(',')[:-1]]
@@ -40,6 +43,7 @@ def parse_seq(filename, genome):
                         exon_ends[i])
                         for i in range(len(exon_starts))
                         ]
+        print >> sys.stderr, exons, gene_id
         yield exons, gene_id
 
 
