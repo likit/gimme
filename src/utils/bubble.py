@@ -105,7 +105,7 @@ def main(argv):
                     % (sequence.id, len(sequence.seq), len(discard))
 
         if n % 1000 == 0:
-            print >> '...', n
+            print >> sys.stderr, '...', n
 
     log_file.close()
 
