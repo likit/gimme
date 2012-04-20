@@ -84,7 +84,7 @@ def rebuild_sequence(kmer_table, all_kmers, discard):
 def main(argv):
     fasta_file = argv[1]
     try:
-        kmersize = argv[2]
+        kmersize = int(argv[2])
     except IndexError:
         kmersize = None
 
