@@ -88,6 +88,8 @@ def main(argv):
         discard = collapse(kmer_table, all_kmers)
         new_sequence = rebuild_sequence(kmer_table, all_kmers, discard)
         print '>%s\n%s' % (sequence.id, new_sequence)
+        if discard:
+            print >> sys.stderr, sequence.id, 'removed', len(discard)
 
 
 if __name__=='__main__':
