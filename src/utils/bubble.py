@@ -87,19 +87,27 @@ def rebuild_sequence(kmer_table, all_kmers, discard):
 
 def main(argv):
     fasta_file = argv[1]
+
     try:
         kmersize = int(argv[2])
     except IndexError:
         kmersize = None
 
-    for sequence in parse_fasta(fasta_file):
+    log_file = open(fasta_file+'.log', 'w')
+
+    for n, sequence in enumerate(parse_fasta(fasta_file), start=1):
         kmer_table, all_kmers, the_rest = makehash(sequence, kmersize)
         discard = collapse(kmer_table, all_kmers)
         new_sequence = rebuild_sequence(kmer_table, all_kmers, discard)
         print '>%s\n%s' % (sequence.id, new_sequence)
         if discard:
-            print >> sys.stderr, sequence.id, 'removed %d/%d'\
-                    % (len(discard), len(sequence.seq))
+            print >> log_file, '%s\t%d\t%d'\
+                    % (sequence.id, len(sequence.seq), len(discard))
+
+        if n % 1000 == 0:
+            print >> '...', n
+
+    log_file.close()
 
 
 if __name__=='__main__':
