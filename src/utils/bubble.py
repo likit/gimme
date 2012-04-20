@@ -44,7 +44,7 @@ def makehash(sequence, kmersize=KMERSIZE):
     all_kmers.append(kmer)
     start = 1
     end += 1
-    while len(sequence.seq) - start > kmersize:
+    while len(sequence.seq) - start >= kmersize:
         kmerid += 1
         kmer = sequence.seq[start:end]
         try:
@@ -54,10 +54,14 @@ def makehash(sequence, kmersize=KMERSIZE):
 
         all_kmers.append(kmer)
 
+        #print >> sys.stderr, kmer, kmer_table[kmer]
+
         start += 1
         end += 1
 
-    return kmer_table, all_kmers
+    the_rest = sequence.seq[start:]
+
+    return kmer_table, all_kmers, the_rest
 
 
 def collapse(kmer_table, all_kmers):
@@ -89,10 +93,13 @@ def main(argv):
         kmersize = None
 
     for sequence in parse_fasta(fasta_file):
-        kmer_table, all_kmers = makehash(sequence, kmersize)
+        kmer_table, all_kmers, the_rest = makehash(sequence, kmersize)
         discard = collapse(kmer_table, all_kmers)
         new_sequence = rebuild_sequence(kmer_table, all_kmers, discard)
+        print '>%s\n%s' % (sequence.id, sequence.seq)
         print '>%s\n%s' % (sequence.id, new_sequence)
+        print 'before %dbp after %dbp' % (len(sequence.seq), len(new_sequence))
+        print all_kmers[-1]
         if discard:
             print >> sys.stderr, sequence.id, 'removed', len(discard)
 
