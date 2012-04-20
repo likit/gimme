@@ -83,8 +83,13 @@ def rebuild_sequence(kmer_table, all_kmers, discard):
 
 def main(argv):
     fasta_file = argv[1]
+    try:
+        kmersize = argv[2]
+    except IndexError:
+        kmersize = None
+
     for sequence in parse_fasta(fasta_file):
-        kmer_table, all_kmers = makehash(sequence)
+        kmer_table, all_kmers = makehash(sequence, kmersize)
         discard = collapse(kmer_table, all_kmers)
         new_sequence = rebuild_sequence(kmer_table, all_kmers, discard)
         print '>%s\n%s' % (sequence.id, new_sequence)
