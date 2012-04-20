@@ -96,12 +96,10 @@ def main(argv):
         kmer_table, all_kmers, the_rest = makehash(sequence, kmersize)
         discard = collapse(kmer_table, all_kmers)
         new_sequence = rebuild_sequence(kmer_table, all_kmers, discard)
-        print '>%s\n%s' % (sequence.id, sequence.seq)
         print '>%s\n%s' % (sequence.id, new_sequence)
-        print 'before %dbp after %dbp' % (len(sequence.seq), len(new_sequence))
-        print all_kmers[-1]
         if discard:
-            print >> sys.stderr, sequence.id, 'removed', len(discard)
+            print >> sys.stderr, sequence.id, 'removed %d/%d'\
+                    % (len(discard), len(sequence.seq))
 
 
 if __name__=='__main__':
