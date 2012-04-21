@@ -10,7 +10,6 @@ import sys
 from collections import namedtuple
 
 import networkx as nx
-import matplotlib.pyplot as plt
 
 KMERSIZE = 27
 
