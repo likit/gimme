@@ -152,7 +152,7 @@ def main(argv):
     except IndexError:
         kmersize = None
 
-    #log_file = open(fasta_file+'.log', 'w')
+    log_file = open(fasta_file+'.log', 'w')
 
     for n, sequence in enumerate(parse_fasta(fasta_file), start=1):
         print >> sys.stderr, sequence.id,
@@ -171,7 +171,7 @@ def main(argv):
             #print '>%s\n%s' % (sequence.id, sequence.seq)
             print '>%s\n%s' % (sequence.id+'_new', new_sequence)
 
-        print >> sys.stderr, '%s\t%d\t%d'\
+        print >> log_file, '%s\t%d\t%d'\
             % (sequence.id, len(sequence.seq) - len(new_sequence), len(sequence.seq))
 
         #path = traverse(kmer_graph)
@@ -185,7 +185,7 @@ def main(argv):
         #nx.draw(kmer_graph)
         #plt.show()
 
-    #log_file.close()
+    log_file.close()
 
 
 if __name__=='__main__':
