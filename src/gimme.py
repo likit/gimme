@@ -28,7 +28,7 @@ import networkx as nx
 from utils import pslparser, get_min_path
 
 
-GAP_SIZE = 70 # a minimum intron size (bp)
+GAP_SIZE = 0 # a minimum intron size (bp)
 MAX_INTRON = 2000000 # a maximum intron size (bp)
 MIN_UTR = 100 # a minimum UTR size (bp)
 MIN_EXON = 40 # a minimum exon size (bp)
@@ -514,7 +514,7 @@ def main(inputFiles):
             value to GAP_SIZE parameter on a command line.
 
             '''
-                #exons = deleteGap(exons)  # fill up a gap <= GAP_SIZE
+            exons = deleteGap(exons)  # fill up a gap <= GAP_SIZE
 
             if len(exons) > 1:
                 addExon(exonDb, exons)
