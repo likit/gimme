@@ -29,7 +29,7 @@ from utils import pslparser, get_min_path
 
 
 GAP_SIZE = 70 # a minimum intron size (bp)
-MAX_INTRON = 20000 # a maximum intron size (bp)
+MAX_INTRON = 2000000 # a maximum intron size (bp)
 MIN_UTR = 100 # a minimum UTR size (bp)
 MIN_EXON = 40 # a minimum exon size (bp)
 SMALL_EXON_ALLOWED = 1 # number of small exons allowed in each transcript
@@ -46,6 +46,7 @@ class ExonObj:
         self.terminal = None
         self.nextExons = set([])
         self.introns = set([])
+        self.single = False
 
     def __str__(self):
         return '%s:%d-%d' % (self.chrom, self.start, self.end)
@@ -56,11 +57,12 @@ def parsePSL(psl_file, max_intron=MAX_INTRON, min_intron=MIN_EXON):
     exon objects from each transcript.
 
     '''
-    removed = 0
+    #removed = 0
     for pslObj in pslparser.read(psl_file):
         exons = []
         selected_exons = []
-        small_exons = 0
+        #small_exons = 0
+        '''
 
         for size in pslObj.attrib['blockSizes']:
             if size < MIN_EXON:
@@ -69,6 +71,7 @@ def parsePSL(psl_file, max_intron=MAX_INTRON, min_intron=MIN_EXON):
         if small_exons > SMALL_EXON_ALLOWED:
             removed += 1
             continue
+        '''
 
         for i in range(len(pslObj.attrib['tStarts'])):
 
@@ -78,41 +81,41 @@ def parsePSL(psl_file, max_intron=MAX_INTRON, min_intron=MIN_EXON):
             exon = ExonObj(pslObj.attrib['tName'], exonStart, exonEnd)
             exons.append(exon)
 
-        exon_set = []
-        for i in range(len(exons)):
-            curr_exon = exons[i]
-            try:
-                next_exon = exons[i + 1]
-            except IndexError:
-                '''if at the end of list,
-                add the last set of exons to a selected-exon list.
+#        exon_set = []
+#        for i in range(len(exons)):
+#            curr_exon = exons[i]
+#            try:
+#                next_exon = exons[i + 1]
+#            except IndexError:
+#                '''if at the end of list,
+#                add the last set of exons to a selected-exon list.
+#
+#                '''
+#                if exon_set:
+#                    selected_exons.append(exon_set)
+#            else:
+#                intron_start = curr_exon.end + 1
+#                intron_end = next_exon.start - 1
+#
+#                exon_set.append(curr_exon)
+#
+#                if intron_end - intron_start < max_intron:
+#                    '''if at the end of list, at the last exon
+#                    to the exon set.
+#
+#                    '''
+#                    if i + 1 == len(exons) - 1:
+#                        exon_set.append(next_exon)
+#                else:
+#                    '''if intron size exceeds a max size,
+#                    add a set of exons to a selected-exon list
+#                    and start a new set.
+#
+#                    '''
+#                    selected_exons.append(exon_set[:])
+#                    exon_set = []
 
-                '''
-                if exon_set:
-                    selected_exons.append(exon_set)
-            else:
-                intron_start = curr_exon.end + 1
-                intron_end = next_exon.start - 1
-
-                exon_set.append(curr_exon)
-
-                if intron_end - intron_start < max_intron:
-                    '''if at the end of list, at the last exon
-                    to the exon set.
-
-                    '''
-                    if i + 1 == len(exons) - 1:
-                        exon_set.append(next_exon)
-                else:
-                    '''if intron size exceeds a max size,
-                    add a set of exons to a selected-exon list
-                    and start a new set.
-
-                    '''
-                    selected_exons.append(exon_set[:])
-                    exon_set = []
-
-        yield selected_exons, removed
+        yield exons, 0
 
 
 def addIntrons(exons, intronDb, exonDb,
@@ -407,6 +410,37 @@ def printBedGraph(transcript, geneId, tranId):
                     blockSizes,
                     blockStarts))
 
+def printBedGraphSingle(exon, geneId, tranId):
+    '''Print a splice graph in BED format.'''
+
+    chromStart = exon.start
+    chromEnd = exon.end
+    chrom = exon.chrom
+
+    blockStarts = ','.join([str(exon.start - chromStart)])
+    blockSizes = ','.join([str(exon.end - exon.start)])
+
+    name = '%s:%d.%d' % (chrom, geneId, tranId)
+    score = 1000
+    itemRgb = '0,0,0'
+    thickStart = chromStart
+    thickEnd = chromEnd
+    strand = '+'
+    blockCount = 1
+
+    writer = csv.writer(stdout, dialect='excel-tab')
+    writer.writerow((chrom,
+                    chromStart,
+                    chromEnd,
+                    name,
+                    score,
+                    strand,
+                    thickStart,
+                    thickEnd,
+                    itemRgb,
+                    blockCount,
+                    blockSizes,
+                    blockStarts))
 
 def buildGeneModels(exonDb, intronDb, clusters, bigCluster, isMin=False):
     print >> stderr, 'Building gene models...'
@@ -437,12 +471,12 @@ def buildGeneModels(exonDb, intronDb, clusters, bigCluster, isMin=False):
                 collapseExons(g, exonDb)
                 if not isMin:
                     for transcript in getPath(g):
-                        if checkCriteria(transcript):
-                            printBedGraph(transcript, geneId, transId)
-                            numTranscripts += 1
-                            transId += 1
-                        else:
-                            excluded += 1
+                        #if checkCriteria(transcript):
+                        printBedGraph(transcript, geneId, transId)
+                        numTranscripts += 1
+                        transId += 1
+                        #else:
+                        #    excluded += 1
 
                 else:
                     max_paths = getPath(g)
@@ -451,12 +485,12 @@ def buildGeneModels(exonDb, intronDb, clusters, bigCluster, isMin=False):
                         paths.append(get_min_path.getEdges(pth))
 
                     for transcript in get_min_path.getMinPaths(paths):
-                        if checkCriteria(transcript):
-                            printBedGraph(transcript, geneId, transId)
-                            numTranscripts += 1
-                            transId += 1
-                        else:
-                            excluded += 1
+                        #if checkCriteria(transcript):
+                        printBedGraph(transcript, geneId, transId)
+                        numTranscripts += 1
+                        transId += 1
+                        #else:
+                        #    excluded += 1
 
         if cl_num % 1000 == 0:
             print >> stderr, '...', cl_num, ': excluded', excluded, 'transcript(s)'
@@ -466,43 +500,47 @@ def buildGeneModels(exonDb, intronDb, clusters, bigCluster, isMin=False):
 
 def main(inputFiles):
     clusterNo = 0
+    single_exons = []
 
     for inputFile in inputFiles:
         print >> stderr, 'Parsing alignments from %s...' % inputFile
-        for n, (selected_exons, removed) in enumerate(
-                                            parsePSL(open(inputFile),
-                                            max_intron=20000), start=1):
-            for exons in selected_exons:
+        for n, (exons, removed) in enumerate(
+                                            parsePSL(open(inputFile)), start=1):
+            #for exons in selected_exons:
 
-                '''Alignments may contain small gaps.
-                The program fills up the gaps to obtain a complete exon. 
-                A maximum size of a gap can be adjusted by assigning a new
-                value to GAP_SIZE parameter on a command line.
+            '''Alignments may contain small gaps.
+            The program fills up the gaps to obtain a complete exon. 
+            A maximum size of a gap can be adjusted by assigning a new
+            value to GAP_SIZE parameter on a command line.
 
-                '''
+            '''
+                #exons = deleteGap(exons)  # fill up a gap <= GAP_SIZE
 
-                exons = deleteGap(exons)  # fill up a gap <= GAP_SIZE
+            if len(exons) > 1:
+                addExon(exonDb, exons)
+                addIntrons(exons, intronDb, exonDb, clusters, clusterNo)
+                clusterNo += 1
+            else:
+                single_exons.append(exons[0])
 
-                if len(exons) > 1:
-                    ''' The program ignores all single exons.'''
-                    addExon(exonDb, exons)
-                    addIntrons(exons, intronDb, exonDb, clusters, clusterNo)
-                    clusterNo += 1
-                else:
-                    exons[0].single = True
-
-            if n % 1000 == 0:
-                print >> stderr, '...', n, ': excluded', removed
+        if n % 1000 == 0:
+            print >> stderr, '...', n, ': excluded', removed
 
     bigCluster = mergeClusters(exonDb)
     geneId, numTranscripts = buildGeneModels(exonDb,
                                     intronDb, clusters,
                                     bigCluster, args.min)
 
+    for exon in single_exons:
+        geneId += 1
+        numTranscripts += 1
+        printBedGraphSingle(exon, geneId, 1)
+
     print >> stderr, '\nTotal exons = %d' % len(exonDb)
     print >> stderr, 'Total genes = %d' % geneId
     print >> stderr, 'Total transcripts = %d' % (numTranscripts)
     print >> stderr, 'Isoform/gene = %.2f' % (float(numTranscripts) / len(clusters))
+
 
 
 if __name__=='__main__':
