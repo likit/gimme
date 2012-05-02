@@ -568,8 +568,8 @@ if __name__=='__main__':
     else:
         print >> sys.stderr, 'Default MIN_UTR = %d' % MIN_UTR
 
-    if args.GAP_SIZE <= 0:
-        raise SystemExit, 'Invalid intron size (<=0)'
+    if args.GAP_SIZE < 0:
+        raise SystemExit, 'Invalid intron size (<0)'
     elif args.GAP_SIZE != GAP_SIZE:
         GAP_SIZE = args.GAP_SIZE
         print >> sys.stderr, 'User defined GAP_SIZE = %d' % GAP_SIZE
