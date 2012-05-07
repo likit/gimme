@@ -28,10 +28,10 @@ import networkx as nx
 from utils import pslparser, get_min_path
 
 
-GAP_SIZE = 0 # a minimum intron size (bp)
+GAP_SIZE = 10 # a minimum intron size (bp)
 MAX_INTRON = 2000000 # a maximum intron size (bp)
 MIN_UTR = 100 # a minimum UTR size (bp)
-MIN_EXON = 40 # a minimum exon size (bp)
+MIN_EXON = 10 # a minimum exon size (bp)
 SMALL_EXON_ALLOWED = 1 # number of small exons allowed in each transcript
 
 exonDb = {}
@@ -57,65 +57,37 @@ def parsePSL(psl_file, max_intron=MAX_INTRON, min_intron=MIN_EXON):
     exon objects from each transcript.
 
     '''
-    #removed = 0
     for pslObj in pslparser.read(psl_file):
         exons = []
-        selected_exons = []
-        #small_exons = 0
-        '''
-
-        for size in pslObj.attrib['blockSizes']:
-            if size < MIN_EXON:
-                small_exons += 1
-
-        if small_exons > SMALL_EXON_ALLOWED:
-            removed += 1
-            continue
-        '''
 
         for i in range(len(pslObj.attrib['tStarts'])):
 
-            exonStart = pslObj.attrib['tStarts'][i]
-            exonEnd = exonStart + pslObj.attrib['blockSizes'][i]
+            exon_start = pslObj.attrib['tStarts'][i]
+            exon_end = exon_start + pslObj.attrib['blockSizes'][i]
 
-            exon = ExonObj(pslObj.attrib['tName'], exonStart, exonEnd)
+            exon = ExonObj(pslObj.attrib['tName'], exon_start, exon_end)
             exons.append(exon)
 
-#        exon_set = []
-#        for i in range(len(exons)):
-#            curr_exon = exons[i]
-#            try:
-#                next_exon = exons[i + 1]
-#            except IndexError:
-#                '''if at the end of list,
-#                add the last set of exons to a selected-exon list.
-#
-#                '''
-#                if exon_set:
-#                    selected_exons.append(exon_set)
-#            else:
-#                intron_start = curr_exon.end + 1
-#                intron_end = next_exon.start - 1
-#
-#                exon_set.append(curr_exon)
-#
-#                if intron_end - intron_start < max_intron:
-#                    '''if at the end of list, at the last exon
-#                    to the exon set.
-#
-#                    '''
-#                    if i + 1 == len(exons) - 1:
-#                        exon_set.append(next_exon)
-#                else:
-#                    '''if intron size exceeds a max size,
-#                    add a set of exons to a selected-exon list
-#                    and start a new set.
-#
-#                    '''
-#                    selected_exons.append(exon_set[:])
-#                    exon_set = []
+        '''Alignments may contain small gaps.
+        The program fills up the gaps to obtain a complete exon. 
+        A maximum size of a gap can be adjusted by assigning a new
+        value to GAP_SIZE parameter on a command line.
 
-        yield exons, 0
+        '''
+        exons = deleteGap(exons)  # fill up a gap <= GAP_SIZE
+
+        kept = []
+
+        for exon in exons:
+            if (exon.end - exon.start) + 1 >= MIN_EXON:
+                kept.append(exon)
+            else:
+                print >> sys.stderr, exon, 'too small!'
+                if kept:
+                    yield kept
+                    kept = []
+        if kept:
+            yield kept
 
 
 def addIntrons(exons, intronDb, exonDb,
@@ -255,7 +227,6 @@ def collapseExons(g, exonDb):
 
 def deleteGap(exons):
     i = 0
-
     newExon = []
     currExon = exons[i]
 
@@ -498,43 +469,65 @@ def buildGeneModels(exonDb, intronDb, clusters, bigCluster, isMin=False):
     return geneId, numTranscripts
 
 
+def merge_exons(exons):
+    for chrom in exons:
+        exons[chrom] = sorted(exons[chrom], key=lambda x: x.start)
+    
+    new_exons = {}
+
+    for chrom in exons:
+        i = 0
+        new_exons[chrom] = []
+        curr_exon = exons[chrom][i]
+        while i < (len(exons[chrom])):
+            try:
+                next_exon = exons[chrom][i+1]
+            except IndexError:
+                return new_exons
+            else:
+                if next_exon.start <= curr_exon.end:
+                    if next_exon.end > curr_exon.end:
+                        next_exon.start = curr_exon.start
+                        curr_exon = next_exon
+                else:
+                    new_exons[chrom].append(curr_exon)
+                    curr_exon = next_exon
+
+            i += 1
+
 def main(inputFiles):
     clusterNo = 0
-    single_exons = []
+    single_exons = {}
 
     for inputFile in inputFiles:
         print >> stderr, 'Parsing alignments from %s...' % inputFile
-        for n, (exons, removed) in enumerate(
-                                            parsePSL(open(inputFile)), start=1):
-            #for exons in selected_exons:
-
-            '''Alignments may contain small gaps.
-            The program fills up the gaps to obtain a complete exon. 
-            A maximum size of a gap can be adjusted by assigning a new
-            value to GAP_SIZE parameter on a command line.
-
-            '''
-            exons = deleteGap(exons)  # fill up a gap <= GAP_SIZE
-
+        for n, exons in enumerate(parsePSL(open(inputFile)), start=1):
             if len(exons) > 1:
                 addExon(exonDb, exons)
                 addIntrons(exons, intronDb, exonDb, clusters, clusterNo)
                 clusterNo += 1
             else:
-                single_exons.append(exons[0])
+                if exons[0].chrom not in single_exons:
+                    single_exons[exons[0].chrom] = [exons[0]]
+                else:
+                    single_exons[exons[0].chrom].append(exons[0])
 
         if n % 1000 == 0:
-            print >> stderr, '...', n, ': excluded', removed
+            print >> stderr, '...', n
 
     bigCluster = mergeClusters(exonDb)
     geneId, numTranscripts = buildGeneModels(exonDb,
                                     intronDb, clusters,
                                     bigCluster, args.min)
 
-    for exon in single_exons:
-        geneId += 1
-        numTranscripts += 1
-        printBedGraphSingle(exon, geneId, 1)
+    merged_single_exons = merge_exons(single_exons)
+
+    for chrom in merged_single_exons:
+        for exon in merged_single_exons[chrom]:
+            geneId += 1
+            numTranscripts += 1
+            printBedGraphSingle(exon, geneId, 1)
+
 
     print >> stderr, '\nTotal exons = %d' % len(exonDb)
     print >> stderr, 'Total genes = %d' % geneId
