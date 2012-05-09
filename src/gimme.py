@@ -29,10 +29,10 @@ from utils import pslparser, get_min_path
 
 
 GAP_SIZE = 10 # a minimum intron size (bp)
-MAX_INTRON = 2000000 # a maximum intron size (bp)
+MAX_INTRON = 100000 # a maximum intron size (bp)
 MIN_UTR = 100 # a minimum UTR size (bp)
 MIN_EXON = 10 # a minimum exon size (bp)
-SMALL_EXON_ALLOWED = 1 # number of small exons allowed in each transcript
+MIN_TRANSCRIPT_LEN = 300 # a minimum transcript length (bp)
 
 exonDb = {}
 intronDb = {}
@@ -52,7 +52,7 @@ class ExonObj:
         return '%s:%d-%d' % (self.chrom, self.start, self.end)
 
 
-def parsePSL(psl_file, max_intron=MAX_INTRON, min_intron=MIN_EXON):
+def parsePSL(psl_file, min_exon=MIN_EXON):
     '''Reads alignments from PSL format and create
     exon objects from each transcript.
 
@@ -68,10 +68,10 @@ def parsePSL(psl_file, max_intron=MAX_INTRON, min_intron=MIN_EXON):
             exon = ExonObj(pslObj.attrib['tName'], exon_start, exon_end)
             exons.append(exon)
 
-        '''Alignments may contain small gaps.
-        The program fills up the gaps to obtain a complete exon. 
-        A maximum size of a gap can be adjusted by assigning a new
-        value to GAP_SIZE parameter on a command line.
+        '''Alignments may contain small gaps. The program fills
+        up gaps to obtain a complete exon.  A maximum size of
+        a gap can be adjusted by assigning a new value to GAP_SIZE
+        parameter on a command line.
 
         '''
         exons = deleteGap(exons)  # fill up a gap <= GAP_SIZE
@@ -79,10 +79,9 @@ def parsePSL(psl_file, max_intron=MAX_INTRON, min_intron=MIN_EXON):
         kept = []
 
         for exon in exons:
-            if (exon.end - exon.start) + 1 >= MIN_EXON:
+            if (exon.end - exon.start) + 1 >= min_exon:
                 kept.append(exon)
             else:
-                print >> sys.stderr, exon, 'too small!'
                 if kept:
                     yield kept
                     kept = []
@@ -91,7 +90,7 @@ def parsePSL(psl_file, max_intron=MAX_INTRON, min_intron=MIN_EXON):
 
 
 def addIntrons(exons, intronDb, exonDb,
-                clusters, clusterNo, max_intron=MAX_INTRON):
+                clusters, clusterNo):
     '''Get introns from a set of exons.'''
 
     existingClusters = set([])
@@ -107,6 +106,9 @@ def addIntrons(exons, intronDb, exonDb,
         else:
             intronStart = currExon.end + 1
             intronEnd = nextExon.start - 1
+
+            if intronEnd - intronStart > MAX_INTRON:
+                continue
 
             currExon.nextExons.add(str(nextExon))
 
@@ -144,7 +146,7 @@ def addIntrons(exons, intronDb, exonDb,
             cluster = nx.DiGraph(exons=set([]))
             for cl in existingClusters:
                 cluster.add_edges_from(clusters[cl].edges())
-                k = clusters.pop(cl)
+                clusters.pop(cl)
 
             for intron in cluster.nodes():
                 intronDb[intron].graph['cluster'] = clusterNo
@@ -334,13 +336,8 @@ def checkCriteria(transcript):
     exons = sorted([exonDb[e] for e in transcript],
                             key=lambda x: (x.start, x.end))
 
-    blockSizes = [exon.end - exon.start for exon in exons]
-    small_exons = 0
-    for size in blockSizes:
-        if size < MIN_EXON:
-            small_exons += 1
-
-    if small_exons > SMALL_EXON_ALLOWED:
+    transcript_length = sum([exon.end - exon.start for exon in exons])
+    if transcript_length <= MIN_TRANSCRIPT_LEN:
         return False
     else:
         return True
@@ -438,16 +435,16 @@ def buildGeneModels(exonDb, intronDb, clusters, bigCluster, isMin=False):
 
             if g.nodes():
                 geneId += 1
-                transId = 1
+                transId = 0
                 collapseExons(g, exonDb)
                 if not isMin:
                     for transcript in getPath(g):
-                        #if checkCriteria(transcript):
-                        printBedGraph(transcript, geneId, transId)
-                        numTranscripts += 1
-                        transId += 1
-                        #else:
-                        #    excluded += 1
+                        if checkCriteria(transcript):
+                            transId += 1
+                            numTranscripts += 1
+                            printBedGraph(transcript, geneId, transId)
+                        else:
+                            excluded += 1
 
                 else:
                     max_paths = getPath(g)
@@ -456,12 +453,14 @@ def buildGeneModels(exonDb, intronDb, clusters, bigCluster, isMin=False):
                         paths.append(get_min_path.getEdges(pth))
 
                     for transcript in get_min_path.getMinPaths(paths):
-                        #if checkCriteria(transcript):
-                        printBedGraph(transcript, geneId, transId)
-                        numTranscripts += 1
-                        transId += 1
-                        #else:
-                        #    excluded += 1
+                        if checkCriteria(transcript):
+                            numTranscripts += 1
+                            transId += 1
+                            printBedGraph(transcript, geneId, transId)
+                        else:
+                            excluded += 1
+            if transId == 0:
+                geneId -= 1
 
         if cl_num % 1000 == 0:
             print >> stderr, '...', cl_num, ': excluded', excluded, 'transcript(s)'
