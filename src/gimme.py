@@ -544,6 +544,8 @@ if __name__=='__main__':
             help='a maximum gap size (bp) (default: %(default)s)')
     parser.add_argument('--MAX_INTRON', type=int, default=MAX_INTRON,
             help='a maximum intron size (bp) (default: %(default)s)')
+    parser.add_argument('--MIN_TRANSCRIPT_LEN', type=int, default=MIN_TRANSCRIPT_LEN,
+            help='a minimum size of transcript (bp) (default: %(default)s)')
     parser.add_argument('--min', action='store_true',
             help='report a minimum set of isoforms')
     parser.add_argument('input', type=str, nargs='+',
@@ -575,6 +577,14 @@ if __name__=='__main__':
         print >> sys.stderr, 'User defined MAX_INTRON = %d' % MAX_INTRON
     else:
         print >> sys.stderr, 'Default MAX_INTRON = %d' % MAX_INTRON
+
+    if args.MIN_TRANSCRIPT_LEN <= 0:
+        raise SystemExit, 'Invalid transcript size (<=0)'
+    elif args.MIN_TRANSCRIPT_LEN != MIN_TRANSCRIPT_LEN:
+        MIN_TRANSCRIPT_LEN = args.MIN_TRANSCRIPT_LEN
+        print >> sys.stderr, 'User defined MIN_TRANSCRIPT_LEN = %d' % MIN_TRANSCRIPT_LEN
+    else:
+        print >> sys.stderr, 'Default MIN_TRANSCRIPT_LEN = %d' % MIN_TRANSCRIPT_LEN
 
     if args.min:
         print >> sys.stderr, 'Search for a minimum set of isoforms = yes'
