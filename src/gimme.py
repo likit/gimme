@@ -511,8 +511,8 @@ def main(inputFiles):
                 else:
                     single_exons[exons[0].chrom].append(exons[0])
 
-        if n % 1000 == 0:
-            print >> stderr, '...', n
+            if n % 1000 == 0:
+                print >> stderr, '...', n
 
     bigCluster = mergeClusters(exonDb)
     geneId, numTranscripts = buildGeneModels(exonDb,
