@@ -62,19 +62,11 @@ def parseCDS(filename):
             strand = '-' if 'minus' in line else '+'
             values = line.split()
             name = values[0].strip('>').strip(';')
-            length = int(values[4].split('=')[-1].strip(';'))
-            if 'blastx' in line:
-                if strand == '+':
-                    start = int(values[2]) - 1
-                    end = int(values[3]) - 1
-                else:
-                    start = length - int(values[3])
-                    end = length - int(values[2])
-            else:
-                start = int(values[2]) - 1
-                end = int(values[3]) - 1
 
-            assert start < end
+            start = int(values[2]) - 1
+            end = int(values[3]) - 1
+
+            assert start < end, line.strip()
             cds[name] = (name, start, end, strand)
 
     return cds
@@ -96,9 +88,18 @@ def findCDS(bedFile, cds):
     for row, exons in parseBed(bedFile):
         tree = buildIntervalTree(exons)
 
+        trans_size = sum([(exon.cEnd - exon.cStart) for exon in exons])
+
         exon = exons[0]
         try:
             name, start, end, strand = cds[exon.seqId]
+            if strand == '-':
+                new_end = trans_size - start
+                new_start = trans_size - end
+                start = new_start
+                end = new_end
+                assert start < end, "%d-%d %d %s" % (start, end, trans_size, exon.seqId)
+
         except KeyError:
             row[5] = '.'
             writer.writerow(row)
