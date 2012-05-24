@@ -18,6 +18,6 @@ def skipped_exon(gene):
         for nb in neighbors:
             for s in gene.successors(nb):
                 if s in neighbors:
-                    skipped_exons.add((node.name,s.name))
+                    skipped_exons.add((node,s))
 
     return skipped_exons
