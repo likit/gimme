@@ -65,7 +65,7 @@ def printBED(transcript):
     writer.writerow([transcript.chrom,
                     chromStart,
                     chromEnd,
-                    "%s.%s" % (transcript.id, transcript.geneid),
+                    "%s.%s" % (transcript.geneid, transcript.id),
                     1000,
                     transcript.strand,
                     chromStart,
