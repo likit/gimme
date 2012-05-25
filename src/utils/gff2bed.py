@@ -27,6 +27,7 @@ def parse(filename):
 
             if not name:
                 name = transId
+                gene_name = transId
 
             if transId == name:
                 chrom = row[0]
@@ -36,16 +37,17 @@ def parse(filename):
                 exons.append((start, end))
             else:
                 exons = sorted(exons, key=lambda x: x[0])
-                yield Transcript(chrom, name, strand, exons, geneId)
+                yield Transcript(chrom, name, strand, exons, gene_name)
 
                 chrom = row[0]
                 start = int(row[3]) - 1
                 end = int(row[4])
                 strand = row[6]
                 name = transId
+                gene_name = geneId
                 exons = [(start, end)]
 
-    yield Transcript(chrom, name, strand, exons, geneId)
+    yield Transcript(chrom, name, strand, exons, gene_name)
 
 
 def printBED(transcript):
