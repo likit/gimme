@@ -13,7 +13,7 @@ from collections import namedtuple
 
 stderr = sys.stderr
 
-Transcript = namedtuple('Transcript', ['chrom', 'id', 'strand', 'exons'])
+Transcript = namedtuple('Transcript', ['chrom', 'id', 'strand', 'exons', 'geneid'])
 
 def parse(filename):
     reader = csv.reader(open(filename), dialect='excel-tab')
@@ -23,6 +23,7 @@ def parse(filename):
     for row in reader:
         if row[2] == 'exon':
             transId = eval(row[-1].split('; ')[1].split(' ')[-1])
+            geneId = eval(row[-1].split('; ')[0].split(' ')[-1])
 
             if not name:
                 name = transId
@@ -35,7 +36,7 @@ def parse(filename):
                 exons.append((start, end))
             else:
                 exons = sorted(exons, key=lambda x: x[0])
-                yield Transcript(chrom, name, strand, exons)
+                yield Transcript(chrom, name, strand, exons, geneId)
 
                 chrom = row[0]
                 start = int(row[3]) - 1
@@ -44,7 +45,7 @@ def parse(filename):
                 name = transId
                 exons = [(start, end)]
 
-    yield Transcript(chrom, name, strand, exons)
+    yield Transcript(chrom, name, strand, exons, geneId)
 
 
 def printBED(transcript):
@@ -62,7 +63,7 @@ def printBED(transcript):
     writer.writerow([transcript.chrom,
                     chromStart,
                     chromEnd,
-                    transcript.id,
+                    "%s.%s" % (transcript.id, transcript.geneid),
                     1000,
                     transcript.strand,
                     chromStart,
