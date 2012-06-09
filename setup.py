@@ -8,4 +8,8 @@ setup(
         # package structure
         packages=find_packages('src'),
         package_dir={'':'src'},
+
+        install_requires = [
+                            'networkx == 1.5',
+                            ]
         )
