@@ -11,5 +11,6 @@ setup(
 
         install_requires = [
                             'networkx == 1.5',
+                            'pygr == 0.8.2',
                             ]
         )
