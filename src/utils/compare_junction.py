@@ -155,92 +155,119 @@ def adjustParser(inputFile1, format1, inputFile2, format2, db1, db2):
 
 def main(args):
     db1 = set([])
-    db2= set([])
+    if args.all:
+        '''Only print out all junctions without comparing junctions.
 
-    if not args.bed and not args.psl:
-        raise ValueError, 'No input file found.'
-    elif not args.bed and args.psl:
-        firstFile, secondFile = args.psl
-        first, second = adjustParser(firstFile, 'psl',
-                                        secondFile, 'psl',
-                                        db1,
-                                        db2)
-    elif not args.psl and args.bed:
-        firstFile, secondFile = args.bed
-        first, second = adjustParser(firstFile, 'bed',
-                                        secondFile, 'bed',
-                                        db1,
-                                        db2)
-    elif len(args.bed) == 1 and len(args.psl) == 1:
-        firstFile = args.bed[0]
-        secondFile = args.psl[0]
-        first, second = adjustParser(firstFile, 'bed',
-                                        secondFile, 'psl',
-                                        db1,
-                                        db2)
-    elif len(args.bed) + len(args.psl) < 2:
-        raise ValueError, 'Need two input files to compare.'
+        Only one input file needed.
 
-    elif len(args.bed) + len(args.psl) > 2:
-        raise ValueError, 'Too many input files.'
+        '''
+        if args.psl:
+            parser = parsePSL
+            inputFileName1 = args.psl[0]
+        elif args.bed:
+            parser = parseBED
+            inputFileName1 = args.bed[0]
+        else: # default format
+            parser = parseBED
+            inputFileName1 = args.bed[0]
 
-    for filename, parser, db in ((first), (second)):
-        print >> sys.stderr, "Parsing alignment from %s ..." % (filename)
-        for n, exons in enumerate(parser(filename), start=1):
+        outputFileName1 = inputFileName1 + '_all_sp.txt'
+
+        print >> sys.stderr, "Parsing alignment from %s ..." % (inputFileName1)
+        for n, exons in enumerate(parser(inputFileName1), start=1):
 
             if len(exons) > 1:
                 '''Skip a single exon.'''
 
                 if parser == parsePSL:
-                    addIntron(exons, db)
+                    addIntron(exons, db1)
                 else:
-                    addIntronBed(exons, db)
+                    addIntronBed(exons, db1)
 
             if n % 1000 == 0:
                 print >> sys.stderr, '...', n
 
-    print >> sys.stderr, "Total introns in %s = %d\n" % (firstFile, len(db1))
-    print >> sys.stderr, "Total introns in %s = %d\n" % (secondFile, len(db2))
-
-    firstDiff = db1.difference(db2)
-    secondDiff = db2.difference(db1)
-
-    print >> sys.stderr, "Total introns not in %s = %d" % \
-                                (secondFile, len(firstDiff))
-    print >> sys.stderr, "Total introns not in %s = %d" % \
-                                (firstFile, len(secondDiff))
-
-    inputFileName1 = os.path.basename(firstFile)
-    inputFileName2 = os.path.basename(secondFile)
-
-    if args.all:
-        outputFileName1 = inputFileName1 + '_all_sp.txt'
-        outputFileName2 = inputFileName2 + '_all_sp.txt'
+        print >> sys.stderr, "Total introns in %s = %d\n" % (inputFileName1, len(db1))
 
         op = open(outputFileName1, 'w')
         for junc in db1:
             print >> op, junc
         op.close()
 
-        op = open(outputFileName2, 'w')
-        for junc in db2:
-            print >> op, junc
-        op.close()
+    else:
+        db2= set([])
 
-    outputFileName1 = inputFileName1 + '_diff_sp.txt'
-    outputFileName2 = inputFileName2 + '_diff_sp.txt'
+        if not args.bed and not args.psl:
+            raise ValueError, 'No input file found.'
+        elif not args.bed and args.psl:
+            firstFile, secondFile = args.psl
+            first, second = adjustParser(firstFile, 'psl',
+                                            secondFile, 'psl',
+                                            db1,
+                                            db2)
+        elif not args.psl and args.bed:
+            firstFile, secondFile = args.bed
+            first, second = adjustParser(firstFile, 'bed',
+                                            secondFile, 'bed',
+                                            db1,
+                                            db2)
+        elif len(args.bed) == 1 and len(args.psl) == 1:
+            firstFile = args.bed[0]
+            secondFile = args.psl[0]
+            first, second = adjustParser(firstFile, 'bed',
+                                            secondFile, 'psl',
+                                            db1,
+                                            db2)
+        elif len(args.bed) + len(args.psl) < 2:
+            raise ValueError, 'Need two input files to compare.'
 
-    if firstDiff:
-        op = open(outputFileName1, 'w')
-        for junc in firstDiff:
-            print >> op, junc
-        op.close()
+        elif len(args.bed) + len(args.psl) > 2:
+            raise ValueError, 'Too many input files.'
 
-    if secondDiff:
-        op = open(outputFileName2, 'w')
-        for junc in secondDiff:
-            print >> op, junc
-        op.close()
+        for filename, parser, db in ((first), (second)):
+            print >> sys.stderr, "Parsing alignment from %s ..." % (filename)
+            for n, exons in enumerate(parser(filename), start=1):
+
+                if len(exons) > 1:
+                    '''Skip a single exon.'''
+
+                    if parser == parsePSL:
+                        addIntron(exons, db)
+                    else:
+                        addIntronBed(exons, db)
+
+                if n % 1000 == 0:
+                    print >> sys.stderr, '...', n
+
+        print >> sys.stderr, "Total introns in %s = %d\n" % (firstFile, len(db1))
+        print >> sys.stderr, "Total introns in %s = %d\n" % (secondFile, len(db2))
+
+        firstDiff = db1.difference(db2)
+        secondDiff = db2.difference(db1)
+
+        print >> sys.stderr, "Total introns not in %s = %d" % \
+                                    (secondFile, len(firstDiff))
+        print >> sys.stderr, "Total introns not in %s = %d" % \
+                                    (firstFile, len(secondDiff))
+
+        inputFileName1 = os.path.basename(firstFile)
+        inputFileName2 = os.path.basename(secondFile)
+
+
+        outputFileName1 = inputFileName1 + '_diff_sp.txt'
+        outputFileName2 = inputFileName2 + '_diff_sp.txt'
+
+        if firstDiff:
+            op = open(outputFileName1, 'w')
+            for junc in firstDiff:
+                print >> op, junc
+            op.close()
+
+        if secondDiff:
+            op = open(outputFileName2, 'w')
+            for junc in secondDiff:
+                print >> op, junc
+            op.close()
 
 
 if __name__=='__main__':
