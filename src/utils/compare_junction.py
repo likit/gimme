@@ -107,7 +107,7 @@ def addIntron(exons, intronDb):
             try:
                 assert currExon.end < nextExon.start, '%s %s %s' % (currExon, nextExon, intron)
             except AssertionError:
-                print >> sys.stderr, '%s skipped ' % intron
+                pass
             else:
                 if nextExon.start - currExon.end > MIN_INTRON:
                     intronDb.add(intron)
