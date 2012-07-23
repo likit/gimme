@@ -12,8 +12,8 @@ def parseBED(filename):
     reader = csv.reader(open(filename), dialect='excel-tab')
     for row in reader:
         chrom = row[0]
-        chrom_start = int(row[1])
-        chrom_end = int(row[2])
+        chrom_start = int(row[1]) + 1
+        chrom_end = int(row[2]) + 1
         transcript_id = row[3]
         strand = row[5]
         exon_sizes = [int(s) for s in row[10].split(',')]
