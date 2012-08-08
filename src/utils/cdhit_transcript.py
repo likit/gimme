@@ -20,22 +20,6 @@ def parseBED(bed_file, kept):
         if n % 10000 == 0:
             print >> sys.stderr, '...', n
 
-
-def parse_clstr(clstr_file):
-    kept = set()
-
-    print >> sys.stderr, 'reading sequences from .clstr file'
-    for n, line in enumerate(open(clstr_file), start=1):
-        if '*' in line:
-            tr_name = line.split()[2]
-            tr_name = tr_name.lstrip('>').rstrip('...')
-            kept.add(tr_name)
-
-        if n % 10000 == 0:
-            print >> sys.stderr, '...', n
-
-    return kept
-
 def parse_reps(reps_file):
     kept = set()
     n = 0
