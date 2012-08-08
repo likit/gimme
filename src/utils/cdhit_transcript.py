@@ -36,11 +36,26 @@ def parse_clstr(clstr_file):
 
     return kept
 
+def parse_reps(reps_file):
+    kept = set()
+    n = 0
+
+    print >> sys.stderr, 'reading sequences from reps file'
+    for line in open(reps_file):
+        if line.startswith('>'):
+            kept.add(line.strip().lstrip('>'))
+            n += 1
+            if n % 10000 == 0:
+                print >> sys.stderr, '...', n
+        else:
+            continue
+
+    return kept
 
 def main(args):
     bed_file = args[1]
-    clstr_file = args[2]
-    parseBED(bed_file, parse_clstr(clstr_file))
+    reps_file = args[2]
+    parseBED(bed_file, parse_reps(reps_file))
 
 
 if __name__=='__main__':
