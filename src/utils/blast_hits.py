@@ -4,9 +4,9 @@ from Bio.Blast import NCBIXML
 def getHits(inputFile, evalue=0.01):
     '''This function parses Blast output -- XML format
     
-    and calculate bitscore/length ratio for each match
-    that has e-value less than a given one. The max score
-    of each queryNames is reported to stdout.
+    and reports a score for each match that has e-value less
+    than a given one or a default evalue (0.01).
+    The max score of each query is reported to stdout.
 
     '''
     handle = open(inputFile)
