@@ -551,7 +551,7 @@ if __name__=='__main__':
     parser.add_argument('input', type=str, nargs='+',
                         help='input file(s) in PSL format')
     parser.add_argument('--version', action='version',
-                        version='%(prog)s version 0.8')
+                        version='%(prog)s version 0.9')
 
     args = parser.parse_args()
     if args.MIN_UTR <=0:
