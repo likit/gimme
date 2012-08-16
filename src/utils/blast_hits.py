@@ -9,9 +9,10 @@ def getHits(inputFile, evalue=0.01):
     The max score of each query is reported to stdout.
 
     '''
+    queryWithMatch = 0
     handle = open(inputFile)
     blastRecords = NCBIXML.parse(handle)
-    for blastRecord in blastRecords:
+    for n, blastRecord in enumerate(blastRecords, start=1):
         queryName = blastRecord.query.split()[0]
         maxScore = None
         maxScoreSubj = None
@@ -27,10 +28,13 @@ def getHits(inputFile, evalue=0.01):
                                                     maxScore,
                                                     maxScoreSubj,
                                                     )
-            print >> sys.stderr, '%s\t%.16f\t%s' % (queryName,
-                                                    maxScore,
-                                                    maxScoreSubj,
-                                                    )
+            queryWithMatch += 1
+
+        if n % 100 == 0:
+            print >> sys.stderr, '...', n
+    pct = float(queryWithMatch)/n * 100
+    print >> sys.stderr, 'Total query', n
+    print >> sys.stderr, 'Total query with match %d (%.02f)' % (queryWithMatch, pct)
 
 if __name__=='__main__':
     inputFile = sys.argv[1]
