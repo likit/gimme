@@ -52,6 +52,33 @@ class ExonObj:
         return '%s:%d-%d' % (self.chrom, self.start, self.end)
 
 
+def parseBED(bed_file, min_exon=MIN_EXON):
+    '''Reads alignments from BED format and create
+    exon objects from each transcript.
+
+    '''
+    reader = csv.reader(bed_file, dialect='excel-tab')
+    for row in reader:
+        exons = []
+        chrom = row[0]
+        chrom_start = int(row[1])
+
+        exon_sizes = [int(s) for s in row[10].split(',')]
+        exon_starts = [chrom_start + int(s) for s in row[11].split(',')]
+
+        for i in range(len(exon_starts)):
+            exon_start = exon_starts[i]
+            exon_end = exon_start + exon_sizes[i]
+
+            exon = ExonObj(chrom, exon_start, exon_end)
+            exons.append(exon)
+
+        exons = deleteGap(exons)
+
+        for kept_exons in remove_small_exon(exons, min_exon):
+            yield kept_exons
+
+
 def parsePSL(psl_file, min_exon=MIN_EXON):
     '''Reads alignments from PSL format and create
     exon objects from each transcript.
@@ -61,7 +88,6 @@ def parsePSL(psl_file, min_exon=MIN_EXON):
         exons = []
 
         for i in range(len(pslObj.attrib['tStarts'])):
-
             exon_start = pslObj.attrib['tStarts'][i]
             exon_end = exon_start + pslObj.attrib['blockSizes'][i]
 
@@ -72,6 +98,7 @@ def parsePSL(psl_file, min_exon=MIN_EXON):
 
         for kept_exons in remove_small_exon(exons, min_exon):
             yield kept_exons
+
 
 def remove_small_exon(exons, min_exon):
     '''A small exon is removed and a transcript is split into
@@ -509,7 +536,7 @@ def main(inputFiles):
 
     for inputFile in inputFiles:
         print >> stderr, 'Parsing alignments from %s...' % inputFile
-        for n, exons in enumerate(parsePSL(open(inputFile)), start=1):
+        for n, exons in enumerate(parseBED(open(inputFile)), start=1):
             if len(exons) > 1:
                 addExon(exonDb, exons)
                 addIntrons(exons, intronDb, exonDb, clusters, clusterNo)
