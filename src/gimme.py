@@ -78,17 +78,17 @@ def remove_small_exon(exons, min_exon):
     parts that precedes and succeeds the exon.
 
     '''
-        kept = []
+    kept = []
 
-        for exon in exons:
-            if (exon.end - exon.start) + 1 >= min_exon:
-                kept.append(exon)
-            else:
-                if kept:
-                    yield kept
-                    kept = []
-        if kept:
-            yield kept
+    for exon in exons:
+        if (exon.end - exon.start) + 1 >= min_exon:
+            kept.append(exon)
+        else:
+            if kept:
+                yield kept
+                kept = []
+    if kept:
+        yield kept
 
 
 def addIntrons(exons, intronDb, exonDb,
@@ -238,7 +238,7 @@ def deleteGap(exons):
     '''
 
     i = 0
-    newExon = []
+    newExons = []
     currExon = exons[i]
 
     while True:
@@ -250,12 +250,12 @@ def deleteGap(exons):
             if nextExon.start - currExon.end <= GAP_SIZE:
                 currExon.end = nextExon.end
             else:
-                newExon.append(currExon)
+                newExons.append(currExon)
                 currExon = nextExon
         i += 1
 
-    newExon.append(currExon)
-    return newExon
+    newExons.append(currExon)
+    return newExons
 
 
 def addExon(db, exons):
