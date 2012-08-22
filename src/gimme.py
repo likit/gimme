@@ -68,14 +68,16 @@ def parsePSL(psl_file, min_exon=MIN_EXON):
             exon = ExonObj(pslObj.attrib['tName'], exon_start, exon_end)
             exons.append(exon)
 
-        '''Alignments may contain small gaps. The program fills
-        up gaps to obtain a complete exon.  A maximum size of
-        a gap can be adjusted by assigning a new value to GAP_SIZE
-        parameter on a command line.
+        exons = deleteGap(exons)
 
-        '''
-        exons = deleteGap(exons)  # fill up a gap <= GAP_SIZE
+        for kept_exons in remove_small_exon(exons, min_exon):
+            yield kept_exons
 
+def remove_small_exon(exons, min_exon):
+    '''A small exon is removed and a transcript is split into
+    parts that precedes and succeeds the exon.
+
+    '''
         kept = []
 
         for exon in exons:
@@ -228,6 +230,13 @@ def collapseExons(g, exonDb):
 
 
 def deleteGap(exons):
+    '''Alignments may contain small gaps. The program fills
+    up gaps to obtain a complete exon.  A maximum size of
+    a gap can be adjusted by assigning a new value to GAP_SIZE
+    parameter on a command line.
+
+    '''
+
     i = 0
     newExon = []
     currExon = exons[i]
