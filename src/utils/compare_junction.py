@@ -23,13 +23,14 @@ import pslparser
 
 MIN_INTRON = 21
 
-Transcript = namedtuple('Transcript', ['chrom',
+Transcript = namedtuple('Transcript', [
+                                        'chrom',
                                         'start',
                                         'end',
                                         'blockSizes',
                                         'blockStarts',
                                         'name',
-                                        ])
+                                    ])
 
 class Exon(object):
     def __init__(self, chrom, start, end):
@@ -100,12 +101,12 @@ def addIntron(exons, intronDb):
         except IndexError:
             continue
         else:
-            intron = "%s:%d-%d" % (currExon.chrom,
-                                        currExon.end,
-                                        nextExon.start)
+            intron = "%s:%d-%d" % \
+                        (currExon.chrom, currExon.end, nextExon.start)
 
             try:
-                assert currExon.end < nextExon.start, '%s %s %s' % (currExon, nextExon, intron)
+                assert currExon.end < nextExon.start, \
+                                '%s %s %s' % (currExon, nextExon, intron)
             except AssertionError:
                 pass
             else:
@@ -173,7 +174,8 @@ def main(args):
 
         outputFileName1 = inputFileName1 + '_all_sp.txt'
 
-        print >> sys.stderr, "Parsing alignment from %s ..." % (inputFileName1)
+        print >> sys.stderr, \
+                "Parsing alignment from %s ..." % (inputFileName1)
         for n, exons in enumerate(parser(inputFileName1), start=1):
 
             if len(exons) > 1:
@@ -187,7 +189,8 @@ def main(args):
             if n % 1000 == 0:
                 print >> sys.stderr, '...', n
 
-        print >> sys.stderr, "Total introns in %s = %d\n" % (inputFileName1, len(db1))
+        print >> sys.stderr, \
+                "Total introns in %s = %d\n" % (inputFileName1, len(db1))
 
         op = open(outputFileName1, 'w')
         for junc in db1:
@@ -239,8 +242,10 @@ def main(args):
                 if n % 1000 == 0:
                     print >> sys.stderr, '...', n
 
-        print >> sys.stderr, "Total introns in %s = %d\n" % (firstFile, len(db1))
-        print >> sys.stderr, "Total introns in %s = %d\n" % (secondFile, len(db2))
+        print >> sys.stderr, \
+                    "Total introns in %s = %d\n" % (firstFile, len(db1))
+        print >> sys.stderr, \
+                    "Total introns in %s = %d\n" % (secondFile, len(db2))
 
         firstDiff = db1.difference(db2)
         secondDiff = db2.difference(db1)
