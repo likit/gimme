@@ -52,7 +52,7 @@ def localBLAST_gene(inputFile, evalue=0.001):
     handle = open(inputFile)
     blastRecords = NCBIXML.parse(handle)
     geneName = None
-    for blastRecord in blastRecords:
+    for n, blastRecord in enumerate(blastRecords, start=1):
         queryName = blastRecord.query.split()[0]
         try:
             chrom, gene = queryName.split(':')
@@ -76,9 +76,6 @@ def localBLAST_gene(inputFile, evalue=0.001):
                     for geneName, ratio, \
                             subj in ratios:
                         print >> sys.stdout, '%s\t%.16f\t%s' % (geneName,
-                                                                ratio,
-                                                                subj)
-                        print >> sys.stderr, '%s\t%.16f\t%s' % (geneName,
                                                                 ratio,
                                                                 subj)
                 ratios = []
@@ -121,6 +118,8 @@ def localBLAST_gene(inputFile, evalue=0.001):
                             if (subj == maxRatioSubj and maxRatio > ratio):
                                 ratios[i] = (geneName, maxRatio, maxRatioSubj)
 
+        if n % 1000 == 0:
+            print >> sys.stderr, '...', n
     '''Print out the result of the last record'''
     if ratios:
         for geneName, ratio, subj in ratios:
@@ -137,7 +136,7 @@ def localBLAST_isoform(inputFile, evalue=0.01):
     '''
     handle = open(inputFile)
     blastRecords = NCBIXML.parse(handle)
-    for blastRecord in blastRecords:
+    for n, blastRecord in enumerate(blastRecords, start=1):
         queryName = blastRecord.query.split()[0]
         chrom, gene = queryName.split(':')
         isoform = blastRecord.query.split()[0]
@@ -154,12 +153,11 @@ def localBLAST_isoform(inputFile, evalue=0.01):
                         # bestHsp = hsp
                         # bestHsp.isoform = isoform
         if maxRatio:
-            print >> sys.stdout, '%s\t%.16f\t%s\t%f\t%f' % (isoform,
-                                                    maxRatio,
-                                                    maxRatioSubj,
-                                                    # bestHsp.align_length,
-                                                    # bestHsp.identities,
-                                                    )
+            print >> sys.stdout, '%s\t%.16f\t%s' % \
+                                (isoform, maxRatio, maxRatioSubj,)
+        if n % 1000 == 0:
+            print >> sys.stderr, '...', n
+    print >> sys.stderr, ''
 
 
 if __name__ == '__main__':
