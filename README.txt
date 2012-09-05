@@ -115,13 +115,3 @@ Utilities
 Gimme contains many useful utilities that work with PSL, BED and SAM format.
 Some programs are useful for building gene models.
 Others are useful for working with reads, assembly sequences etc.
-
-get_min_path.py
-===============
-
-The program finds a minimal set of transcripts that contains all edges from
-an exon graph.
-
-Example::
-
-    $ python ./src/utils/get_min_path.py models.bed > models.min.bed
