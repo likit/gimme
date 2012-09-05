@@ -4,6 +4,7 @@ import sys
 import os
 
 from unittest import TestCase
+import unittest
 import networkx as nx
 
 source_path = os.path.abspath('src')
@@ -568,3 +569,6 @@ class TestAddIntrons(TestCase):
         addIntrons(self.exons, self.intronDb, self.exonDb,
                     self.clusters, self.clusterNo)
         self.assertEqual(len(self.intronDb), 5)
+
+if __name__=='__main__':
+    unittest.main()
