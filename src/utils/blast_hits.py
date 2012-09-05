@@ -34,7 +34,8 @@ def getHits(inputFile, evalue=0.01):
             print >> sys.stderr, '...', n
     pct = float(queryWithMatch)/n * 100
     print >> sys.stderr, 'Total query', n
-    print >> sys.stderr, 'Total query with match %d (%.02f)' % (queryWithMatch, pct)
+    print >> sys.stderr, 'Total query with match %d (%.02f)' % \
+                            (queryWithMatch, pct)
 
 if __name__=='__main__':
     inputFile = sys.argv[1]
