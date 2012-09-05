@@ -530,13 +530,37 @@ def merge_exons(exons):
 
             i += 1
 
+def detect_format(inputFile):
+    fp = open(inputFile)
+    cols = fp.readline().split()
+    fp.close()
+
+    if len(cols) == 21:
+        if int(cols[11]) <= int(cols[12]) and cols[8] in ['+', '.', '-']:
+            return 'PSL'
+    elif len(cols) == 12:
+        if int(cols[1]) <= int(cols[2]) and cols[5] in ['+', '.', '-']:
+            return 'BED'
+    else:
+        return None
+
 def main(inputFiles):
     clusterNo = 0
     single_exons = {}
 
     for inputFile in inputFiles:
+        input_format = detect_format(inputFile)
+        if input_format == 'PSL':
+            parse = parsePSL
+        elif input_format == 'BED':
+            parse = parseBED
+        else:
+            print >> stderr, 'ERROR: Unrecognized input format. ' + \
+                    'Use utils/gff2bed.py to convert GFF to BED.'
+            raise SystemExit
+
         print >> stderr, 'Parsing alignments from %s...' % inputFile
-        for n, exons in enumerate(parseBED(open(inputFile)), start=1):
+        for n, exons in enumerate(parse(open(inputFile)), start=1):
             if len(exons) > 1:
                 addExon(exonDb, exons)
                 addIntrons(exons, intronDb, exonDb, clusters, clusterNo)
@@ -567,25 +591,26 @@ def main(inputFiles):
     print >> stderr, '\nTotal exons = %d' % len(exonDb)
     print >> stderr, 'Total genes = %d' % geneId
     print >> stderr, 'Total transcripts = %d' % (numTranscripts)
-    print >> stderr, 'Isoform/gene = %.2f' % (float(numTranscripts) / len(clusters))
-
+    print >> stderr, 'Isoform/gene = %.2f' % (float(numTranscripts)
+                                                / len(clusters))
 
 
 if __name__=='__main__':
 
     parser = argparse.ArgumentParser(prog='Gimme')
     parser.add_argument('--MIN_UTR', type=int, default=MIN_UTR,
-            help='a cutoff size of alternative UTRs (bp) (default: %(default)s)')
+        help='a cutoff size of alternative UTRs (bp) (default: %(default)s)')
     parser.add_argument('--GAP_SIZE', type=int, default=GAP_SIZE,
-            help='a maximum gap size (bp) (default: %(default)s)')
+        help='a maximum gap size (bp) (default: %(default)s)')
     parser.add_argument('--MAX_INTRON', type=int, default=MAX_INTRON,
-            help='a maximum intron size (bp) (default: %(default)s)')
-    parser.add_argument('--MIN_TRANSCRIPT_LEN', type=int, default=MIN_TRANSCRIPT_LEN,
-            help='a minimum size of transcript (bp) (default: %(default)s)')
+        help='a maximum intron size (bp) (default: %(default)s)')
+    parser.add_argument('--MIN_TRANSCRIPT_LEN', type=int,
+        default=MIN_TRANSCRIPT_LEN,
+        help='a minimum size of transcript (bp) (default: %(default)s)')
     parser.add_argument('--min', action='store_true',
-            help='report a minimum set of isoforms')
+        help='report a minimum set of isoforms')
     parser.add_argument('input', type=str, nargs='+',
-                        help='input file(s) in PSL format')
+        help='input file(s) in PSL/BED format')
     parser.add_argument('--version', action='version',
                         version='%(prog)s version 0.9')
 
@@ -618,9 +643,11 @@ if __name__=='__main__':
         raise SystemExit, 'Invalid transcript size (<=0)'
     elif args.MIN_TRANSCRIPT_LEN != MIN_TRANSCRIPT_LEN:
         MIN_TRANSCRIPT_LEN = args.MIN_TRANSCRIPT_LEN
-        print >> sys.stderr, 'User defined MIN_TRANSCRIPT_LEN = %d' % MIN_TRANSCRIPT_LEN
+        print >> sys.stderr, 'User defined MIN_TRANSCRIPT_LEN = %d' % \
+                                                    MIN_TRANSCRIPT_LEN
     else:
-        print >> sys.stderr, 'Default MIN_TRANSCRIPT_LEN = %d' % MIN_TRANSCRIPT_LEN
+        print >> sys.stderr, 'Default MIN_TRANSCRIPT_LEN = %d' % \
+                                                    MIN_TRANSCRIPT_LEN
 
     if args.min:
         print >> sys.stderr, 'Search for a minimum set of isoforms = yes'
