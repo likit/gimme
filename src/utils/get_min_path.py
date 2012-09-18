@@ -102,7 +102,7 @@ def walkEdges(edge, paths, pathCounts,
                     continue
 
                 walkEdges(edge, paths, pathCounts,
-                                subPaths, subPathEdges, uniqEdges, ignored, l + 2)
+                        subPaths, subPathEdges, uniqEdges, ignored, l + 2)
 
 
 def getMinPaths(paths):
@@ -142,8 +142,9 @@ def getMinPaths(paths):
             break
 
     
-    assert subPathEdges == set(uniqEdges), 'Cannot get all unique edges. %d %d' %\
-                                            (len(subPathEdges), len(uniqEdges))
+    assert subPathEdges == set(uniqEdges), \
+                            'Cannot get all unique edges. %d %d' %\
+                            (len(subPathEdges), len(uniqEdges))
     if __name__=='__main__':
         print >> stderr, ', %d minimal isoforms' % (len(subPaths))
 
