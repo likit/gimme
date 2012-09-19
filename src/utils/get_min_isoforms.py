@@ -283,7 +283,7 @@ def main(argv, verbose=True):
                                             (gene_id, len(G.nodes()))
 
         paths = get_min_paths(G, verbose)
-        if len(G.edges()) < total:
+        if len(paths) < total:
             for n, path in enumerate(paths, start=1):
                 printBed(path, exon_db, gene_id, n)
             if verbose:
