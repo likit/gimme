@@ -165,7 +165,6 @@ def get_min_paths(G, verbose=True):
 
     '''
     total_edges = len(G.edges())
-    remaining_edges = total_edges
     paths = set() # store unique paths
     B, node_index = create_bipartite_graph(G)
 
@@ -174,7 +173,6 @@ def get_min_paths(G, verbose=True):
 
     mf_round = 1
     while edges: # a max flow path is found
-        remaining_edges -= len(edges)
         if (total_edges > 50) and verbose: # display progress
             if verbose:
                 print >> sys.stderr, \
