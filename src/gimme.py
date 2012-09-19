@@ -369,14 +369,19 @@ def buildSpliceGraph(cluster, intronDb, exonDb, mergedExons):
 
 
 def checkCriteria(transcript):
+    '''Return True or False whether a transcript pass or
+    fail the criteria.
+
+    '''
+
     exons = sorted([exonDb[e] for e in transcript],
                             key=lambda x: (x.start, x.end))
 
     transcript_length = sum([exon.end - exon.start for exon in exons])
     if transcript_length <= MIN_TRANSCRIPT_LEN:
-        return False
+        return False # fail
     else:
-        return True
+        return True # pass
 
 
 def printBedGraph(transcript, geneId, tranId):
