@@ -1,4 +1,39 @@
+import sys, csv
+
 import networkx as nx
+
+class ExonObj(object):
+    def __init__(self, chrom, start, end):
+        self.chrom = chrom
+        self.start = start
+        self.end = end
+
+    def __str__(self):
+        return '%s:%d-%d' % (self.chrom, self.start, self.end)
+
+def parseBed(filename):
+    '''Reads BED file and returns exons of a transcript.'''
+
+    with open(filename) as fp:
+        for row in csv.reader(fp, dialect='excel-tab'):
+            exons = []
+            chrom = row[0]
+            chromStart = int(row[1])
+            geneId = row[3].split('.')[0]
+
+            '''Get all exons except terminal ones.'''
+            blockStarts = [int(i) for i in row[-1].split(',')]
+            blockSizes = [int(i) for i in row[-2].split(',')]
+
+            if len(blockStarts) == 1:
+                continue
+
+            for i in range(len(blockStarts)):
+                start = chromStart + blockStarts[i]
+                end = start + blockSizes[i]
+                exons.append(ExonObj(chrom, start, end))
+
+            yield geneId, exons
 
 def create_bipartite_graph(G):
     '''Return a bipartite graph with top nodes = G.nodes and
@@ -85,44 +120,175 @@ def add_path(edges, paths, G):
 
     '''
     K = nx.DiGraph()
+    J = nx.DiGraph()
     K.add_edges_from(edges)
-    print '-' * 40
     for SG in nx.algorithms.weakly_connected_component_subgraphs(K):
-        print '*' * 40
-        dfs_path = [dp for dp in nx.algorithms.dfs_preorder_nodes(SG)]
-        SG.add_path(nx.algorithms.shortest_path(G, 'Start', dfs_path[0])) 
-        SG.add_path(nx.algorithms.shortest_path(G, dfs_path[-1], 'End'))
-        print [p for p in nx.algorithms.dfs_preorder_nodes(SG, 'Start')]
+        head_node = None
+        tail_node = None
+        for node in SG.nodes():
+            if not SG.predecessors(node):
+                head_node = node
+            if not SG.successors(node):
+                tail_node = node
+
+        # print 'head node= %s, tail node = %s' % (head_node, tail_node)
+
+        body = nx.algorithms.shortest_path(SG, head_node, tail_node)
+        head = nx.algorithms.shortest_path(G, 'Start', head_node)
+        tail = nx.algorithms.shortest_path(G, tail_node, 'End')
+
+        SG.add_path(head)
+        SG.add_path(body)
+        SG.add_path(tail)
+
+        path = [p for p in nx.algorithms.dfs_preorder_nodes(SG, 'Start')]
+
+        J.add_path(path)
+        path_str = '->'.join(path)
+        paths.add(path_str)
+        if set(J.edges()).difference(set(G.edges())):
+            print set(J.edges()).difference(set(G.edges()))
+            print head
+            print body
+            print tail
+            raise ValueError, "Error: edges are added."
         # for e in SG.edges():
         #     print e
 
-def get_min_paths(G):
+def get_min_paths(G, verbose=True):
     '''Returns minimal paths including all edges.
     G is a directed graph.
 
     '''
-    paths = []
-    all_edges = set()
+    total_edges = len(G.edges())
+    remaining_edges = total_edges
+    paths = set() # store unique paths
     B, node_index = create_bipartite_graph(G)
 
     mf_edges = run_max_flow(B)
     edges = set(rebuild_edges(mf_edges, node_index))
 
+    mf_round = 1
     while edges: # a max flow path is found
-        all_edges.update(edges)
+        remaining_edges -= len(edges)
+        if (total_edges > 50) and verbose: # display progress
+            print >> sys.stderr, \
+                    '\t\t\t... #%d found %d edges, remaining %d edges' % \
+                                    (mf_round, len(edges), remaining_edges)
+
         add_path(edges, paths, G)
         remove_maxflow_edges(mf_edges, B)
         mf_edges = run_max_flow(B)
         edges = set(rebuild_edges(mf_edges, node_index))
+        mf_round += 1
 
-    if len(all_edges) != len(G.edges()) - 2:
-        print "Error: Some edges are missing."
-        print set(G.edges()).difference(all_edges)
+    g = G.copy()
+    g.remove_nodes_from(['Start', 'End'])
+
+    paths = list(paths)
+    for i in range(len(paths)):
+        paths[i] = paths[i].split('->')
+        paths[i].remove('Start')
+        paths[i].remove('End')
+
+    K = nx.DiGraph()
+    for path in paths:
+        K.add_path(path)
+
+    if set(K.edges()) != set(g.edges()):
+        raise ValueError, "Error: Some edges are added or removed."
+
+    return paths
+
+def printBed(path, db, geneId, transId):
+    path = sorted(path, key=lambda x: db[x].start)
+    firstExon = db[path[0]]
+    lastExon = db[path[-1]]
+    chrom = firstExon.chrom
+    chromStart = firstExon.start
+    chromEnd = lastExon.end
+
+    blockStarts = [str(db[e].start - chromStart) for e in path]
+    blockSizes = [str(db[e].end - db[e].start) for e in path]
+    blockCount = len(blockStarts)
+    
+    name = '%s.%d' % (geneId, transId)
+    strand = '+'
+    score = 1000
+    thickStart = chromStart
+    thickEnd = chromEnd
+    itemRgb='0,0,0'
+
+    writer = csv.writer(sys.stdout, dialect='excel-tab')
+
+    writer.writerow((chrom,
+                    chromStart,
+                    chromEnd,
+                    name,
+                    score,
+                    strand,
+                    thickStart,
+                    thickEnd,
+                    itemRgb,
+                    blockCount,
+                    ','.join(blockSizes),
+                    ','.join(blockStarts)))
+
+def make_graph(bedfile, exon_db):
+    def get_path(exons, exon_db):
+        path = [str(e) for e in exons]
+        for exon in exons:
+            exon_db[str(exon)] = exon
+        path.insert(0, 'Start')
+        path.append('End')
+
+        return path
+
+    gene_id = None
+    total = 0
+    G = nx.DiGraph()
+    for id, exons in parseBed(bedfile):
+        if not gene_id:
+            gene_id = id
+
+        if gene_id == id:
+            path = get_path(exons, exon_db)
+            G.add_path(path)
+            total += 1
+        else:
+            yield gene_id, G, total
+            total = 1
+            G = nx.DiGraph()
+            gene_id = id
+            path = get_path(exons, exon_db)
+            G.add_path(path)
+
+    yield gene_id, G, total
+
+def main(argv):
+    bedfile = argv[1]
+    exon_db = {}
+    for n, (gene_id, G, total) in enumerate(make_graph(bedfile, exon_db),
+                                                                start=1):
+        '''G is a directed graph.'''
+        print >> sys.stderr, '\t%s\n\ttotal edges = %d' %\
+                                            (gene_id, len(G.edges()))
+        print >> sys.stderr, '\t\tSearch'
+        paths = get_min_paths(G)
+
+        for n, path in enumerate(paths, start=1):
+            printBed(path, exon_db, gene_id, n)
+
+        print >> sys.stderr, \
+                '\t\ttotal max = %d, min = %d' % (total, len(paths))
+
+        assert total >= len(paths), '%s total max = %d, min = %d' %\
+                                                (gene_id, total, len(paths))
 
 if __name__=='__main__':
-    G = nx.DiGraph()
-    G.add_path(['Start', 'A', 'B', 'C', 'D', 'E', 'End'])
-    G.add_edge('A', 'C')
-    G.add_edge('B', 'D')
-    G.add_edge('C', 'E')
-    paths = get_min_paths(G)
+    main(sys.argv)
+    # G = nx.DiGraph()
+    # G.add_path(['Start', 'A', 'B', 'C', 'E', 'F', 'G', 'I', 'J', 'End'])
+    # G.add_path(['Start', 'A', 'B', 'C', 'E', 'F', 'G', 'H', 'End'])
+    # paths = get_min_paths(G)
+    # print len(paths)
