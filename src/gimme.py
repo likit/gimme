@@ -377,18 +377,13 @@ def build_splice_graph(cluster, intron_db, exon_db, merged_exons):
     return G
 
 
-<<<<<<< HEAD
-def checkCriteria(transcript):
+def check_criteria(transcript):
     '''Return True or False whether a transcript pass or
     fail the criteria.
 
     '''
 
-    exons = sorted([exonDb[e] for e in transcript],
-=======
-def check_criteria(transcript):
     exons = sorted([exon_db[e] for e in transcript],
->>>>>>> get_min_trial
                             key=lambda x: (x.start, x.end))
 
     transcript_length = sum([exon.end - exon.start for exon in exons])
@@ -550,16 +545,11 @@ def merge_exons(exons):
                     curr_exon = next_exon
             i += 1
 
-<<<<<<< HEAD
     return new_exons
 
-def detect_format(inputFile):
-    fp = open(inputFile)
-=======
 
 def detect_format(input_file):
     fp = open(input_file)
->>>>>>> get_min_trial
     cols = fp.readline().split()
     fp.close()
 
