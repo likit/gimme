@@ -1,3 +1,5 @@
+'''The script reads gene models in BED format and search for
+minimum'''
 import sys, csv
 
 import networkx as nx
@@ -33,7 +35,7 @@ def parseBed(filename):
                 end = start + blockSizes[i]
                 exons.append(ExonObj(chrom, start, end))
 
-            yield geneId, exons
+            yield geneId, exons, row
 
 def create_bipartite_graph(G):
     '''Return a bipartite graph with top nodes = G.nodes and
@@ -144,16 +146,12 @@ def add_path(edges, paths, G):
         path = [p for p in nx.algorithms.dfs_preorder_nodes(SG, 'Start')]
 
         J.add_path(path)
-        path_str = '->'.join(path)
-        paths.add(path_str)
         if set(J.edges()).difference(set(G.edges())):
-            print set(J.edges()).difference(set(G.edges()))
-            print head
-            print body
-            print tail
             raise ValueError, "Error: edges are added."
         # for e in SG.edges():
         #     print e
+        path_str = '->'.join(path)
+        paths.add(path_str)
 
 def get_min_paths(G, verbose=True):
     '''Returns minimal paths including all edges.
@@ -172,9 +170,9 @@ def get_min_paths(G, verbose=True):
     while edges: # a max flow path is found
         remaining_edges -= len(edges)
         if (total_edges > 50) and verbose: # display progress
-            print >> sys.stderr, \
-                    '\t\t\t... #%d found %d edges, remaining %d edges' % \
-                                    (mf_round, len(edges), remaining_edges)
+            if verbose:
+                print >> sys.stderr, \
+                    '\t... #%d found %d edges' % (mf_round, len(edges))
 
         add_path(edges, paths, G)
         remove_maxflow_edges(mf_edges, B)
@@ -247,7 +245,8 @@ def make_graph(bedfile, exon_db):
     gene_id = None
     total = 0
     G = nx.DiGraph()
-    for id, exons in parseBed(bedfile):
+    transcripts = []
+    for id, exons, trns in parseBed(bedfile):
         if not gene_id:
             gene_id = id
 
@@ -255,35 +254,41 @@ def make_graph(bedfile, exon_db):
             path = get_path(exons, exon_db)
             G.add_path(path)
             total += 1
+            transcripts.append(trns)
         else:
-            yield gene_id, G, total
+            yield gene_id, G, total, transcripts
+            transcripts = []
             total = 1
             G = nx.DiGraph()
             gene_id = id
             path = get_path(exons, exon_db)
             G.add_path(path)
 
-    yield gene_id, G, total
+    yield gene_id, G, total, transcripts
 
-def main(argv):
+def main(argv, verbose=True):
     bedfile = argv[1]
     exon_db = {}
-    for n, (gene_id, G, total) in enumerate(make_graph(bedfile, exon_db),
-                                                                start=1):
-        '''G is a directed graph.'''
-        print >> sys.stderr, '\t%s\n\ttotal edges = %d' %\
-                                            (gene_id, len(G.edges()))
-        print >> sys.stderr, '\t\tSearch'
-        paths = get_min_paths(G)
+    for n, items in enumerate(make_graph(bedfile, exon_db), start=1):
+        gene_id, G, total, transcripts = items
 
-        for n, path in enumerate(paths, start=1):
-            printBed(path, exon_db, gene_id, n)
+        if verbose:
+            print >> sys.stderr, '%s, total nodes = %d\n\tSearch' %\
+                                            (gene_id, len(G.nodes()))
 
-        print >> sys.stderr, \
-                '\t\ttotal max = %d, min = %d' % (total, len(paths))
-
-        assert total >= len(paths), '%s total max = %d, min = %d' %\
-                                                (gene_id, total, len(paths))
+        paths = get_min_paths(G, verbose)
+        if len(G.edges()) < total:
+            for n, path in enumerate(paths, start=1):
+                printBed(path, exon_db, gene_id, n)
+            if verbose:
+                print >> sys.stderr, \
+                    '\ttotal max = %d, min = %d' % (total, len(paths))
+        else:
+            for trns in transcripts:
+                print '\t'.join(trns)
+            if verbose:
+                print >> sys.stderr, \
+                    '\ttotal original = %d' % total
 
 if __name__=='__main__':
     main(sys.argv)
