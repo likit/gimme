@@ -34,8 +34,8 @@ MIN_UTR = 100 # a minimum UTR size (bp)
 MIN_EXON = 10 # a minimum exon size (bp)
 MIN_TRANSCRIPT_LEN = 300 # a minimum transcript length (bp)
 
-exonDb = {}
-intronDb = {}
+exon_db = {}
+intron_db = {}
 clusters = {}
 
 class ExonObj:
@@ -44,7 +44,7 @@ class ExonObj:
         self.start = start
         self.end = end
         self.terminal = None
-        self.nextExons = set([])
+        self.next_exons = set([])
         self.introns = set([])
         self.single = False
 
@@ -52,9 +52,9 @@ class ExonObj:
         return '%s:%d-%d' % (self.chrom, self.start, self.end)
 
 
-def parseBED(bed_file, min_exon=MIN_EXON):
-    '''Reads alignments from BED format and create
-    exon objects from each transcript.
+def parse_bed(bed_file, min_exon=MIN_EXON):
+    '''Reads alignments from BED format and creates
+    exon objects from a transcript.
 
     '''
     reader = csv.reader(bed_file, dialect='excel-tab')
@@ -73,35 +73,35 @@ def parseBED(bed_file, min_exon=MIN_EXON):
             exon = ExonObj(chrom, exon_start, exon_end)
             exons.append(exon)
 
-        exons = deleteGap(exons)
+        exons = delete_gap(exons)
 
         for kept_exons in remove_small_exon(exons, min_exon):
             yield kept_exons
 
 
-def parsePSL(psl_file, min_exon=MIN_EXON):
-    '''Reads alignments from PSL format and create
+def parse_psl(psl_file, min_exon=MIN_EXON):
+    '''Reads alignments from PSL format and creates
     exon objects from each transcript.
 
     '''
-    for pslObj in pslparser.read(psl_file):
+    for pslobj in pslparser.read(psl_file):
         exons = []
 
-        for i in range(len(pslObj.attrib['tStarts'])):
-            exon_start = pslObj.attrib['tStarts'][i]
-            exon_end = exon_start + pslObj.attrib['blockSizes'][i]
+        for i in range(len(pslobj.attrib['tStarts'])):
+            exon_start = pslobj.attrib['tStarts'][i]
+            exon_end = exon_start + pslobj.attrib['block_sizes'][i]
 
-            exon = ExonObj(pslObj.attrib['tName'], exon_start, exon_end)
+            exon = ExonObj(pslobj.attrib['tName'], exon_start, exon_end)
             exons.append(exon)
 
-        exons = deleteGap(exons)
+        exons = delete_gap(exons)
 
         for kept_exons in remove_small_exon(exons, min_exon):
             yield kept_exons
 
 
 def remove_small_exon(exons, min_exon):
-    '''A small exon is removed and a transcript is split into
+    '''Removes a small exon and a transcript is split into
     parts that precedes and succeeds the exon.
 
     '''
@@ -118,176 +118,183 @@ def remove_small_exon(exons, min_exon):
         yield kept
 
 
-def addIntrons(exons, intronDb, exonDb,
-                clusters, clusterNo):
+def add_introns(exons, intron_db, exon_db,
+                clusters, cluster_no):
     '''Get introns from a set of exons.'''
 
-    existingClusters = set([])
+    existing_clusters = set([])
 
     introns = []
 
     for i in range(len(exons)):
-        currExon = exonDb[str(exons[i])]
+        curr_exon = exon_db[str(exons[i])]
         try:
-            nextExon = exonDb[str(exons[i + 1])]
+            next_exon = exon_db[str(exons[i + 1])]
         except IndexError:
             pass
         else:
-            intronStart = currExon.end + 1
-            intronEnd = nextExon.start - 1
+            intron_start = curr_exon.end + 1
+            intron_end = next_exon.start - 1
 
-            if intronEnd - intronStart > MAX_INTRON:
+            if intron_end - intron_start > MAX_INTRON:
                 continue
 
-            currExon.nextExons.add(str(nextExon))
+            curr_exon.next_exons.add(str(next_exon))
 
-            intronName = '%s:%d-%d' % (currExon.chrom, intronStart, intronEnd)
-            intron = nx.DiGraph(name=intronName, cluster=None)
+            intron_name = '%s:%d-%d' % (curr_exon.chrom,
+                                            intron_start,
+                                            intron_end)
+            intron = nx.DiGraph(name=intron_name, cluster=None)
 
             try:
-                intron_ = intronDb[intron.graph['name']]
+                intron_ = intron_db[intron.graph['name']]
             except KeyError:
-
-                intronDb[intron.graph['name']] = intron
-                intron.add_edge(str(currExon), str(nextExon))
+                intron_db[intron.graph['name']] = intron
+                intron.add_edge(str(curr_exon), str(next_exon))
                 introns.append(intron)
-                currExon.introns.add(intron.graph['name'])
-                nextExon.introns.add(intron.graph['name'])
+
+                curr_exon.introns.add(intron.graph['name'])
+                next_exon.introns.add(intron.graph['name'])
             else:
-                intron_.add_edge(str(currExon), str(nextExon))
+                intron_.add_edge(str(curr_exon), str(next_exon))
                 introns.append(intron_)
-                existingClusters.add(intron_.graph['cluster'])
-                currExon.introns.add(intron_.graph['name'])
-                nextExon.introns.add(intron_.graph['name'])
+                existing_clusters.add(intron_.graph['cluster'])
+
+                curr_exon.introns.add(intron_.graph['name'])
+                next_exon.introns.add(intron_.graph['name'])
 
     if introns:
-        if not existingClusters:
+        if not existing_clusters:
             cluster = nx.DiGraph()
             if len(introns) > 1:
                 cluster.add_path([i.graph['name'] for i in introns])
                 for intron in introns:
-                    intron.graph['cluster'] = clusterNo
+                    intron.graph['cluster'] = cluster_no
             else:
                 cluster.add_node(introns[0].graph['name'])
-                introns[0].graph['cluster'] = clusterNo
+                introns[0].graph['cluster'] = cluster_no
 
         else:
             cluster = nx.DiGraph(exons=set([]))
-            for cl in existingClusters:
+            for cl in existing_clusters:
                 cluster.add_edges_from(clusters[cl].edges())
                 clusters.pop(cl)
 
             for intron in cluster.nodes():
-                intronDb[intron].graph['cluster'] = clusterNo
+                intron_db[intron].graph['cluster'] = cluster_no
 
             if len(introns) > 1:
                 cluster.add_path([i.graph['name'] for i in introns])
 
                 for intron in introns:
-                    intron.graph['cluster'] = clusterNo
+                    intron.graph['cluster'] = cluster_no
             else:
                 cluster.add_node(introns[0].graph['name'])
-                introns[0].graph['cluster'] = clusterNo
+                introns[0].graph['cluster'] = cluster_no
 
-        clusters[clusterNo] = cluster
+        clusters[cluster_no] = cluster
 
-    return clusterNo
+    return cluster_no
 
 
-def collapseExons(g, exonDb):
+def collapse_exons(g, exon_db):
     # g = an exon graph.
 
-    exons = [exonDb[e] for e in g.nodes()]
-    sortedExons = sorted(exons, key=lambda x: (x.end, x.start))
+    exons = [exon_db[e] for e in g.nodes()]
+    sorted_exons = sorted(exons, key=lambda x: (x.end, x.start))
 
     i = 0
-    currExon = sortedExons[i]
-    while i <= len(sortedExons):
+    curr_exon = sorted_exons[i]
+    while i <= len(sorted_exons):
         try:
-            nextExon = sortedExons[i + 1]
+            next_exon = sorted_exons[i + 1]
         except IndexError:
             pass
         else:
-            if currExon.end == nextExon.end:
-                if nextExon.terminal == 1:
-                    g.add_edges_from([(str(currExon), n)\
-                            for n in g.successors(str(nextExon))])
-                    g.remove_node(str(nextExon))
+            if curr_exon.end == next_exon.end:
+                if next_exon.terminal == 1:
+                    g.add_edges_from([(str(curr_exon), n)\
+                            for n in g.successors(str(next_exon))])
+                    g.remove_node(str(next_exon))
                 else:
-                    if currExon.terminal == 1:
-                        if nextExon.start - currExon.start <= MIN_UTR:
-                            g.add_edges_from([(str(nextExon), n)\
-                                    for n in g.successors(str(currExon))])
-                            g.remove_node(str(currExon))
+                    if curr_exon.terminal == 1:
+                        if next_exon.start - curr_exon.start <= MIN_UTR:
+                            g.add_edges_from([(str(next_exon), n)\
+                                    for n in g.successors(str(curr_exon))])
+                            g.remove_node(str(curr_exon))
 
-                    currExon = nextExon
+                    curr_exon = next_exon
             else:
-                currExon = nextExon
+                curr_exon = next_exon
         i += 1
 
     i = 0
-    exons = [exonDb[e] for e in g.nodes()]
-    sortedExons = sorted(exons, key=lambda x: (x.start, x.end))
-    currExon = sortedExons[0]
-    while i <= len(sortedExons):
+    exons = [exon_db[e] for e in g.nodes()]
+    sorted_exons = sorted(exons, key=lambda x: (x.start, x.end))
+    curr_exon = sorted_exons[0]
+    while i <= len(sorted_exons):
         try:
-            nextExon = sortedExons[i + 1]
+            next_exon = sorted_exons[i + 1]
         except IndexError:
             pass
         else:
-            if currExon.start == nextExon.start:
-                if currExon.terminal == 2:
-                    g.add_edges_from([(n, str(nextExon))\
-                            for n in g.predecessors(str(currExon))])
-                    g.remove_node(str(currExon))
-                    currExon = nextExon
+            if curr_exon.start == next_exon.start:
+                if curr_exon.terminal == 2:
+                    g.add_edges_from([(n, str(next_exon))\
+                            for n in g.predecessors(str(curr_exon))])
+                    g.remove_node(str(curr_exon))
+                    curr_exon = next_exon
                 else:
-                    if nextExon.terminal == 2:
-                        if nextExon.end - currExon.end <= MIN_UTR:
-                            g.add_edges_from([(n, str(currExon))\
-                                    for n in g.predecessors(str(nextExon))])
-                            g.remove_node(str(nextExon))
+                    if next_exon.terminal == 2:
+                        if next_exon.end - curr_exon.end <= MIN_UTR:
+                            g.add_edges_from([(n, str(curr_exon))\
+                                    for n in g.predecessors(str(next_exon))])
+                            g.remove_node(str(next_exon))
                         else:
-                            currExon = nextExon
+                            curr_exon = next_exon
                     else:
-                        currExon = nextExon
+                        curr_exon = next_exon
             else:
-                currExon = nextExon
+                curr_exon = next_exon
         i += 1
 
 
-def deleteGap(exons):
-    '''Alignments may contain small gaps. The program fills
-    up gaps to obtain a complete exon.  A maximum size of
-    a gap can be adjusted by assigning a new value to GAP_SIZE
-    parameter on a command line.
+def delete_gap(exons):
+    '''Alignments may contain small gaps from indels and etc.
+
+    The program fills up gaps to obtain a complete exon.
+
+    A maximum size of a gap can be adjusted by assigning a new
+    value to GAP_SIZE parameter on a command line.
 
     '''
 
     i = 0
-    newExons = []
-    currExon = exons[i]
+    new_exons = []
+    curr_exon = exons[i]
 
     while True:
         try:
-            nextExon = exons[i + 1]
+            next_exon = exons[i + 1]
         except IndexError:
             break
         else:
-            if nextExon.start - currExon.end <= GAP_SIZE:
-                currExon.end = nextExon.end
+            if next_exon.start - curr_exon.end <= GAP_SIZE:
+                curr_exon.end = next_exon.end
             else:
-                newExons.append(currExon)
-                currExon = nextExon
+                new_exons.append(curr_exon)
+                curr_exon = next_exon
         i += 1
 
-    newExons.append(currExon)
-    return newExons
+    new_exons.append(curr_exon)
+
+    return new_exons
 
 
-def addExon(db, exons):
+def add_exon(db, exons):
     '''1.Change a terminal attribute of a leftmost exon
     and a rightmost exon to 1 and 2 respectively.
+
     A terminal attribute has a value 'None' by default.
 
     2.Add exons to the exon database (db).
@@ -306,68 +313,71 @@ def addExon(db, exons):
                 exon_.terminal = None
 
 
-def mergeClusters(exonDb):
-    bigCluster = nx.Graph()
-    for exon in exonDb.itervalues():
+def merge_clusters(exon_db):
+    big_cluster = nx.Graph()
+    for exon in exon_db.itervalues():
         path = []
         for intron in exon.introns:
-            path.append(intronDb[intron].graph['cluster'])
+            path.append(intron_db[intron].graph['cluster'])
 
         if len(path) > 1:
-            bigCluster.add_path(path)
+            big_cluster.add_path(path)
         elif len(path) == 1:
-            bigCluster.add_node(path[0])
+            big_cluster.add_node(path[0])
         else:
             pass
 
-    return bigCluster
+    return big_cluster
 
 
-def walkDown(intronCoord, path, allPath, cluster):
+def walk_down(intron_coord, path, all_paths, cluster):
     '''Returns all downstream exons from a given exon.'''
 
-    if cluster.successors(intronCoord) == []:
-        allPath.append(path[:])
+    if cluster.successors(intron_coord) == []:
+        all_paths.append(path[:])
         return
     else:
-        for nex in cluster.successors(intronCoord):
+        for nex in cluster.successors(intron_coord):
             if nex not in path:
                 path.append(nex)
 
-            walkDown(nex, path, allPath, cluster)
+            walk_down(nex, path, all_paths, cluster)
 
             path.pop()
 
 
-def getPath(cluster):
-    '''Returns all paths of a given cluster.'''
+def get_path(cluster):
+    '''Returns all paths from a given cluster.'''
 
     roots = [node for node in cluster.nodes() \
                     if not cluster.predecessors(node)]
-    allPaths = []
+    all_paths = []
 
     for root in roots:
         path = [root]
-        walkDown(root, path, allPaths, cluster)
+        walk_down(root, path, all_paths, cluster)
 
-    return allPaths
+    return all_paths
 
 
-def buildSpliceGraph(cluster, intronDb, exonDb, mergedExons):
-    allPaths = getPath(cluster)
+def build_splice_graph(cluster, intron_db, exon_db, merged_exons):
+    '''Return a directed graph containing all exons.'''
 
-    g = nx.DiGraph()
-    for path in allPaths:
-        for intronCoord in path:
-            intron = intronDb[intronCoord]
+    all_paths = get_path(cluster)
+
+    G = nx.DiGraph()
+    for path in all_paths:
+        for intron_coord in path:
+            intron = intron_db[intron_coord]
             for exon in intron.exons:
-                for nextExon in exonDb[exon].nextExons:
-                    if nextExon not in mergedExons:
-                        g.add_edge(exon, nextExon)
+                for next_exon in exon_db[exon].next_exons:
+                    if next_exon not in merged_exons:
+                        G.add_edge(exon, next_exon)
 
-    return g
+    return G
 
 
+<<<<<<< HEAD
 def checkCriteria(transcript):
     '''Return True or False whether a transcript pass or
     fail the criteria.
@@ -375,6 +385,10 @@ def checkCriteria(transcript):
     '''
 
     exons = sorted([exonDb[e] for e in transcript],
+=======
+def check_criteria(transcript):
+    exons = sorted([exon_db[e] for e in transcript],
+>>>>>>> get_min_trial
                             key=lambda x: (x.start, x.end))
 
     transcript_length = sum([exon.end - exon.start for exon in exons])
@@ -384,129 +398,131 @@ def checkCriteria(transcript):
         return True # pass
 
 
-def printBedGraph(transcript, geneId, tranId):
+def print_bed_graph(transcript, gene_id, tran_id):
     '''Print a splice graph in BED format.'''
 
-    exons = sorted([exonDb[e] for e in transcript],
+    exons = sorted([exon_db[e] for e in transcript],
                             key=lambda x: (x.start, x.end))
 
-    chromStart = exons[0].start
-    chromEnd = exons[-1].end
+    chrom_start = exons[0].start
+    chrom_end = exons[-1].end
     chrom = exons[0].chrom
 
-    blockStarts = ','.join([str(exon.start - chromStart) for exon in exons])
-    blockSizes = ','.join([str(exon.end - exon.start) for exon in exons])
+    block_starts = ','.join([str(exon.start - chrom_start) for exon in exons])
+    block_sizes = ','.join([str(exon.end - exon.start) for exon in exons])
 
-    name = '%s:%d.%d' % (chrom, geneId, tranId)
+    name = '%s:%d.%d' % (chrom, gene_id, tran_id)
     score = 1000
-    itemRgb = '0,0,0'
-    thickStart = chromStart
-    thickEnd = chromEnd
+    item_RGB = '0,0,0'
+    thick_start = chrom_start
+    thick_end = chrom_end
     strand = '+'
-    blockCount = len(exons)
+    block_count = len(exons)
 
     writer = csv.writer(stdout, dialect='excel-tab')
     writer.writerow((chrom,
-                    chromStart,
-                    chromEnd,
+                    chrom_start,
+                    chrom_end,
                     name,
                     score,
                     strand,
-                    thickStart,
-                    thickEnd,
-                    itemRgb,
-                    blockCount,
-                    blockSizes,
-                    blockStarts))
+                    thick_start,
+                    thick_end,
+                    item_RGB,
+                    block_count,
+                    block_sizes,
+                    block_starts))
 
-def printBedGraphSingle(exon, geneId, tranId):
+def print_bed_graph_single(exon, gene_id, tran_id):
     '''Print a splice graph in BED format.'''
 
-    chromStart = exon.start
-    chromEnd = exon.end
+    chrom_start = exon.start
+    chrom_end = exon.end
     chrom = exon.chrom
 
-    blockStarts = ','.join([str(exon.start - chromStart)])
-    blockSizes = ','.join([str(exon.end - exon.start)])
+    block_starts = ','.join([str(exon.start - chrom_start)])
+    block_sizes = ','.join([str(exon.end - exon.start)])
 
-    name = '%s:%d.%d' % (chrom, geneId, tranId)
+    name = '%s:%d.%d' % (chrom, gene_id, tran_id)
     score = 1000
-    itemRgb = '0,0,0'
-    thickStart = chromStart
-    thickEnd = chromEnd
+    item_RGB = '0,0,0'
+    thick_start = chrom_start
+    thick_end = chrom_end
     strand = '+'
-    blockCount = 1
+    block_count = 1
 
     writer = csv.writer(stdout, dialect='excel-tab')
     writer.writerow((chrom,
-                    chromStart,
-                    chromEnd,
+                    chrom_start,
+                    chrom_end,
                     name,
                     score,
                     strand,
-                    thickStart,
-                    thickEnd,
-                    itemRgb,
-                    blockCount,
-                    blockSizes,
-                    blockStarts))
+                    thick_start,
+                    thick_end,
+                    item_RGB,
+                    block_count,
+                    block_sizes,
+                    block_starts))
 
-def buildGeneModels(exonDb, intronDb, clusters, bigCluster, isMin=False):
+def build_gene_models(exon_db, intron_db, clusters,
+                            big_cluster, is_min=False):
     print >> stderr, 'Building gene models...'
 
-    removedClusters = set([])
-    numTranscripts = 0
-    geneId = 0
+    removed_clusters = set([])
+    transcripts_num = 0
+    gene_id = 0
     excluded = 0
 
-    for cl_num, cl in enumerate(bigCluster.nodes(), start=1):
-        if cl not in removedClusters:
+    for cl_num, cl in enumerate(big_cluster.nodes(), start=1):
+        if cl not in removed_clusters:
             g = nx.DiGraph()
             for intron in clusters[cl].nodes():
-                g.add_edges_from(intronDb[intron].edges())
+                g.add_edges_from(intron_db[intron].edges())
 
-            for neighbor in bigCluster.neighbors(cl):
+            for neighbor in big_cluster.neighbors(cl):
                 if neighbor != cl: # chances are node connects to itself.
-                    neighborCluster = clusters[neighbor]
-                    for intron in neighborCluster.nodes():
-                        g.add_edges_from(intronDb[intron].edges())
+                    neighbor_cluster = clusters[neighbor]
+                    for intron in neighbor_cluster.nodes():
+                        g.add_edges_from(intron_db[intron].edges())
 
-                removedClusters.add(neighbor)
-            removedClusters.add(cl)
+                removed_clusters.add(neighbor)
+            removed_clusters.add(cl)
 
             if g.nodes():
-                geneId += 1
-                transId = 0
-                collapseExons(g, exonDb)
-                if not isMin:
-                    for transcript in getPath(g):
-                        if checkCriteria(transcript):
-                            transId += 1
-                            numTranscripts += 1
-                            printBedGraph(transcript, geneId, transId)
+                gene_id += 1
+                trans_id = 0
+                collapse_exons(g, exon_db)
+                if not is_min:
+                    for transcript in get_path(g):
+                        if check_criteria(transcript):
+                            trans_id += 1
+                            transcripts_num += 1
+                            print_bed_graph(transcript, gene_id, trans_id)
                         else:
                             excluded += 1
 
                 else:
-                    max_paths = getPath(g)
+                    max_paths = get_path(g)
                     paths = []
                     for pth in max_paths:
                         paths.append(get_min_path.getEdges(pth))
 
                     for transcript in get_min_path.getMinPaths(paths):
-                        if checkCriteria(transcript):
-                            numTranscripts += 1
-                            transId += 1
-                            printBedGraph(transcript, geneId, transId)
+                        if check_criteria(transcript):
+                            transcripts_num += 1
+                            trans_id += 1
+                            print_bed_graph(transcript, gene_id, trans_id)
                         else:
                             excluded += 1
-            if transId == 0:
-                geneId -= 1
+            if trans_id == 0:
+                gene_id -= 1
 
         if cl_num % 1000 == 0:
-            print >> stderr, '...', cl_num, ': excluded', excluded, 'transcript(s)'
+            print >> stderr, \
+                    '...', cl_num, ': excluded', excluded, 'transcript(s)'
 
-    return geneId, numTranscripts
+    return gene_id, transcripts_num
 
 
 def merge_exons(exons):
@@ -532,13 +548,18 @@ def merge_exons(exons):
                 else:
                     new_exons[chrom].append(curr_exon)
                     curr_exon = next_exon
-
             i += 1
 
+<<<<<<< HEAD
     return new_exons
 
 def detect_format(inputFile):
     fp = open(inputFile)
+=======
+
+def detect_format(input_file):
+    fp = open(input_file)
+>>>>>>> get_min_trial
     cols = fp.readline().split()
     fp.close()
 
@@ -551,27 +572,27 @@ def detect_format(inputFile):
     else:
         return None
 
-def main(inputFiles):
-    clusterNo = 0
+def main(input_files):
+    cluster_no = 0
     single_exons = {}
 
-    for inputFile in inputFiles:
-        input_format = detect_format(inputFile)
+    for input_file in input_files:
+        input_format = detect_format(input_file)
         if input_format == 'PSL':
-            parse = parsePSL
+            parse = parse_psl
         elif input_format == 'BED':
-            parse = parseBED
+            parse = parse_bed
         else:
             print >> stderr, 'ERROR: Unrecognized input format. ' + \
                     'Use utils/gff2bed.py to convert GFF to BED.'
             raise SystemExit
 
-        print >> stderr, 'Parsing alignments from %s...' % inputFile
-        for n, exons in enumerate(parse(open(inputFile)), start=1):
+        print >> stderr, 'Parsing alignments from %s...' % input_file
+        for n, exons in enumerate(parse(open(input_file)), start=1):
             if len(exons) > 1:
-                addExon(exonDb, exons)
-                addIntrons(exons, intronDb, exonDb, clusters, clusterNo)
-                clusterNo += 1
+                add_exon(exon_db, exons)
+                add_introns(exons, intron_db, exon_db, clusters, cluster_no)
+                cluster_no += 1
             else:
                 if exons[0].chrom not in single_exons:
                     single_exons[exons[0].chrom] = [exons[0]]
@@ -581,29 +602,28 @@ def main(inputFiles):
             if n % 1000 == 0:
                 print >> stderr, '...', n
 
-    bigCluster = mergeClusters(exonDb)
-    geneId, numTranscripts = buildGeneModels(exonDb,
-                                    intronDb, clusters,
-                                    bigCluster, args.min)
+    big_cluster = merge_clusters(exon_db)
+    gene_id, transcripts_num = build_gene_models(exon_db,
+                                    intron_db, clusters,
+                                    big_cluster, args.min)
 
     merged_single_exons = merge_exons(single_exons)
 
     for chrom in merged_single_exons:
         for exon in merged_single_exons[chrom]:
-            geneId += 1
-            numTranscripts += 1
-            printBedGraphSingle(exon, geneId, 1)
+            gene_id += 1
+            transcripts_num += 1
+            print_bed_graph_single(exon, gene_id, 1)
 
 
-    print >> stderr, '\nTotal exons = %d' % len(exonDb)
-    print >> stderr, 'Total genes = %d' % geneId
-    print >> stderr, 'Total transcripts = %d' % (numTranscripts)
-    print >> stderr, 'Isoform/gene = %.2f' % (float(numTranscripts)
+    print >> stderr, '\nTotal exons = %d' % len(exon_db)
+    print >> stderr, 'Total genes = %d' % gene_id
+    print >> stderr, 'Total transcripts = %d' % (transcripts_num)
+    print >> stderr, 'Isoform/gene = %.2f' % (float(transcripts_num)
                                                 / len(clusters))
 
 
 if __name__=='__main__':
-
     parser = argparse.ArgumentParser(prog='Gimme')
     parser.add_argument('--MIN_UTR', type=int, default=MIN_UTR,
         help='a cutoff size of alternative UTRs (bp) (default: %(default)s)')
