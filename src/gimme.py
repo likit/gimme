@@ -530,6 +530,8 @@ def merge_exons(exons):
 
             i += 1
 
+    return new_exons
+
 def detect_format(inputFile):
     fp = open(inputFile)
     cols = fp.readline().split()
