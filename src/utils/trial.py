@@ -1,5 +1,11 @@
-'''The script reads gene models in BED format and search for
-minimum'''
+'''The script reads gene models in BED format and searches for
+minimum isoforms.
+
+If the total number in original gene models is lesser than that
+of minimum isoforms, the script return the original transcripts.
+
+'''
+
 import sys, csv
 
 import networkx as nx
