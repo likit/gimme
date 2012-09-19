@@ -11,9 +11,9 @@ source_path = os.path.abspath('src')
 if source_path not in sys.path:
     sys.path.append(os.path.abspath('src'))
 
-from gimme import ExonObj, collapseExons, addIntrons
+from gimme import ExonObj, collapse_exons, add_introns
 
-class TestCollapseExons(TestCase):
+class Testcollapse_exons(TestCase):
     def setUp(self):
         self.exonDb = {}
         start = 1000
@@ -69,7 +69,7 @@ class TestCollapseExons(TestCase):
         self.assertEqual(len(self.exon_graph.nodes()), 7)
         self.assertEqual(len(self.exon_graph.edges()), 6)
 
-        collapseExons(self.exon_graph, self.exonDb)
+        collapse_exons(self.exon_graph, self.exonDb)
 
         self.assertEqual(len(self.exon_graph.nodes()), 6)
         self.assertEqual(len(self.exon_graph.edges()), 5)
@@ -92,7 +92,7 @@ class TestCollapseExons(TestCase):
         self.assertEqual(len(self.exon_graph.nodes()), 7)
         self.assertEqual(len(self.exon_graph.edges()), 6)
 
-        collapseExons(self.exon_graph, self.exonDb)
+        collapse_exons(self.exon_graph, self.exonDb)
 
         self.assertEqual(len(self.exon_graph.nodes()), 6)
         self.assertEqual(len(self.exon_graph.edges()), 5)
@@ -120,7 +120,7 @@ class TestCollapseExons(TestCase):
         self.assertEqual(len(self.exon_graph.nodes()), 8)
         self.assertEqual(len(self.exon_graph.edges()), 6)
 
-        collapseExons(self.exon_graph, self.exonDb)
+        collapse_exons(self.exon_graph, self.exonDb)
 
 
         self.assertEqual(len(self.exon_graph.nodes()), 7)
@@ -157,7 +157,7 @@ class TestCollapseExons(TestCase):
         self.assertEqual(len(self.exon_graph.nodes()), 8)
         self.assertEqual(len(self.exon_graph.edges()), 6)
 
-        collapseExons(self.exon_graph, self.exonDb)
+        collapse_exons(self.exon_graph, self.exonDb)
 
 
         self.assertEqual(len(self.exon_graph.nodes()), 7)
@@ -196,7 +196,7 @@ class TestCollapseExons(TestCase):
         self.assertEqual(len(self.exon_graph.nodes()), 7)
         self.assertEqual(len(self.exon_graph.edges()), 6)
 
-        collapseExons(self.exon_graph, self.exonDb)
+        collapse_exons(self.exon_graph, self.exonDb)
 
         #print >> sys.stderr, self.exon_graph.edges()
 
@@ -240,7 +240,7 @@ class TestCollapseExons(TestCase):
         self.assertEqual(len(self.exon_graph.nodes()), 7)
         self.assertEqual(len(self.exon_graph.edges()), 6)
 
-        collapseExons(self.exon_graph, self.exonDb)
+        collapse_exons(self.exon_graph, self.exonDb)
 
         self.assertEqual(len(self.exon_graph.nodes()), 6)
         self.assertEqual(len(self.exon_graph.edges()), 6)
@@ -283,7 +283,7 @@ class TestCollapseExons(TestCase):
         self.assertEqual(len(self.exon_graph.nodes()), 8)
         self.assertEqual(len(self.exon_graph.edges()), 7)
 
-        collapseExons(self.exon_graph, self.exonDb)
+        collapse_exons(self.exon_graph, self.exonDb)
         
         self.assertEqual(len(self.exon_graph.nodes()), 6)
         self.assertEqual(len(self.exon_graph.edges()), 6)
@@ -326,7 +326,7 @@ class TestCollapseExons(TestCase):
         self.assertEqual(len(self.exon_graph.nodes()), 8)
         self.assertEqual(len(self.exon_graph.edges()), 7)
 
-        collapseExons(self.exon_graph, self.exonDb)
+        collapse_exons(self.exon_graph, self.exonDb)
 
         self.assertEqual(len(self.exon_graph.nodes()), 7)
         self.assertEqual(len(self.exon_graph.edges()), 6)
@@ -367,7 +367,7 @@ class TestCollapseExons(TestCase):
         self.assertEqual(len(self.exon_graph.nodes()), 8)
         self.assertEqual(len(self.exon_graph.edges()), 7)
 
-        collapseExons(self.exon_graph, self.exonDb)
+        collapse_exons(self.exon_graph, self.exonDb)
 
         self.assertEqual(len(self.exon_graph.nodes()), 6)
         self.assertEqual(len(self.exon_graph.edges()), 5)
@@ -401,7 +401,7 @@ class TestCollapseExons(TestCase):
         self.assertEqual(len(self.exon_graph.nodes()), 8)
         self.assertEqual(len(self.exon_graph.edges()), 7)
 
-        collapseExons(self.exon_graph, self.exonDb)
+        collapse_exons(self.exon_graph, self.exonDb)
 
         self.assertEqual(len(self.exon_graph.nodes()), 7)
         self.assertEqual(len(self.exon_graph.edges()), 6)
@@ -440,7 +440,7 @@ class TestCollapseExons(TestCase):
         self.assertEqual(len(self.exon_graph.nodes()), 8)
         self.assertEqual(len(self.exon_graph.edges()), 6)
 
-        collapseExons(self.exon_graph, self.exonDb)
+        collapse_exons(self.exon_graph, self.exonDb)
 
         self.assertEqual(len(self.exon_graph.nodes()), 8)
         self.assertEqual(len(self.exon_graph.edges()), 6)
@@ -477,7 +477,7 @@ class TestCollapseExons(TestCase):
         self.assertEqual(len(self.exon_graph.nodes()), 8)
         self.assertEqual(len(self.exon_graph.edges()), 6)
 
-        collapseExons(self.exon_graph, self.exonDb)
+        collapse_exons(self.exon_graph, self.exonDb)
 
         self.assertEqual(len(self.exon_graph.nodes()), 6)
         self.assertEqual(len(self.exon_graph.edges()), 5)
@@ -510,7 +510,7 @@ class TestCollapseExons(TestCase):
         self.assertEqual(len(self.exon_graph.nodes()), 8)
         self.assertEqual(len(self.exon_graph.edges()), 7)
 
-        collapseExons(self.exon_graph, self.exonDb)
+        collapse_exons(self.exon_graph, self.exonDb)
 
         self.assertEqual(len(self.exon_graph.nodes()), 6)
         self.assertEqual(len(self.exon_graph.edges()), 5)
@@ -539,12 +539,12 @@ class TestCollapseExons(TestCase):
         self.assertEqual(len(self.exon_graph.nodes()), 8)
         self.assertEqual(len(self.exon_graph.edges()), 6)
 
-        collapseExons(self.exon_graph, self.exonDb)
+        collapse_exons(self.exon_graph, self.exonDb)
 
         self.assertEqual(len(self.exon_graph.nodes()), 6)
         self.assertEqual(len(self.exon_graph.edges()), 5)
 
-class TestAddIntrons(TestCase):
+class Testadd_introns(TestCase):
     def setUp(self):
         self.exonDb = {}
         start = 1000
@@ -566,7 +566,7 @@ class TestAddIntrons(TestCase):
         self.clusterNo = 0
 
     def test_simple(self):
-        addIntrons(self.exons, self.intronDb, self.exonDb,
+        add_introns(self.exons, self.intronDb, self.exonDb,
                     self.clusters, self.clusterNo)
         self.assertEqual(len(self.intronDb), 5)
 
