@@ -176,7 +176,7 @@ def get_min_paths(G, verbose=True):
         if (total_edges > 50) and verbose: # display progress
             if verbose:
                 print >> sys.stderr, \
-                    '\t... #%d found %d edges' % (mf_round, len(edges))
+                    '\t... #%d found %d junctions' % (mf_round, len(edges))
 
         add_path(edges, paths, G)
         remove_maxflow_edges(mf_edges, B)
@@ -261,7 +261,7 @@ def make_graph(bedfile, exon_db):
             transcripts.append(trns)
         else:
             yield gene_id, G, total, transcripts
-            transcripts = []
+            transcripts = [trns]
             total = 1
             G = nx.DiGraph()
             gene_id = id
@@ -270,29 +270,42 @@ def make_graph(bedfile, exon_db):
 
     yield gene_id, G, total, transcripts
 
+def print_original(transcripts):
+    '''Prints original transcripts in BED format.'''
+    for trns in transcripts:
+        print '\t'.join(trns)
+
 def main(argv, verbose=True):
     bedfile = argv[1]
     exon_db = {}
+
+    def report_total(transcripts):
+        print >> sys.stderr, '\ttotal isoforms = %d' % total
+
     for n, items in enumerate(make_graph(bedfile, exon_db), start=1):
         gene_id, G, total, transcripts = items
 
         if verbose:
-            print >> sys.stderr, '%s, total nodes = %d\n\tSearch' %\
+            print >> sys.stderr, '%s, total exons = %d' %\
                                             (gene_id, len(G.nodes()))
-
-        paths = get_min_paths(G, verbose)
-        if len(paths) < total:
-            for n, path in enumerate(paths, start=1):
-                printBed(path, exon_db, gene_id, n)
-            if verbose:
-                print >> sys.stderr, \
-                    '\ttotal max = %d, min = %d' % (total, len(paths))
+        if len(transcripts) > 1:
+            print >> sys.stderr, '\tSearch'
+            paths = get_min_paths(G, verbose)
+            print >> sys.stderr, '\tDone.'
+            if len(paths) < total:
+                for n, path in enumerate(paths, start=1):
+                    printBed(path, exon_db, gene_id, n)
+                if verbose:
+                    print >> sys.stderr, \
+                        '\ttotal max = %d, min = %d isofroms' %\
+                                            (total, len(paths))
+            else:
+                print_original(transcripts)
+                if verbose: report_total(transcripts)
         else:
-            for trns in transcripts:
-                print '\t'.join(trns)
-            if verbose:
-                print >> sys.stderr, \
-                    '\ttotal original = %d' % total
+            print_original(transcripts)
+            if verbose: report_total(transcripts)
+
 
 if __name__=='__main__':
     main(sys.argv)
