@@ -533,10 +533,10 @@ def build_gene_models(exon_db, intron_db, clusters, big_cluster, find_max):
                 gene_id -= 1
 
         if cl_num % 10 == 0:
-            print >> stderr, '.',
+            print >> stderr, '\r... %d' % cl_num,
         if cl_num % 100 == 0:
             print >> stderr, \
-                '%d : %d genes/%d isoforms found' % (cl_num,
+                '\r... %d : %d genes/%d isoforms ' % (cl_num,
                                                         gene_id,
                                                         transcripts_num)
 
@@ -628,12 +628,13 @@ def main(input_files):
             transcripts_num += 1
             print_bed_graph_single(exon, gene_id, 1)
 
+    isoform_per_gene = float(transcripts_num) / gene_id
 
-    print >> stderr, '\nTotal exons = %d' % len(exon_db)
-    print >> stderr, 'Total genes = %d' % gene_id
-    print >> stderr, 'Total transcripts = %d' % (transcripts_num)
-    print >> stderr, 'Isoform/gene = %.2f' % (float(transcripts_num)
-                                                / len(clusters))
+    print >> stderr, \
+        'total %d genes with %d isoforms (%.1f isoforms/gene)' % \
+                                                    (gene_id,
+                                                    transcripts_num,
+                                                    isoform_per_gene)
 
 
 if __name__=='__main__':
