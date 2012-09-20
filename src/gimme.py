@@ -53,6 +53,9 @@ class ExonObj:
     def __str__(self):
         return '%s:%d-%d' % (self.chrom, self.start, self.end)
 
+    def get_size(self):
+        return self.end - self.start
+
 
 def parse_bed(bed_file, min_exon=MIN_EXON):
     '''Reads alignments from BED format and creates
@@ -557,7 +560,7 @@ def merge_exons(exons):
             try:
                 next_exon = exons[chrom][i+1]
             except IndexError:
-                return new_exons
+                break
             else:
                 if next_exon.start <= curr_exon.end:
                     if next_exon.end > curr_exon.end:
@@ -624,9 +627,10 @@ def main(input_files):
 
     for chrom in merged_single_exons:
         for exon in merged_single_exons[chrom]:
-            gene_id += 1
-            transcripts_num += 1
-            print_bed_graph_single(exon, gene_id, 1)
+            if exon.get_size() > MIN_TRANSCRIPT_LEN:
+                gene_id += 1
+                transcripts_num += 1
+                print_bed_graph_single(exon, gene_id, 1)
 
     isoform_per_gene = float(transcripts_num) / gene_id
 
