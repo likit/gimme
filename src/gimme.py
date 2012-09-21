@@ -491,30 +491,32 @@ def build_gene_models(exon_db, intron_db, clusters, big_cluster, find_max):
                 gene_id += 1
                 trans_id = 0
                 collapse_exons(g, exon_db)
+
+                for node in g.nodes():
+                    if not g.predecessors(node):
+                        g.add_edge('Start', node)
+                    if not g.successors(node):
+                        g.add_edge(node, 'End')
+
+                max_paths = nx.all_simple_paths(g, 'Start', 'End')
+
                 if find_max:
                     '''Report all maximum isoforms.'''
 
-                    for transcript in get_path(g):
+                    for transcript in max_paths:
+                        transcript = transcript[1:-1]  # remove Start,End
                         if check_criteria(transcript):
                             transcripts_num += 1
                             trans_id += 1
                             print_bed_graph(transcript, gene_id, trans_id)
                         else:
                             excluded += 1
-
                 else:
                     '''Report minimal isoforms if maximum isoforms exceeds
                     MAX_ISOFORMS.
 
                     '''
-                    max_paths = get_path(g)
                     if max_paths > MAX_ISOFORMS:
-                        for node in g.nodes():
-                            if not g.predecessors(node):
-                                g.add_edge('Start', node)
-                            if not g.successors(node):
-                                g.add_edge(node, 'End')
-
                         for transcript in \
                                 get_min_isoforms.get_min_paths(g, False):
                             if check_criteria(transcript):
