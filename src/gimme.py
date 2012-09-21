@@ -23,13 +23,13 @@
 import sys, csv
 import argparse
 from sys import stderr, stdout
-
+# import matplotlib.pyplot as plt
 import networkx as nx
 from utils import pslparser, get_min_isoforms
 
 
-GAP_SIZE = 10 # a minimum intron size (bp)
-MAX_INTRON = 100000 # a maximum intron size (bp)
+GAP_SIZE = 50 # a minimum intron size (bp)
+MAX_INTRON = 300000 # a maximum intron size (bp)
 MIN_UTR = 100 # a minimum UTR size (bp)
 MIN_EXON = 10 # a minimum exon size (bp)
 MIN_TRANSCRIPT_LEN = 300 # a minimum transcript length (bp)
@@ -46,8 +46,8 @@ class ExonObj:
         self.start = start
         self.end = end
         self.terminal = None
-        self.next_exons = set([])
-        self.introns = set([])
+        self.next_exons = set()
+        self.introns = set()
         self.single = False
 
     def __str__(self):
@@ -142,6 +142,7 @@ def add_introns(exons, intron_db, exon_db,
             intron_end = next_exon.start - 1
 
             if intron_end - intron_start > MAX_INTRON:
+                print >> stderr, 'invalid intron size', intron_start, intron_end, (intron_end - intron_start)
                 continue
 
             curr_exon.next_exons.add(str(next_exon))
@@ -320,15 +321,22 @@ def add_exon(db, exons):
 
 def merge_clusters(exon_db):
     big_cluster = nx.Graph()
+    paths = []
     for exon in exon_db.itervalues():
-        path = []
+        pth = []
         for intron in exon.introns:
-            path.append(intron_db[intron].graph['cluster'])
+            cluster = intron_db[intron].graph['cluster']
+            pth.append(cluster)
+            # exon.clusters.add(cluster)
+        paths.append(pth)
 
-        if len(path) > 1:
-            big_cluster.add_path(path)
-        elif len(path) == 1:
-            big_cluster.add_node(path[0])
+    for pth in paths:
+        if len(pth) > 2:
+            big_cluster.add_path(pth)
+        elif len(pth) == 2:
+            big_cluster.add_edges_from([pth])
+        elif len(pth) == 1:
+            big_cluster.add_nodes_from(pth)
         else:
             pass
 
@@ -385,8 +393,7 @@ def build_splice_graph(cluster, intron_db, exon_db, merged_exons):
 def print_bed_graph(transcript, gene_id, tran_id):
     '''Print a splice graph in BED format.'''
 
-    exons = sorted([exon_db[e] for e in transcript],
-                            key=lambda x: (x.start, x.end))
+    exons = [exon_db[e] for e in transcript]
 
     chrom_start = exons[0].start
     chrom_end = exons[-1].end
@@ -452,44 +459,51 @@ def print_bed_graph_single(exon, gene_id, tran_id):
 def build_gene_models(exon_db, intron_db, clusters, big_cluster, find_max):
     print >> stderr, 'Building gene models...'
 
-    removed_clusters = set([])
+    visited_clusters = set()
     transcripts_num = 0
     gene_id = 0
     excluded = 0
+    two_exon_trns = set()
 
-    def check_criteria(transcript):
+    def check_criteria(transcript, two_exon_trns):
         '''Return True or False whether a transcript pass or
         fail the criteria.
 
         '''
+        transcript_length = sum([exon_db[e].get_size() for e in transcript])
 
-        exons = sorted([exon_db[e] for e in transcript],
-                                key=lambda x: (x.start, x.end))
-
-        transcript_length = sum([exon.end - exon.start for exon in exons])
         if transcript_length <= MIN_TRANSCRIPT_LEN:
             return False # fail
         else:
-            return True # pass
+            if len(transcript) == 2:
+                trns = ','.join(transcript)
+                if trns in two_exon_trns:
+                    return False
+                else:
+                    two_exon_trns.add(trns)
+                    return True # pass
+            else:
+                return True
 
     for cl_num, cl in enumerate(big_cluster.nodes(), start=1):
-        if cl not in removed_clusters:
+        if cl not in visited_clusters:
             g = nx.DiGraph()
             for intron in clusters[cl].nodes():
                 g.add_edges_from(intron_db[intron].edges())
 
-            for neighbor in big_cluster.neighbors(cl):
-                if neighbor != cl: # chances are node connects to itself.
-                    neighbor_cluster = clusters[neighbor]
-                    for intron in neighbor_cluster.nodes():
-                        g.add_edges_from(intron_db[intron].edges())
+            visited_clusters.add(cl)
 
-                removed_clusters.add(neighbor)
-            removed_clusters.add(cl)
+            for neighbor in nx.dfs_tree(big_cluster, cl):
+                # if neighbor != cl: # chances are node connects to itself.
+                neighbor_cluster = clusters[neighbor]
+                for intron in neighbor_cluster.nodes():
+                    g.add_edges_from(intron_db[intron].edges())
+
+                visited_clusters.add(neighbor)
 
             if g.nodes():
-                gene_id += 1
                 trans_id = 0
+                gene_id += 1
                 collapse_exons(g, exon_db)
 
                 for node in g.nodes():
@@ -505,7 +519,7 @@ def build_gene_models(exon_db, intron_db, clusters, big_cluster, find_max):
 
                     for transcript in max_paths:
                         transcript = transcript[1:-1]  # remove Start,End
-                        if check_criteria(transcript):
+                        if check_criteria(transcript, two_exon_trns):
                             transcripts_num += 1
                             trans_id += 1
                             print_bed_graph(transcript, gene_id, trans_id)
@@ -519,7 +533,7 @@ def build_gene_models(exon_db, intron_db, clusters, big_cluster, find_max):
                     if max_paths > MAX_ISOFORMS:
                         for transcript in \
                                 get_min_isoforms.get_min_paths(g, False):
-                            if check_criteria(transcript):
+                            if check_criteria(transcript, two_exon_trns):
                                 transcripts_num += 1
                                 trans_id += 1
                                 print_bed_graph(transcript, gene_id, trans_id)
@@ -527,7 +541,7 @@ def build_gene_models(exon_db, intron_db, clusters, big_cluster, find_max):
                                 excluded += 1
                     else:
                         for transcript in get_path(g):
-                            if check_criteria(transcript):
+                            if check_criteria(transcript, two_exon_trns):
                                 transcripts_num += 1
                                 trans_id += 1
                                 print_bed_graph(transcript, gene_id, trans_id)
@@ -558,10 +572,11 @@ def merge_exons(exons):
         i = 0
         new_exons[chrom] = []
         curr_exon = exons[chrom][i]
-        while i < (len(exons[chrom])):
+        while i < len(exons[chrom]):
             try:
                 next_exon = exons[chrom][i+1]
             except IndexError:
+                new_exons[chrom].append(curr_exon)
                 break
             else:
                 if next_exon.start <= curr_exon.end:
@@ -625,14 +640,14 @@ def main(input_files):
                                     intron_db, clusters,
                                     big_cluster, args.max)
 
-    merged_single_exons = merge_exons(single_exons)
+    # merged_single_exons = merge_exons(single_exons)
 
-    for chrom in merged_single_exons:
-        for exon in merged_single_exons[chrom]:
-            if exon.get_size() > MIN_TRANSCRIPT_LEN:
-                gene_id += 1
-                transcripts_num += 1
-                print_bed_graph_single(exon, gene_id, 1)
+    # for chrom in merged_single_exons:
+    #     for exon in merged_single_exons[chrom]:
+    #         if exon.get_size() > MIN_TRANSCRIPT_LEN:
+    #             gene_id += 1
+    #             transcripts_num += 1
+    #             print_bed_graph_single(exon, gene_id, 1)
 
     isoform_per_gene = float(transcripts_num) / gene_id
 
@@ -658,58 +673,74 @@ if __name__=='__main__':
         help='a minimum size of transcript (bp) (default: %(default)s)')
     parser.add_argument('--max', action='store_true',
         help='report a maximum set of isoforms')
+    parser.add_argument('--debug', action='store_true',
+        help='reset parameters (for debugging purpose only)')
     parser.add_argument('input', type=str, nargs='+',
         help='input file(s) in PSL/BED format')
     parser.add_argument('--version', action='version',
                         version='%(prog)s version 0.9')
 
     args = parser.parse_args()
-    if args.MIN_UTR <=0:
-        raise SystemExit, 'Invalid UTRs size (<=0)'
-    elif args.MIN_UTR != MIN_UTR:
-        MIN_UTR = args.MIN_UTR
-        print >> sys.stderr, 'User defined MIN_UTR = %d' % MIN_UTR
-    else:
-        print >> sys.stderr, 'Default MIN_UTR = %d' % MIN_UTR
+    if args.debug:
+        '''Parameters are set to retain all splice junctions for
+        debugging.
 
-    if args.GAP_SIZE < 0:
-        raise SystemExit, 'Invalid intron size (<0)'
-    elif args.GAP_SIZE != GAP_SIZE:
-        GAP_SIZE = args.GAP_SIZE
-        print >> sys.stderr, 'User defined GAP_SIZE = %d' % GAP_SIZE
+        '''
+        GAP_SIZE = 0
+        MAX_INTRON = 1e6
+        MIN_UTR = 100
+        MIN_EXON = 0
+        MIN_TRANSCRIPT_LEN = 1
+        MAX_ISOFORMS = 20
+        args.max = True
+        print >> stderr, 'Using parameters set for debugging..'
     else:
-        print >> sys.stderr, 'Default GAP_SIZE = %d' % GAP_SIZE
+        if args.MIN_UTR <=0:
+            raise SystemExit, 'Invalid UTRs size (<=0)'
+        elif args.MIN_UTR != MIN_UTR:
+            MIN_UTR = args.MIN_UTR
+            print >> sys.stderr, 'User defined MIN_UTR = %d' % MIN_UTR
+        else:
+            print >> sys.stderr, 'Default MIN_UTR = %d' % MIN_UTR
 
-    if args.MAX_INTRON <= 0:
-        raise SystemExit, 'Invalid intron size (<=0)'
-    elif args.MAX_INTRON != MAX_INTRON:
-        MAX_INTRON = args.MAX_INTRON
-        print >> sys.stderr, 'User defined MAX_INTRON = %d' % MAX_INTRON
-    else:
-        print >> sys.stderr, 'Default MAX_INTRON = %d' % MAX_INTRON
+        if args.GAP_SIZE < 0:
+            raise SystemExit, 'Invalid intron size (<0)'
+        elif args.GAP_SIZE != GAP_SIZE:
+            GAP_SIZE = args.GAP_SIZE
+            print >> sys.stderr, 'User defined GAP_SIZE = %d' % GAP_SIZE
+        else:
+            print >> sys.stderr, 'Default GAP_SIZE = %d' % GAP_SIZE
 
-    if args.MAX_ISOFORMS <= 0:
-        raise SystemExit, 'Invalid number of isoforms (<=0)'
-    elif args.MAX_ISOFORMS != MAX_ISOFORMS:
-        MAX_ISOFORMS = args.MAX_ISOFORMS
-        print >> sys.stderr, 'User defined MAX_ISOFORMS = %d' % MAX_ISOFORMS
-    else:
-        print >> sys.stderr, 'Default MAX_ISOFORMS = %d' % MAX_ISOFORMS
+        if args.MAX_INTRON <= 0:
+            raise SystemExit, 'Invalid intron size (<=0)'
+        elif args.MAX_INTRON != MAX_INTRON:
+            MAX_INTRON = args.MAX_INTRON
+            print >> sys.stderr, 'User defined MAX_INTRON = %d' % MAX_INTRON
+        else:
+            print >> sys.stderr, 'Default MAX_INTRON = %d' % MAX_INTRON
 
-    if args.MIN_TRANSCRIPT_LEN <= 0:
-        raise SystemExit, 'Invalid transcript size (<=0)'
-    elif args.MIN_TRANSCRIPT_LEN != MIN_TRANSCRIPT_LEN:
-        MIN_TRANSCRIPT_LEN = args.MIN_TRANSCRIPT_LEN
-        print >> sys.stderr, 'User defined MIN_TRANSCRIPT_LEN = %d' % \
-                                                    MIN_TRANSCRIPT_LEN
-    else:
-        print >> sys.stderr, 'Default MIN_TRANSCRIPT_LEN = %d' % \
-                                                    MIN_TRANSCRIPT_LEN
+        if args.MAX_ISOFORMS <= 0:
+            raise SystemExit, 'Invalid number of isoforms (<=0)'
+        elif args.MAX_ISOFORMS != MAX_ISOFORMS:
+            MAX_ISOFORMS = args.MAX_ISOFORMS
+            print >> sys.stderr, 'User defined MAX_ISOFORMS = %d' % MAX_ISOFORMS
+        else:
+            print >> sys.stderr, 'Default MAX_ISOFORMS = %d' % MAX_ISOFORMS
 
-    if args.max:
-        print >> sys.stderr, 'Search for a maximum set of isoforms = yes'
-    else:
-        print >> sys.stderr, 'Search for a minimum set of isoforms = yes'
+        if args.MIN_TRANSCRIPT_LEN <= 0:
+            raise SystemExit, 'Invalid transcript size (<=0)'
+        elif args.MIN_TRANSCRIPT_LEN != MIN_TRANSCRIPT_LEN:
+            MIN_TRANSCRIPT_LEN = args.MIN_TRANSCRIPT_LEN
+            print >> sys.stderr, 'User defined MIN_TRANSCRIPT_LEN = %d' % \
+                                                        MIN_TRANSCRIPT_LEN
+        else:
+            print >> sys.stderr, 'Default MIN_TRANSCRIPT_LEN = %d' % \
+                                                        MIN_TRANSCRIPT_LEN
+        if args.max:
+            print >> sys.stderr, 'Search for a maximum set of isoforms = yes'
+        else:
+            print >> sys.stderr, 'Search for a minimum set of isoforms = yes'
+
 
     if args.input:
         main(args.input)
