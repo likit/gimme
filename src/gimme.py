@@ -23,7 +23,7 @@
 import sys, csv
 import argparse
 from sys import stderr, stdout
-# import matplotlib.pyplot as plt
+
 import networkx as nx
 from utils import pslparser, get_min_isoforms
 
@@ -31,7 +31,6 @@ from utils import pslparser, get_min_isoforms
 GAP_SIZE = 50 # a minimum intron size (bp)
 MAX_INTRON = 300000 # a maximum intron size (bp)
 MIN_UTR = 100 # a minimum UTR size (bp)
-MIN_EXON = 10 # a minimum exon size (bp)
 MIN_TRANSCRIPT_LEN = 300 # a minimum transcript length (bp)
 MAX_ISOFORMS = 20   # minimal isoforms will be searched
                     #if the number of isoforms exceed this number
@@ -57,7 +56,7 @@ class ExonObj:
         return self.end - self.start
 
 
-def parse_bed(bed_file, min_exon=MIN_EXON):
+def parse_bed(bed_file):
     '''Reads alignments from BED format and creates
     exon objects from a transcript.
 
@@ -79,12 +78,10 @@ def parse_bed(bed_file, min_exon=MIN_EXON):
             exons.append(exon)
 
         exons = delete_gap(exons)
-
-        for kept_exons in remove_small_exon(exons, min_exon):
-            yield kept_exons
+        yield exons
 
 
-def parse_psl(psl_file, min_exon=MIN_EXON):
+def parse_psl(psl_file):
     '''Reads alignments from PSL format and creates
     exon objects from each transcript.
 
@@ -100,27 +97,7 @@ def parse_psl(psl_file, min_exon=MIN_EXON):
             exons.append(exon)
 
         exons = delete_gap(exons)
-
-        for kept_exons in remove_small_exon(exons, min_exon):
-            yield kept_exons
-
-
-def remove_small_exon(exons, min_exon):
-    '''Removes a small exon and a transcript is split into
-    parts that precedes and succeeds the exon.
-
-    '''
-    kept = []
-
-    for exon in exons:
-        if (exon.end - exon.start) + 1 >= min_exon:
-            kept.append(exon)
-        else:
-            if kept:
-                yield kept
-                kept = []
-    if kept:
-        yield kept
+        yield exons
 
 
 def add_introns(exons, intron_db, exon_db,
@@ -142,7 +119,6 @@ def add_introns(exons, intron_db, exon_db,
             intron_end = next_exon.start - 1
 
             if intron_end - intron_start > MAX_INTRON:
-                print >> stderr, 'invalid intron size', intron_start, intron_end, (intron_end - intron_start)
                 continue
 
             curr_exon.next_exons.add(str(next_exon))
@@ -689,7 +665,6 @@ if __name__=='__main__':
         GAP_SIZE = 0
         MAX_INTRON = 1e6
         MIN_UTR = 100
-        MIN_EXON = 0
         MIN_TRANSCRIPT_LEN = 1
         MAX_ISOFORMS = 20
         args.max = True
