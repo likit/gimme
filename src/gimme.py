@@ -194,17 +194,18 @@ def collapse_exons(g, exon_db):
             pass
         else:
             if curr_exon.end == next_exon.end:
-                if next_exon.terminal == 1:
+                if next_exon.terminal == 1: # left terminal
                     g.add_edges_from([(str(curr_exon), n)\
                             for n in g.successors(str(next_exon))])
                     g.remove_node(str(next_exon))
+                    if curr_exon.terminal == 2:
+                        curr_exon.terminal = None
                 else:
-                    if curr_exon.terminal == 1:
-                        if next_exon.start - curr_exon.start <= MIN_UTR:
-                            g.add_edges_from([(str(next_exon), n)\
-                                    for n in g.successors(str(curr_exon))])
-                            g.remove_node(str(curr_exon))
-
+                    if (curr_exon.terminal == 1 and
+                            next_exon.start - curr_exon.start <= MIN_UTR):
+                        g.add_edges_from([(str(next_exon), n) for n in
+                                            g.successors(str(curr_exon))])
+                        g.remove_node(str(curr_exon))
                     curr_exon = next_exon
             else:
                 curr_exon = next_exon
@@ -269,7 +270,6 @@ def delete_gap(exons):
         i += 1
 
     new_exons.append(curr_exon)
-
     return new_exons
 
 
@@ -291,6 +291,10 @@ def add_exon(db, exons):
         except KeyError:
             db[str(exon)] = exon
         else:
+            if ((exon.terminal and exon_.terminal) and 
+                        exon.terminal != exon_.terminal):
+                exon.terminal = None
+
             if not exon.terminal and exon_.terminal:
                 exon_.terminal = None
 
@@ -481,7 +485,6 @@ def build_gene_models(exon_db, intron_db, clusters, big_cluster, find_max):
                 trans_id = 0
                 gene_id += 1
                 collapse_exons(g, exon_db)
-
                 for node in g.nodes():
                     if not g.predecessors(node):
                         g.add_edge('Start', node)
@@ -664,7 +667,7 @@ if __name__=='__main__':
         '''
         GAP_SIZE = 0
         MAX_INTRON = 1e6
-        MIN_UTR = 100
+        MIN_UTR = 0
         MIN_TRANSCRIPT_LEN = 1
         MAX_ISOFORMS = 20
         args.max = True
