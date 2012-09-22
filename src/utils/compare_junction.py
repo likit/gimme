@@ -21,7 +21,7 @@ from collections import namedtuple
 
 import pslparser
 
-MIN_INTRON = 21
+MIN_INTRON = 0
 
 Transcript = namedtuple('Transcript', [
                                         'chrom',
