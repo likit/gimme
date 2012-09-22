@@ -647,25 +647,30 @@ def main(input_files):
 
 if __name__=='__main__':
     parser = argparse.ArgumentParser(prog='Gimme')
-    parser.add_argument('--MIN_UTR', type=int, default=MIN_UTR,
-        help='a cutoff size of alternative UTRs (bp) (default: %(default)s)')
-    parser.add_argument('--GAP_SIZE', type=int, default=GAP_SIZE,
-        help='a maximum gap size (bp) (default: %(default)s)')
-    parser.add_argument('--MAX_INTRON', type=int, default=MAX_INTRON,
-        help='a maximum intron size (bp) (default: %(default)s)')
-    parser.add_argument('--MAX_ISOFORMS', type=int, default=MAX_ISOFORMS,
-        help='a maximum intron size (bp) (default: %(default)s)')
-    parser.add_argument('--MIN_TRANSCRIPT_LEN', type=int,
-        default=MIN_TRANSCRIPT_LEN,
-        help='a minimum size of transcript (bp) (default: %(default)s)')
-    parser.add_argument('--max', action='store_true',
-        help='report a maximum set of isoforms')
+    parser.add_argument('--min_utr', type=int, metavar='int',
+            default=MIN_UTR,
+            help='a cutoff size of alternative UTRs (bp)' +
+                    ' (default: %(default)s)')
+    parser.add_argument('--gap_size', type=int, metavar='int',
+            default=GAP_SIZE,
+            help='a maximum gap size (bp) (default: %(default)s)')
+    parser.add_argument('--max_intron', type=int, metavar='int',
+            default=MAX_INTRON,
+            help='a maximum intron size (bp) (default: %(default)s)')
+    parser.add_argument('--max_isoforms', type=int, metavar='int',
+            default=MAX_ISOFORMS,
+            help='a maximum intron size (bp) (default: %(default)s)')
+    parser.add_argument('--min_transcript_len', type=int,
+            metavar='int', default=MIN_TRANSCRIPT_LEN,
+            help='a minimum size of transcript (bp) (default: %(default)s)')
+    parser.add_argument('-x', '--max', action='store_true',
+            help='report a maximum set of isoforms')
     parser.add_argument('--debug', action='store_true',
-        help='reset parameters (for debugging purpose only)')
+            help='reset parameters (for debugging purpose only)')
     parser.add_argument('input', type=str, nargs='+',
-        help='input file(s) in PSL/BED format')
-    parser.add_argument('--version', action='version',
-                        version='%(prog)s version 0.9')
+            help='input file(s) in PSL/BED format')
+    parser.add_argument('-v', '--version', action='version',
+            version='%(prog)s version 0.97')
 
     args = parser.parse_args()
     if args.debug:
@@ -681,42 +686,42 @@ if __name__=='__main__':
         args.max = True
         print >> stderr, 'Using parameters set for debugging..'
     else:
-        if args.MIN_UTR <=0:
+        if args.min_utr <=0:
             raise SystemExit, 'Invalid UTRs size (<=0)'
-        elif args.MIN_UTR != MIN_UTR:
-            MIN_UTR = args.MIN_UTR
+        elif args.min_utr != MIN_UTR:
+            MIN_UTR = args.min_utr
             print >> sys.stderr, 'User defined MIN_UTR = %d' % MIN_UTR
         else:
             print >> sys.stderr, 'Default MIN_UTR = %d' % MIN_UTR
 
-        if args.GAP_SIZE < 0:
+        if args.gap_size < 0:
             raise SystemExit, 'Invalid intron size (<0)'
-        elif args.GAP_SIZE != GAP_SIZE:
-            GAP_SIZE = args.GAP_SIZE
+        elif args.gap_size != GAP_SIZE:
+            GAP_SIZE = args.gap_size
             print >> sys.stderr, 'User defined GAP_SIZE = %d' % GAP_SIZE
         else:
             print >> sys.stderr, 'Default GAP_SIZE = %d' % GAP_SIZE
 
-        if args.MAX_INTRON <= 0:
+        if args.max_intron <= 0:
             raise SystemExit, 'Invalid intron size (<=0)'
-        elif args.MAX_INTRON != MAX_INTRON:
-            MAX_INTRON = args.MAX_INTRON
+        elif args.max_intron != MAX_INTRON:
+            MAX_INTRON = args.max_intron
             print >> sys.stderr, 'User defined MAX_INTRON = %d' % MAX_INTRON
         else:
             print >> sys.stderr, 'Default MAX_INTRON = %d' % MAX_INTRON
 
-        if args.MAX_ISOFORMS <= 0:
+        if args.max_isoforms <= 0:
             raise SystemExit, 'Invalid number of isoforms (<=0)'
-        elif args.MAX_ISOFORMS != MAX_ISOFORMS:
-            MAX_ISOFORMS = args.MAX_ISOFORMS
+        elif args.max_isoforms != MAX_ISOFORMS:
+            MAX_ISOFORMS = args.max_isoforms
             print >> sys.stderr, 'User defined MAX_ISOFORMS = %d' % MAX_ISOFORMS
         else:
             print >> sys.stderr, 'Default MAX_ISOFORMS = %d' % MAX_ISOFORMS
 
-        if args.MIN_TRANSCRIPT_LEN <= 0:
+        if args.min_transcript_len <= 0:
             raise SystemExit, 'Invalid transcript size (<=0)'
-        elif args.MIN_TRANSCRIPT_LEN != MIN_TRANSCRIPT_LEN:
-            MIN_TRANSCRIPT_LEN = args.MIN_TRANSCRIPT_LEN
+        elif args.min_transcript_len != MIN_TRANSCRIPT_LEN:
+            MIN_TRANSCRIPT_LEN = args.min_transcript_len
             print >> sys.stderr, 'User defined MIN_TRANSCRIPT_LEN = %d' % \
                                                         MIN_TRANSCRIPT_LEN
         else:
