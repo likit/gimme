@@ -684,7 +684,8 @@ if __name__=='__main__':
         MIN_TRANSCRIPT_LEN = 1
         MAX_ISOFORMS = 20
         args.max = True
-        print >> stderr, 'Using parameters set for debugging..'
+        print >> stderr, '-===DEBBUG MODE===-'
+        print >> stderr, 'Warning : Use this mode for debugging only!'
     else:
         if args.min_utr <=0:
             raise SystemExit, 'Invalid UTRs size (<=0)'
