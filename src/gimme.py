@@ -437,7 +437,7 @@ def print_bed_graph_single(exon, gene_id, tran_id):
                     block_starts))
 
 def build_gene_models(exon_db, intron_db, clusters, big_cluster, find_max):
-    print >> stderr, 'Building gene models...'
+    print >> stderr, '[Constructing]'
 
     visited_clusters = set()
     transcripts_num = 0
@@ -530,13 +530,8 @@ def build_gene_models(exon_db, intron_db, clusters, big_cluster, find_max):
             if trans_id == 0:
                 gene_id -= 1
 
-        if cl_num % 10 == 0:
-            print >> stderr, '\r... %d' % cl_num,
-        if cl_num % 100 == 0:
-            print >> stderr, \
-                '\r... %d : %d genes/%d isoforms ' % (cl_num,
-                                                        gene_id,
-                                                        transcripts_num)
+        print >> stderr, \
+            '\r  %d genes, %d isoforms ' % (gene_id, transcripts_num),
 
     return gene_id, transcripts_num, excluded
 
@@ -599,7 +594,7 @@ def main(input_files):
                     'Use utils/gff2bed.py to convert GFF to BED.'
             raise SystemExit
 
-        print >> stderr, 'Parsing alignments from %s...' % input_file
+        print >> stderr, '[Parsing] %s' % input_file
         for n, exons in enumerate(parse(open(input_file)), start=1):
             if len(exons) > 1:
                 add_exon(exon_db, exons)
@@ -612,7 +607,7 @@ def main(input_files):
                     single_exons[exons[0].chrom].append(exons[0])
 
             if n % 100 == 0:
-                print >> stderr, '\r... %d alignments' % n,
+                print >> stderr, '\r  %d alignments' % n,
         print >> stderr, ''
 
     big_cluster = merge_clusters(exon_db)
@@ -627,16 +622,15 @@ def main(input_files):
                 gene_id += 1
                 transcripts_num += 1
                 print_bed_graph_single(exon, gene_id, 1)
+                print >> stderr, '\r  %d genes, %d isoforms' % \
+                                            (gene_id, transcripts_num),
             else:
                 excluded += 1
 
+    print >> stderr, '\n[Done]'
     if gene_id > 0:
-        isoform_per_gene = float(transcripts_num) / gene_id
         print >> stderr, \
-            'Total %d genes with %d isoforms (%.1f isoforms/gene)' % \
-                                                        (gene_id,
-                                                        transcripts_num,
-                                                        isoform_per_gene),
+            '  Total %d genes with %d isoforms' % (gene_id, transcripts_num),
     else:
         print >> stderr, '\nNo gene models built.',
     if excluded > 0:
@@ -679,7 +673,7 @@ if __name__=='__main__':
 
         '''
         GAP_SIZE = 0
-        MAX_INTRON = 1e6
+        MAX_INTRON = 1e20
         MIN_UTR = 0
         MIN_TRANSCRIPT_LEN = 1
         MAX_ISOFORMS = 20
