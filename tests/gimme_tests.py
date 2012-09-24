@@ -770,5 +770,89 @@ class TestMergeExons(TestCase):
 
         self.assertEqual(len(self.merged_exons['chr1']), 3)
 
+
+class TestSplitExonGroups(TestCase):
+    max_intron = 200
+
+    def setUp(self):
+        self.exon_db = {}
+        self.exons = []
+        e1 = gimme.ExonObj('chr1', 1000, 1100)
+        e2 = gimme.ExonObj('chr1', 1200, 1300)
+
+        self.exon_db[str(e1)] = e1
+        self.exons.append(str(e1))
+
+        self.exon_db[str(e2)] = e2
+        self.exons.append(str(e2))
+
+        self.exon_db[self.exons[0]].terminal = 1 # mark a left terminal
+        self.exon_db[self.exons[-1]].terminal = 2 # mark a right terminal
+
+    def test_no_split(self):
+        split = gimme.split_exon_groups(self.exons,
+                                        self.exon_db,
+                                        TestSplitExonGroups.max_intron)
+        self.assertEqual(len(split), 1)
+
+    def test_split_one_two_exons(self):
+        self.exons = []
+        self.exon_db = {}
+        e1 = gimme.ExonObj('chr1', 1000, 1100)
+        e2 = gimme.ExonObj('chr1', 2800, 2900)
+
+        self.exon_db[str(e1)] = e1
+        self.exons.append(str(e1))
+
+        self.exon_db[str(e2)] = e2
+        self.exons.append(str(e2))
+
+        split = gimme.split_exon_groups(self.exons,
+                                        self.exon_db,
+                                        TestSplitExonGroups.max_intron)
+        self.assertEqual(len(split), 2)
+
+    def test_split_one_back(self):
+        e3 = gimme.ExonObj('chr1', 1800, 1900)
+
+        self.exon_db[str(e3)] = e3
+        self.exons.append(str(e3))
+
+        split = gimme.split_exon_groups(self.exons,
+                                        self.exon_db,
+                                        TestSplitExonGroups.max_intron)
+        self.assertEqual(len(split), 2)
+
+    def test_split_one_front(self):
+        e3 = gimme.ExonObj('chr1', 500, 700)
+
+        self.exon_db[str(e3)] = e3
+        self.exons.insert(0, str(e3))
+
+        split = gimme.split_exon_groups(self.exons,
+                                        self.exon_db,
+                                        TestSplitExonGroups.max_intron)
+        self.assertEqual(len(split), 2)
+
+    def test_split_two(self):
+        e3 = gimme.ExonObj('chr1', 1800, 1900)
+        e4 = gimme.ExonObj('chr1', 2100, 2200)
+        e5 = gimme.ExonObj('chr1', 3000, 3400)
+        e6 = gimme.ExonObj('chr1', 3500, 3600)
+
+        self.exon_db[str(e3)] = e3
+        self.exon_db[str(e4)] = e4
+        self.exon_db[str(e5)] = e5
+        self.exon_db[str(e6)] = e6
+        self.exons.append(str(e3))
+        self.exons.append(str(e4))
+        self.exons.append(str(e5))
+        self.exons.append(str(e6))
+
+        split = gimme.split_exon_groups(self.exons,
+                                        self.exon_db,
+                                        TestSplitExonGroups.max_intron)
+        self.assertEqual(len(split), 3)
+
 if __name__=='__main__':
     unittest.main()
