@@ -34,6 +34,8 @@ MIN_UTR = 100 # a minimum UTR size (bp)
 MIN_TRANSCRIPT_LEN = 300 # a minimum transcript length (bp)
 MAX_ISOFORMS = 20   # minimal isoforms will be searched
                     #if the number of isoforms exceed this number
+VERSION = '0.97'
+SHA = '09ec1539a8' # git commit SHA
 
 exon_db = {}
 intron_db = {}
@@ -437,8 +439,6 @@ def print_bed_graph_single(exon, gene_id, tran_id):
                     block_starts))
 
 def build_gene_models(exon_db, intron_db, clusters, big_cluster, find_max):
-    print >> stderr, '[Constructing]'
-
     visited_clusters = set()
     transcripts_num = 0
     gene_id = 0
@@ -530,8 +530,8 @@ def build_gene_models(exon_db, intron_db, clusters, big_cluster, find_max):
             if trans_id == 0:
                 gene_id -= 1
 
-        print >> stderr, \
-            '\r  %d genes, %d isoforms ' % (gene_id, transcripts_num),
+        print >> stderr, '\r  |--Multi-exon\t\t%d genes, %d isoforms ' % \
+                                            (gene_id, transcripts_num),
 
     return gene_id, transcripts_num, excluded
 
@@ -580,6 +580,16 @@ def detect_format(input_file):
         return None
 
 def main(input_files):
+    print >> stderr, 'Gimme : Alignments-based assembler'
+    print >> stderr, 'Version : %s (%s)' % (VERSION, SHA)
+    print >> stderr, 'Source code : https://github.com/ged-lab/gimme.git\n'
+
+    if args.debug:
+        print >> stderr, 'DEBBUG MODE\t' + \
+                'Use this mode for debugging only!\n'
+
+    print >> stderr, '[Run...]'
+
     cluster_no = 0
     single_exons = {}
 
@@ -594,7 +604,7 @@ def main(input_files):
                     'Use utils/gff2bed.py to convert GFF to BED.'
             raise SystemExit
 
-        print >> stderr, '[Parsing] %s' % input_file
+        print >> stderr, 'Input\t\t\t%s' % input_file
         for n, exons in enumerate(parse(open(input_file)), start=1):
             if len(exons) > 1:
                 add_exon(exon_db, exons)
@@ -607,13 +617,19 @@ def main(input_files):
                     single_exons[exons[0].chrom].append(exons[0])
 
             if n % 100 == 0:
-                print >> stderr, '\r  %d alignments' % n,
+                print >> stderr, '\r  |--Parsing\t\t%d alignments' % n,
+
+        if n < 100:
+            print >> stderr, '\r  |--Parsing\t\t%d alignments' % n,
         print >> stderr, ''
 
     big_cluster = merge_clusters(exon_db)
+
+    print >> stderr, 'Constructing'
     gene_id, transcripts_num, excluded = build_gene_models(exon_db,
                                                     intron_db, clusters,
                                                     big_cluster, args.max)
+    print >> stderr, ''
     merged_single_exons = merge_exons(single_exons)
 
     for chrom in merged_single_exons:
@@ -622,49 +638,49 @@ def main(input_files):
                 gene_id += 1
                 transcripts_num += 1
                 print_bed_graph_single(exon, gene_id, 1)
-                print >> stderr, '\r  %d genes, %d isoforms' % \
-                                            (gene_id, transcripts_num),
+                print >> stderr, '\r  |--Single-exon\t%d genes' % gene_id,
             else:
                 excluded += 1
 
     print >> stderr, '\n[Done]'
     if gene_id > 0:
         print >> stderr, \
-            '  Total %d genes with %d isoforms' % (gene_id, transcripts_num),
+            '\nTotal %d genes with %d isoforms' % (gene_id, transcripts_num),
     else:
-        print >> stderr, '\nNo gene models built.',
-    if excluded > 0:
+        print >> stderr, 'No gene models built.',
+    if excluded > 0 and args.debug:
         print >> stderr, '(%d transcripts do not pass criteria.)' % excluded
     else:
         print >> stderr, ''
 
 
 if __name__=='__main__':
-    parser = argparse.ArgumentParser(prog='Gimme')
+    parser = argparse.ArgumentParser(prog='python gimme.py')
     parser.add_argument('--min_utr', type=int, metavar='int',
             default=MIN_UTR,
             help='a cutoff size of alternative UTRs (bp)' +
                     ' (default: %(default)s)')
     parser.add_argument('--gap_size', type=int, metavar='int',
             default=GAP_SIZE,
-            help='a maximum gap size (bp) (default: %(default)s)')
+            help='the maximum gap size (bp) (default: %(default)s)')
     parser.add_argument('--max_intron', type=int, metavar='int',
             default=MAX_INTRON,
-            help='a maximum intron size (bp) (default: %(default)s)')
+            help='the maximum intron size (bp) (default: %(default)s)')
     parser.add_argument('--max_isoforms', type=int, metavar='int',
             default=MAX_ISOFORMS,
-            help='a maximum intron size (bp) (default: %(default)s)')
+            help='the maximum number of isoforms reported ' +
+            'without -x option (default: %(default)s)')
     parser.add_argument('--min_transcript_len', type=int,
             metavar='int', default=MIN_TRANSCRIPT_LEN,
-            help='a minimum size of transcript (bp) (default: %(default)s)')
+            help='the minimum size of transcript (bp) (default: %(default)s)')
     parser.add_argument('-x', '--max', action='store_true',
-            help='report a maximum set of isoforms')
+            help='report all putative isoforms')
     parser.add_argument('--debug', action='store_true',
             help='reset parameters (for debugging purpose only)')
     parser.add_argument('input', type=str, nargs='+',
             help='input file(s) in PSL/BED format')
     parser.add_argument('-v', '--version', action='version',
-            version='%(prog)s version 0.97')
+            version='%(prog)s version ' + VERSION)
 
     args = parser.parse_args()
     if args.debug:
@@ -678,55 +694,36 @@ if __name__=='__main__':
         MIN_TRANSCRIPT_LEN = 1
         MAX_ISOFORMS = 20
         args.max = True
-        print >> stderr, '-===DEBBUG MODE===-'
-        print >> stderr, 'Warning : Use this mode for debugging only!'
     else:
         if args.min_utr <=0:
-            raise SystemExit, 'Invalid UTRs size (<=0)'
+            raise ValueError, 'Invalid UTRs size (<=0)'
         elif args.min_utr != MIN_UTR:
             MIN_UTR = args.min_utr
             print >> sys.stderr, 'User defined MIN_UTR = %d' % MIN_UTR
-        else:
-            print >> sys.stderr, 'Default MIN_UTR = %d' % MIN_UTR
 
         if args.gap_size < 0:
-            raise SystemExit, 'Invalid intron size (<0)'
+            raise ValueError, 'Invalid intron size (<0)'
         elif args.gap_size != GAP_SIZE:
             GAP_SIZE = args.gap_size
             print >> sys.stderr, 'User defined GAP_SIZE = %d' % GAP_SIZE
-        else:
-            print >> sys.stderr, 'Default GAP_SIZE = %d' % GAP_SIZE
 
         if args.max_intron <= 0:
-            raise SystemExit, 'Invalid intron size (<=0)'
+            raise ValueError, 'Invalid intron size (<=0)'
         elif args.max_intron != MAX_INTRON:
             MAX_INTRON = args.max_intron
             print >> sys.stderr, 'User defined MAX_INTRON = %d' % MAX_INTRON
-        else:
-            print >> sys.stderr, 'Default MAX_INTRON = %d' % MAX_INTRON
 
         if args.max_isoforms <= 0:
-            raise SystemExit, 'Invalid number of isoforms (<=0)'
+            raise ValueError, 'Invalid number of isoforms (<=0)'
         elif args.max_isoforms != MAX_ISOFORMS:
             MAX_ISOFORMS = args.max_isoforms
             print >> sys.stderr, 'User defined MAX_ISOFORMS = %d' % MAX_ISOFORMS
-        else:
-            print >> sys.stderr, 'Default MAX_ISOFORMS = %d' % MAX_ISOFORMS
 
         if args.min_transcript_len <= 0:
-            raise SystemExit, 'Invalid transcript size (<=0)'
+            raise ValueError, 'Invalid transcript size (<=0)'
         elif args.min_transcript_len != MIN_TRANSCRIPT_LEN:
             MIN_TRANSCRIPT_LEN = args.min_transcript_len
             print >> sys.stderr, 'User defined MIN_TRANSCRIPT_LEN = %d' % \
                                                         MIN_TRANSCRIPT_LEN
-        else:
-            print >> sys.stderr, 'Default MIN_TRANSCRIPT_LEN = %d' % \
-                                                        MIN_TRANSCRIPT_LEN
-        if args.max:
-            print >> sys.stderr, 'Search for a maximum set of isoforms = yes'
-        else:
-            print >> sys.stderr, 'Search for a minimum set of isoforms = yes'
-
-
     if args.input:
         main(args.input)
