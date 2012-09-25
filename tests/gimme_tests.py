@@ -789,7 +789,20 @@ class TestSplitExonGroups(TestCase):
         self.exon_db[self.exons[0]].terminal = 1 # mark a left terminal
         self.exon_db[self.exons[-1]].terminal = 2 # mark a right terminal
 
-    def test_no_split(self):
+    def test_no_split_one_exon(self):
+        self.exons = []
+        self.exon_db = {}
+        e1 = gimme.ExonObj('chr1', 1000, 1100)
+
+        self.exon_db[str(e1)] = e1
+        self.exons.append(str(e1))
+
+        split = gimme.split_exon_groups(self.exons,
+                                        self.exon_db,
+                                        TestSplitExonGroups.max_intron)
+        self.assertEqual(len(split), 1)
+
+    def test_no_split_two_exons(self):
         split = gimme.split_exon_groups(self.exons,
                                         self.exon_db,
                                         TestSplitExonGroups.max_intron)
