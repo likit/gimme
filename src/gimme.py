@@ -33,11 +33,12 @@ GAP_SIZE = 50 # a minimum intron size (bp)
 MAX_INTRON = 300000 # a maximum intron size (bp)
 MIN_UTR = 100 # a minimum UTR size (bp)
 MIN_TRANSCRIPT_LEN = 300 # a minimum length for multiple exon transcript(bp)
-MIN_SINGLE_EXON_LEN = 1000 # a minimum length for a single exon(bp)
+MIN_SINGLE_EXON_LEN = 500 # a minimum length for a single exon(bp)
 MAX_ISOFORMS = 20   # minimal isoforms will be searched
                     #if the number of isoforms exceed this number
 VERSION = '0.97'
-SHA = '09ec1539a8' # git commit SHA
+SHA = '91a00edd2a' # git commit SHA
+
 
 exon_db = {}
 intron_db = {}
@@ -291,15 +292,25 @@ def extend_exons(exon, singles, unmergables):
         for o in overlaps:
             if o.start >= exon.start and o.end <= exon.end:
                 o.value['exon'].remove = True  # mark the exon as removed
-            elif abs(o.start - exon.start) + \
-                                abs(o.end - exon.end) < MIN_UTR:
-                o.value['exon'].remove = True  # mark the exon as removed
+            elif o.start >= exon.start and o.end > exon.end:
+                if o.end - exon.end < MIN_UTR:
+                    o.value['exon'].remove = True
+                else:
+                    unmergables.add(str(o.value['exon']))
+            elif o.start < exon.start and o.end <= exon.end:
+                if exon.start - o.start < MIN_UTR:
+                    o.value['exon'].remove = True
+                else:
+                    unmergables.add(str(o.value['exon']))
+            elif o.start < exon.start and o.end > exon.end:
+                if (exon.start - o.start) + (o.end - exon.end) < MIN_UTR:
+                    o.value['exon'].remove = True
+                else:
+                    unmergables.add(str(o.value['exon']))
             else:
-                unmergables.add(str(o.value['exon']))  # unmergable exon
+                unmergables.add(str(o.value['exon']))
 
         extend_exons(exon, singles, unmergables)
-        # exn = overlaps[0].value['exon']
-        # print >> stderr, 'overlaps', exon, len(overlaps), exn, exn.terminal
 
 def delete_gap(exons):
     '''Alignments may contain small gaps from indels and etc.
@@ -598,7 +609,7 @@ def detect_format(input_file):
         return None
 
 def main(input_files):
-    print >> stderr, 'Gimme : Alignments-based assembler'
+    print >> stderr, 'Gimme : Alignment-based assembler'
     print >> stderr, 'Version : %s (%s)' % (VERSION, SHA)
     print >> stderr, 'Source code : https://github.com/ged-lab/gimme.git\n'
 
@@ -697,7 +708,7 @@ def main(input_files):
 
 
 if __name__=='__main__':
-    parser = argparse.ArgumentParser(prog='python gimme.py')
+    parser = argparse.ArgumentParser(prog='gimme.py')
     parser.add_argument('--min_utr', type=int, metavar='int',
             default=MIN_UTR,
             help='a cutoff size of alternative UTRs (bp)' +
@@ -727,7 +738,7 @@ if __name__=='__main__':
     parser.add_argument('input', type=str, nargs='+',
             help='input file(s) in PSL/BED format')
     parser.add_argument('-v', '--version', action='version',
-            version='%(prog)s version ' + VERSION)
+            version='%(prog)s version ' + VERSION + ' (' + SHA + ')')
 
     args = parser.parse_args()
     if args.debug:
