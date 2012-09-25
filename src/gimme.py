@@ -31,7 +31,7 @@ from utils import pslparser, get_min_isoforms
 GAP_SIZE = 50 # a minimum intron size (bp)
 MAX_INTRON = 300000 # a maximum intron size (bp)
 MIN_UTR = 100 # a minimum UTR size (bp)
-MIN_TRANSCRIPT_LEN = 300 # a minimum transcript length (bp)
+MIN_TRANSCRIPT_LEN = 1 # a minimum transcript length (bp)
 MAX_ISOFORMS = 20   # minimal isoforms will be searched
                     #if the number of isoforms exceed this number
 VERSION = '0.97'
@@ -102,84 +102,114 @@ def parse_psl(psl_file):
         yield exons
 
 
-def add_introns(exons, intron_db, exon_db,
-                clusters, cluster_no):
-    '''Get introns from a set of exons.'''
+def split_exon_groups(exons, max_intron=MAX_INTRON):
+    '''Returns groups of exons split by excessively large
+    introns.
 
-    existing_clusters = set([])
+    Exons is a list of exons sorted by start position.
 
-    introns = []
+    '''
+    if MAX_INTRON < 0: return [exons] # disable
 
+    all_exon_groups = []
+    subgroup = []
     for i in range(len(exons)):
-        curr_exon = exon_db[str(exons[i])]
+        curr_exon = exons[i]
         try:
-            next_exon = exon_db[str(exons[i + 1])]
-        except IndexError:
-            pass
+            next_exon = exons[i + 1]
+        except IndexError: # end of list
+            subgroup.append(curr_exon)
+            all_exon_groups.append(subgroup[:])
+            break
         else:
             intron_start = curr_exon.end + 1
             intron_end = next_exon.start - 1
 
-            if intron_end - intron_start > MAX_INTRON:
-                continue
+            if intron_end - intron_start > max_intron:
+                subgroup.append(curr_exon)
+                all_exon_groups.append(subgroup[:])
 
-            curr_exon.next_exons.add(str(next_exon))
+                subgroup = [] # start new subgroup
+            else:
+                subgroup.append(curr_exon)
 
-            intron_name = '%s:%d-%d' % (curr_exon.chrom,
-                                            intron_start,
-                                            intron_end)
-            intron = nx.DiGraph(name=intron_name, cluster=None)
+    return all_exon_groups
 
+
+def add_introns(exons, intron_db, clusters, cluster_no):
+    '''Get introns from a set of exons.'''
+
+    all_exon_groups = split_exon_groups(exons, MAX_INTRON)
+
+    for subgroup in all_exon_groups:
+        introns = []
+        existing_clusters = set()
+        for i in range(len(subgroup)):
+            curr_exon = subgroup[i]
             try:
-                intron_ = intron_db[intron.graph['name']]
-            except KeyError:
-                intron_db[intron.graph['name']] = intron
-                intron.add_edge(str(curr_exon), str(next_exon))
-                introns.append(intron)
-
-                curr_exon.introns.add(intron.graph['name'])
-                next_exon.introns.add(intron.graph['name'])
+                next_exon = subgroup[i + 1]
+            except IndexError:
+                pass
             else:
-                intron_.add_edge(str(curr_exon), str(next_exon))
-                introns.append(intron_)
-                existing_clusters.add(intron_.graph['cluster'])
+                intron_start = curr_exon.end + 1
+                intron_end = next_exon.start - 1
 
-                curr_exon.introns.add(intron_.graph['name'])
-                next_exon.introns.add(intron_.graph['name'])
+                curr_exon.next_exons.add(str(next_exon))
 
-    if introns:
-        if not existing_clusters:
-            cluster = nx.DiGraph()
-            if len(introns) > 1:
-                cluster.add_path([i.graph['name'] for i in introns])
-                for intron in introns:
-                    intron.graph['cluster'] = cluster_no
+                intron_name = '%s:%d-%d' % (curr_exon.chrom,
+                                                intron_start,
+                                                intron_end)
+                intron = nx.DiGraph(name=intron_name, cluster=None)
+
+                try:
+                    intron_ = intron_db[intron.graph['name']]
+                except KeyError:
+                    intron_db[intron.graph['name']] = intron
+                    intron.add_edge(str(curr_exon), str(next_exon))
+                    introns.append(intron)
+
+                    curr_exon.introns.add(intron.graph['name'])
+                    next_exon.introns.add(intron.graph['name'])
+                else:
+                    intron_.add_edge(str(curr_exon), str(next_exon))
+                    introns.append(intron_)
+                    existing_clusters.add(intron_.graph['cluster'])
+
+                    curr_exon.introns.add(intron_.graph['name'])
+                    next_exon.introns.add(intron_.graph['name'])
+
+        if introns:
+            cluster_no += 1 # create new cluster index
+            if not existing_clusters:
+                cluster = nx.DiGraph()
+                if len(introns) > 1:
+                    cluster.add_path([i.graph['name'] for i in introns])
+                    for intron in introns:
+                        intron.graph['cluster'] = cluster_no
+                else:
+                    cluster.add_node(introns[0].graph['name'])
+                    introns[0].graph['cluster'] = cluster_no
             else:
-                cluster.add_node(introns[0].graph['name'])
-                introns[0].graph['cluster'] = cluster_no
+                cluster = nx.DiGraph(exons=set())
+                for cl in existing_clusters:
+                    cluster.add_edges_from(clusters[cl].edges())
+                    clusters.pop(cl)
 
-        else:
-            cluster = nx.DiGraph(exons=set([]))
-            for cl in existing_clusters:
-                cluster.add_edges_from(clusters[cl].edges())
-                clusters.pop(cl)
+                for intron in cluster.nodes():
+                    intron_db[intron].graph['cluster'] = cluster_no
 
-            for intron in cluster.nodes():
-                intron_db[intron].graph['cluster'] = cluster_no
+                if len(introns) > 1:
+                    cluster.add_path([i.graph['name'] for i in introns])
 
-            if len(introns) > 1:
-                cluster.add_path([i.graph['name'] for i in introns])
+                    for intron in introns:
+                        intron.graph['cluster'] = cluster_no
+                else:
+                    cluster.add_node(introns[0].graph['name'])
+                    introns[0].graph['cluster'] = cluster_no
 
-                for intron in introns:
-                    intron.graph['cluster'] = cluster_no
-            else:
-                cluster.add_node(introns[0].graph['name'])
-                introns[0].graph['cluster'] = cluster_no
+            clusters[cluster_no] = cluster
 
-        clusters[cluster_no] = cluster
-
-    return cluster_no
-
+    return cluster_no, all_exon_groups
 
 def collapse_exons(g, exon_db):
     # g = an exon graph.
@@ -284,8 +314,8 @@ def add_exon(db, exons):
     2.Add exons to the exon database (db).
 
     '''
-    exons[0].terminal = 1
-    exons[-1].terminal = 2
+    exons[0].terminal = 1  # left end
+    exons[-1].terminal = 2  # right end
 
     for exon in exons:
         try:
@@ -323,53 +353,6 @@ def merge_clusters(exon_db):
             pass
 
     return big_cluster
-
-
-def walk_down(intron_coord, path, all_paths, cluster):
-    '''Returns all downstream exons from a given exon.'''
-
-    if cluster.successors(intron_coord) == []:
-        all_paths.append(path[:])
-        return
-    else:
-        for nex in cluster.successors(intron_coord):
-            if nex not in path:
-                path.append(nex)
-
-            walk_down(nex, path, all_paths, cluster)
-
-            path.pop()
-
-
-def get_path(cluster):
-    '''Returns all paths from a given cluster.'''
-
-    roots = [node for node in cluster.nodes() \
-                    if not cluster.predecessors(node)]
-    all_paths = []
-
-    for root in roots:
-        path = [root]
-        walk_down(root, path, all_paths, cluster)
-
-    return all_paths
-
-
-def build_splice_graph(cluster, intron_db, exon_db, merged_exons):
-    '''Return a directed graph containing all exons.'''
-
-    all_paths = get_path(cluster)
-
-    G = nx.DiGraph()
-    for path in all_paths:
-        for intron_coord in path:
-            intron = intron_db[intron_coord]
-            for exon in intron.exons:
-                for next_exon in exon_db[exon].next_exons:
-                    if next_exon not in merged_exons:
-                        G.add_edge(exon, next_exon)
-
-    return G
 
 
 def print_bed_graph(transcript, gene_id, tran_id):
@@ -444,6 +427,7 @@ def build_gene_models(exon_db, intron_db, clusters, big_cluster, find_max):
     gene_id = 0
     excluded = 0
     two_exon_trns = set()
+    single_isoform_genes = 0
 
     def check_criteria(transcript, two_exon_trns):
         '''Return True or False whether a transcript pass or
@@ -491,13 +475,16 @@ def build_gene_models(exon_db, intron_db, clusters, big_cluster, find_max):
                     if not g.successors(node):
                         g.add_edge(node, 'End')
 
-                max_paths = nx.all_simple_paths(g, 'Start', 'End')
+                max_paths = [path for path in \
+                                    nx.all_simple_paths(g, 'Start', 'End')]
+
+                if len(max_paths) == 1: single_isoform_genes += 1
 
                 if find_max:
                     '''Report all maximum isoforms.'''
 
                     for transcript in max_paths:
-                        transcript = transcript[1:-1]  # remove Start,End
+                        transcript = transcript[1:-1]
                         if check_criteria(transcript, two_exon_trns):
                             transcripts_num += 1
                             trans_id += 1
@@ -509,7 +496,7 @@ def build_gene_models(exon_db, intron_db, clusters, big_cluster, find_max):
                     MAX_ISOFORMS.
 
                     '''
-                    if max_paths > MAX_ISOFORMS:
+                    if len(max_paths) > MAX_ISOFORMS:
                         for transcript in \
                                 get_min_isoforms.get_min_paths(g, False):
                             if check_criteria(transcript, two_exon_trns):
@@ -519,7 +506,8 @@ def build_gene_models(exon_db, intron_db, clusters, big_cluster, find_max):
                             else:
                                 excluded += 1
                     else:
-                        for transcript in get_path(g):
+                        for transcript in max_paths:
+                            transcript = transcript[1:-1]
                             if check_criteria(transcript, two_exon_trns):
                                 transcripts_num += 1
                                 trans_id += 1
@@ -533,7 +521,7 @@ def build_gene_models(exon_db, intron_db, clusters, big_cluster, find_max):
         print >> stderr, '\r  |--Multi-exon\t\t%d genes, %d isoforms ' % \
                                             (gene_id, transcripts_num),
 
-    return gene_id, transcripts_num, excluded
+    return gene_id, transcripts_num, single_isoform_genes, excluded
 
 
 def merge_exons(exons):
@@ -606,46 +594,55 @@ def main(input_files):
 
         print >> stderr, 'Input\t\t\t%s' % input_file
         for n, exons in enumerate(parse(open(input_file)), start=1):
-            if len(exons) > 1:
-                add_exon(exon_db, exons)
-                add_introns(exons, intron_db, exon_db, clusters, cluster_no)
-                cluster_no += 1
-            else:
-                if exons[0].chrom not in single_exons:
-                    single_exons[exons[0].chrom] = [exons[0]]
+            cluster_no, all_exon_groups = add_introns(exons,
+                                                        intron_db,
+                                                        clusters,
+                                                        cluster_no)
+            for subgroup in all_exon_groups:
+                if len(subgroup) > 1: # more than one exon
+                    add_exon(exon_db, subgroup)
                 else:
-                    single_exons[exons[0].chrom].append(exons[0])
+                    if exons[0].chrom not in single_exons:
+                        single_exons[exons[0].chrom] = [exons[0]]
+                    else:
+                        single_exons[exons[0].chrom].append(exons[0])
 
             if n % 100 == 0:
                 print >> stderr, '\r  |--Parsing\t\t%d alignments' % n,
-
-        if n < 100:
-            print >> stderr, '\r  |--Parsing\t\t%d alignments' % n,
-        print >> stderr, ''
+        print >> stderr, '\r  |--Parsing\t\t%d alignments' % n
 
     big_cluster = merge_clusters(exon_db)
 
     print >> stderr, 'Constructing'
-    gene_id, transcripts_num, excluded = build_gene_models(exon_db,
-                                                    intron_db, clusters,
+    return_items = build_gene_models(exon_db, intron_db, clusters,
                                                     big_cluster, args.max)
+
+    gene_id, transcripts_num, single_isoform_genes, excluded = return_items
     print >> stderr, ''
+
     merged_single_exons = merge_exons(single_exons)
 
+    single_exon_gene_num = 0
     for chrom in merged_single_exons:
         for exon in merged_single_exons[chrom]:
             if exon.get_size() > MIN_TRANSCRIPT_LEN:
                 gene_id += 1
                 transcripts_num += 1
+                single_exon_gene_num += 1
                 print_bed_graph_single(exon, gene_id, 1)
-                print >> stderr, '\r  |--Single-exon\t%d genes' % gene_id,
+                print >> stderr, '\r  |--Single-exon\t%d genes' % \
+                                                    single_exon_gene_num,
             else:
                 excluded += 1
 
     print >> stderr, '\n[Done]'
     if gene_id > 0:
         print >> stderr, \
-            '\nTotal %d genes with %d isoforms' % (gene_id, transcripts_num),
+            '\nTotal %d genes and %d isoforms' % (gene_id, transcripts_num)
+        print >> stderr, \
+            'Total %d genes with single isoforms' % single_isoform_genes
+        print >> stderr, \
+            'Total single-exon %d genes' % single_exon_gene_num
     else:
         print >> stderr, 'No gene models built.',
     if excluded > 0 and args.debug:
@@ -692,7 +689,6 @@ if __name__=='__main__':
         MAX_INTRON = 1e20
         MIN_UTR = 0
         MIN_TRANSCRIPT_LEN = 1
-        MAX_ISOFORMS = 20
         args.max = True
     else:
         if args.min_utr <=0:
