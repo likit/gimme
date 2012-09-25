@@ -26,12 +26,14 @@ from sys import stderr, stdout
 
 import networkx as nx
 from utils import pslparser, get_min_isoforms
+from bx.intervals.intersection import Interval, IntervalTree
 
 
 GAP_SIZE = 50 # a minimum intron size (bp)
 MAX_INTRON = 300000 # a maximum intron size (bp)
 MIN_UTR = 100 # a minimum UTR size (bp)
-MIN_TRANSCRIPT_LEN = 1 # a minimum transcript length (bp)
+MIN_TRANSCRIPT_LEN = 300 # a minimum length for multiple exon transcript(bp)
+MIN_SINGLE_EXON_LEN = 1000 # a minimum length for a single exon(bp)
 MAX_ISOFORMS = 20   # minimal isoforms will be searched
                     #if the number of isoforms exceed this number
 VERSION = '0.97'
@@ -50,6 +52,7 @@ class ExonObj:
         self.next_exons = set()
         self.introns = set()
         self.single = False
+        self.remove = False
 
     def __str__(self):
         return '%s:%d-%d' % (self.chrom, self.start, self.end)
@@ -211,11 +214,12 @@ def add_introns(exons, intron_db, clusters, cluster_no):
 
     return cluster_no, all_exon_groups
 
-def collapse_exons(g, exon_db):
+def collapse_exons(g, exon_db, single_exons):
     # g = an exon graph.
 
     exons = [exon_db[e] for e in g.nodes()]
     sorted_exons = sorted(exons, key=lambda x: (x.end, x.start))
+    chromosome = exons[0].chrom
 
     i = 0
     curr_exon = sorted_exons[i]
@@ -273,6 +277,29 @@ def collapse_exons(g, exon_db):
                 curr_exon = next_exon
         i += 1
 
+    for node in g.nodes():
+        exon = exon_db[node]
+        singles = single_exons[chromosome]
+        extend_exons(exon, singles, set())
+
+def extend_exons(exon, singles, unmergables):
+        overlaps = [o for o in singles.find(exon.start, exon.end) \
+                                    if not o.value['exon'].remove and \
+                                    str(o.value['exon']) not in unmergables]
+        if not overlaps:
+            return
+        for o in overlaps:
+            if o.start >= exon.start and o.end <= exon.end:
+                o.value['exon'].remove = True  # mark the exon as removed
+            elif abs(o.start - exon.start) + \
+                                abs(o.end - exon.end) < MIN_UTR:
+                o.value['exon'].remove = True  # mark the exon as removed
+            else:
+                unmergables.add(str(o.value['exon']))  # unmergable exon
+
+        extend_exons(exon, singles, unmergables)
+        # exn = overlaps[0].value['exon']
+        # print >> stderr, 'overlaps', exon, len(overlaps), exn, exn.terminal
 
 def delete_gap(exons):
     '''Alignments may contain small gaps from indels and etc.
@@ -421,13 +448,13 @@ def print_bed_graph_single(exon, gene_id, tran_id):
                     block_sizes,
                     block_starts))
 
-def build_gene_models(exon_db, intron_db, clusters, big_cluster, find_max):
+def build_gene_models(exon_db, intron_db, clusters,
+                            big_cluster, single_exons, find_max):
     visited_clusters = set()
     transcripts_num = 0
     gene_id = 0
     excluded = 0
     two_exon_trns = set()
-    single_isoform_genes = 0
 
     def check_criteria(transcript, two_exon_trns):
         '''Return True or False whether a transcript pass or
@@ -468,7 +495,7 @@ def build_gene_models(exon_db, intron_db, clusters, big_cluster, find_max):
             if g.nodes():
                 trans_id = 0
                 gene_id += 1
-                collapse_exons(g, exon_db)
+                collapse_exons(g, exon_db, single_exons)
                 for node in g.nodes():
                     if not g.predecessors(node):
                         g.add_edge('Start', node)
@@ -477,8 +504,6 @@ def build_gene_models(exon_db, intron_db, clusters, big_cluster, find_max):
 
                 max_paths = [path for path in \
                                     nx.all_simple_paths(g, 'Start', 'End')]
-
-                if len(max_paths) == 1: single_isoform_genes += 1
 
                 if find_max:
                     '''Report all maximum isoforms.'''
@@ -521,13 +546,18 @@ def build_gene_models(exon_db, intron_db, clusters, big_cluster, find_max):
         print >> stderr, '\r  |--Multi-exon\t\t%d genes, %d isoforms ' % \
                                             (gene_id, transcripts_num),
 
-    return gene_id, transcripts_num, single_isoform_genes, excluded
+    return gene_id, transcripts_num, excluded
 
 
-def merge_exons(exons):
-    for chrom in exons:
+def merge_exons(single_exons_db):
+    exons = {}
+    for chrom in single_exons_db:
+        exons[chrom] = []
+        for exn in single_exons_db[chrom]:
+            if not exn.remove:
+                exons[chrom].append(exn)
         exons[chrom] = sorted(exons[chrom], key=lambda x: x.start)
-    
+
     new_exons = {}
 
     for chrom in exons:
@@ -579,7 +609,8 @@ def main(input_files):
     print >> stderr, '[Run...]'
 
     cluster_no = 0
-    single_exons = {}
+    single_exons_db = {}
+    single_exons_intervals = {}
 
     for input_file in input_files:
         input_format = detect_format(input_file)
@@ -602,10 +633,12 @@ def main(input_files):
                 if len(subgroup) > 1: # more than one exon
                     add_exon(exon_db, subgroup)
                 else:
-                    if exons[0].chrom not in single_exons:
-                        single_exons[exons[0].chrom] = [exons[0]]
+                    exon = exons[0]
+                    if exon.chrom not in single_exons_db:
+                        single_exons_db[exon.chrom] = [exon]
                     else:
-                        single_exons[exons[0].chrom].append(exons[0])
+                        single_exons_db[exon.chrom].append(exon)
+
 
             if n % 100 == 0:
                 print >> stderr, '\r  |--Parsing\t\t%d alignments' % n,
@@ -613,19 +646,32 @@ def main(input_files):
 
     big_cluster = merge_clusters(exon_db)
 
+    merged_single_exons = merge_exons(single_exons_db)
+
+    '''Build intervals from single exons.'''
+    for chrom in merged_single_exons:
+        single_exons_intervals[chrom] = IntervalTree()
+        for exon in merged_single_exons[chrom]:
+            interval = Interval(exon.start, exon.end, value={'exon':exon})
+            single_exons_intervals[chrom].insert_interval(interval)
+
     print >> stderr, 'Constructing'
-    return_items = build_gene_models(exon_db, intron_db, clusters,
-                                                    big_cluster, args.max)
+    return_items = build_gene_models(exon_db,
+                                        intron_db,
+                                        clusters,
+                                        big_cluster,
+                                        single_exons_intervals,
+                                        args.max,
+                                        )
 
-    gene_id, transcripts_num, single_isoform_genes, excluded = return_items
     print >> stderr, ''
-
-    merged_single_exons = merge_exons(single_exons)
+    gene_id, transcripts_num, excluded = return_items
 
     single_exon_gene_num = 0
     for chrom in merged_single_exons:
         for exon in merged_single_exons[chrom]:
-            if exon.get_size() > MIN_TRANSCRIPT_LEN:
+            if (exon.get_size() > MIN_SINGLE_EXON_LEN
+                                    and not exon.remove):
                 gene_id += 1
                 transcripts_num += 1
                 single_exon_gene_num += 1
@@ -638,11 +684,10 @@ def main(input_files):
     print >> stderr, '\n[Done]'
     if gene_id > 0:
         print >> stderr, \
-            '\nTotal %d genes and %d isoforms' % (gene_id, transcripts_num)
+            '\nTotal multi-exon gene = %d gene(s) / %d isoform(s)' % \
+                                                (gene_id, transcripts_num)
         print >> stderr, \
-            'Total %d genes with single isoforms' % single_isoform_genes
-        print >> stderr, \
-            'Total single-exon %d genes' % single_exon_gene_num
+            'Total single-exon gene = %d gene(s)' % single_exon_gene_num
     else:
         print >> stderr, 'No gene models built.',
     if excluded > 0 and args.debug:
@@ -669,7 +714,12 @@ if __name__=='__main__':
             'without -x option (default: %(default)s)')
     parser.add_argument('--min_transcript_len', type=int,
             metavar='int', default=MIN_TRANSCRIPT_LEN,
-            help='the minimum size of transcript (bp) (default: %(default)s)')
+            help='the minimum size of transcript (bp)' +
+                    '(default: %(default)s)')
+    parser.add_argument('--min_single_exon_len', type=int,
+            metavar='int', default=MIN_SINGLE_EXON_LEN,
+            help='the minimum size of a transcript with a single exon (bp)' +
+                    '(default: %(default)s)')
     parser.add_argument('-x', '--max', action='store_true',
             help='report all putative isoforms')
     parser.add_argument('--debug', action='store_true',
@@ -689,6 +739,7 @@ if __name__=='__main__':
         MAX_INTRON = 1e20
         MIN_UTR = 0
         MIN_TRANSCRIPT_LEN = 1
+        MIN_SINGLE_TRANSCRIPT_LEN = 1
         args.max = True
     else:
         if args.min_utr <=0:
@@ -721,5 +772,11 @@ if __name__=='__main__':
             MIN_TRANSCRIPT_LEN = args.min_transcript_len
             print >> sys.stderr, 'User defined MIN_TRANSCRIPT_LEN = %d' % \
                                                         MIN_TRANSCRIPT_LEN
+        if args.min_single_exon_len <= 0:
+            raise ValueError, 'Invalid transcript size (<=0)'
+        elif args.min_single_exon_len != MIN_SINGLE_EXON_LEN:
+            MIN_SINGLE_EXON_LEN = args.min_single_exon_len
+            print >> sys.stderr, 'User defined MIN_SINGLE_EXON_LEN = %d' % \
+                                                        MIN_SINGLE_EXON_LEN
     if args.input:
         main(args.input)
