@@ -16,6 +16,7 @@ import gimme
 class TestCollapseExons(TestCase):
     def setUp(self):
         self.exon_db = {}
+        self.singles = {}
         start = 1000
         n = 1
         exons = []
@@ -69,7 +70,7 @@ class TestCollapseExons(TestCase):
         self.assertEqual(len(self.exon_graph.nodes()), 7)
         self.assertEqual(len(self.exon_graph.edges()), 6)
 
-        gimme.collapse_exons(self.exon_graph, self.exon_db)
+        gimme.collapse_exons(self.exon_graph, self.exon_db, self.singles)
 
         self.assertEqual(len(self.exon_graph.nodes()), 6)
         self.assertEqual(len(self.exon_graph.edges()), 5)
@@ -92,7 +93,7 @@ class TestCollapseExons(TestCase):
         self.assertEqual(len(self.exon_graph.nodes()), 7)
         self.assertEqual(len(self.exon_graph.edges()), 6)
 
-        gimme.collapse_exons(self.exon_graph, self.exon_db)
+        gimme.collapse_exons(self.exon_graph, self.exon_db, self.singles)
 
         self.assertEqual(len(self.exon_graph.nodes()), 6)
         self.assertEqual(len(self.exon_graph.edges()), 5)
@@ -120,7 +121,7 @@ class TestCollapseExons(TestCase):
         self.assertEqual(len(self.exon_graph.nodes()), 8)
         self.assertEqual(len(self.exon_graph.edges()), 6)
 
-        gimme.collapse_exons(self.exon_graph, self.exon_db)
+        gimme.collapse_exons(self.exon_graph, self.exon_db, self.singles)
 
 
         self.assertEqual(len(self.exon_graph.nodes()), 7)
@@ -157,7 +158,7 @@ class TestCollapseExons(TestCase):
         self.assertEqual(len(self.exon_graph.nodes()), 8)
         self.assertEqual(len(self.exon_graph.edges()), 6)
 
-        gimme.collapse_exons(self.exon_graph, self.exon_db)
+        gimme.collapse_exons(self.exon_graph, self.exon_db, self.singles)
 
 
         self.assertEqual(len(self.exon_graph.nodes()), 7)
@@ -196,7 +197,7 @@ class TestCollapseExons(TestCase):
         self.assertEqual(len(self.exon_graph.nodes()), 7)
         self.assertEqual(len(self.exon_graph.edges()), 6)
 
-        gimme.collapse_exons(self.exon_graph, self.exon_db)
+        gimme.collapse_exons(self.exon_graph, self.exon_db, self.singles)
 
         #print >> sys.stderr, self.exon_graph.edges()
 
@@ -240,7 +241,7 @@ class TestCollapseExons(TestCase):
         self.assertEqual(len(self.exon_graph.nodes()), 7)
         self.assertEqual(len(self.exon_graph.edges()), 6)
 
-        gimme.collapse_exons(self.exon_graph, self.exon_db)
+        gimme.collapse_exons(self.exon_graph, self.exon_db, self.singles)
 
         self.assertEqual(len(self.exon_graph.nodes()), 6)
         self.assertEqual(len(self.exon_graph.edges()), 6)
@@ -283,7 +284,7 @@ class TestCollapseExons(TestCase):
         self.assertEqual(len(self.exon_graph.nodes()), 8)
         self.assertEqual(len(self.exon_graph.edges()), 7)
 
-        gimme.collapse_exons(self.exon_graph, self.exon_db)
+        gimme.collapse_exons(self.exon_graph, self.exon_db, self.singles)
         
         self.assertEqual(len(self.exon_graph.nodes()), 6)
         self.assertEqual(len(self.exon_graph.edges()), 6)
@@ -326,7 +327,7 @@ class TestCollapseExons(TestCase):
         self.assertEqual(len(self.exon_graph.nodes()), 8)
         self.assertEqual(len(self.exon_graph.edges()), 7)
 
-        gimme.collapse_exons(self.exon_graph, self.exon_db)
+        gimme.collapse_exons(self.exon_graph, self.exon_db, self.singles)
 
         self.assertEqual(len(self.exon_graph.nodes()), 7)
         self.assertEqual(len(self.exon_graph.edges()), 6)
@@ -367,7 +368,7 @@ class TestCollapseExons(TestCase):
         self.assertEqual(len(self.exon_graph.nodes()), 8)
         self.assertEqual(len(self.exon_graph.edges()), 7)
 
-        gimme.collapse_exons(self.exon_graph, self.exon_db)
+        gimme.collapse_exons(self.exon_graph, self.exon_db, self.singles)
 
         self.assertEqual(len(self.exon_graph.nodes()), 6)
         self.assertEqual(len(self.exon_graph.edges()), 5)
@@ -401,7 +402,7 @@ class TestCollapseExons(TestCase):
         self.assertEqual(len(self.exon_graph.nodes()), 8)
         self.assertEqual(len(self.exon_graph.edges()), 7)
 
-        gimme.collapse_exons(self.exon_graph, self.exon_db)
+        gimme.collapse_exons(self.exon_graph, self.exon_db, self.singles)
 
         self.assertEqual(len(self.exon_graph.nodes()), 7)
         self.assertEqual(len(self.exon_graph.edges()), 6)
@@ -440,7 +441,7 @@ class TestCollapseExons(TestCase):
         self.assertEqual(len(self.exon_graph.nodes()), 8)
         self.assertEqual(len(self.exon_graph.edges()), 6)
 
-        gimme.collapse_exons(self.exon_graph, self.exon_db)
+        gimme.collapse_exons(self.exon_graph, self.exon_db, self.singles)
 
         self.assertEqual(len(self.exon_graph.nodes()), 8)
         self.assertEqual(len(self.exon_graph.edges()), 6)
@@ -477,7 +478,7 @@ class TestCollapseExons(TestCase):
         self.assertEqual(len(self.exon_graph.nodes()), 8)
         self.assertEqual(len(self.exon_graph.edges()), 6)
 
-        gimme.collapse_exons(self.exon_graph, self.exon_db)
+        gimme.collapse_exons(self.exon_graph, self.exon_db, self.singles)
 
         self.assertEqual(len(self.exon_graph.nodes()), 6)
         self.assertEqual(len(self.exon_graph.edges()), 5)
@@ -510,7 +511,7 @@ class TestCollapseExons(TestCase):
         self.assertEqual(len(self.exon_graph.nodes()), 8)
         self.assertEqual(len(self.exon_graph.edges()), 7)
 
-        gimme.collapse_exons(self.exon_graph, self.exon_db)
+        gimme.collapse_exons(self.exon_graph, self.exon_db, self.singles)
 
         self.assertEqual(len(self.exon_graph.nodes()), 6)
         self.assertEqual(len(self.exon_graph.edges()), 5)
@@ -539,7 +540,7 @@ class TestCollapseExons(TestCase):
         self.assertEqual(len(self.exon_graph.nodes()), 8)
         self.assertEqual(len(self.exon_graph.edges()), 6)
 
-        gimme.collapse_exons(self.exon_graph, self.exon_db)
+        gimme.collapse_exons(self.exon_graph, self.exon_db, self.singles)
 
         self.assertEqual(len(self.exon_graph.nodes()), 6)
         self.assertEqual(len(self.exon_graph.edges()), 5)
@@ -578,7 +579,7 @@ class TestCollapseExons(TestCase):
         self.assertEqual(len(self.exon_graph.nodes()), 9)
         self.assertEqual(len(self.exon_graph.edges()), 8)
 
-        gimme.collapse_exons(self.exon_graph, self.exon_db)
+        gimme.collapse_exons(self.exon_graph, self.exon_db, self.singles)
 
         self.assertEqual(len(self.exon_graph.nodes()), 8)
         self.assertEqual(len(self.exon_graph.edges()), 7)
@@ -611,7 +612,7 @@ class TestCollapseExons(TestCase):
         self.assertEqual(len(self.exon_graph.nodes()), 9)
         self.assertEqual(len(self.exon_graph.edges()), 7)
 
-        gimme.collapse_exons(self.exon_graph, self.exon_db)
+        gimme.collapse_exons(self.exon_graph, self.exon_db, self.singles)
 
         self.assertEqual(len(self.exon_graph.nodes()), 9)
         self.assertEqual(len(self.exon_graph.edges()), 7)
@@ -644,36 +645,31 @@ class TestCollapseExons(TestCase):
         self.assertEqual(len(self.exon_graph.nodes()), 8)
         self.assertEqual(len(self.exon_graph.edges()), 7)
 
-        gimme.collapse_exons(self.exon_graph, self.exon_db)
+        gimme.collapse_exons(self.exon_graph, self.exon_db, self.singles)
 
         self.assertEqual(len(self.exon_graph.nodes()), 8)
         self.assertEqual(len(self.exon_graph.edges()), 7)
 
 class TestAddIntrons(TestCase):
     def setUp(self):
-        self.exon_db = {}
         start = 1000
         n = 1
         self.exons = []
+        self.intron_db = {}
 
         while n < 7:
             e = gimme.ExonObj('chr1', start, start + 100)
-            self.exon_db[str(e)] = e
-            self.exons.append(str(e))
+            self.exons.append(e)
             start += 300
             n += 1
 
-        self.exon_db[self.exons[0]].terminal = 1 # mark a left terminal
-        self.exon_db[self.exons[-1]].terminal = 2 # mark a right terminal
-
-        self.intronDb = {}
-        self.clusters = {}
-        self.clusterNo = 0
+        self.exons[0].terminal = 1 # mark a left terminal
+        self.exons[-1].terminal = 2 # mark a right terminal
 
     def test_simple(self):
-        gimme.add_introns(self.exons, self.intronDb, self.exon_db,
-                    self.clusters, self.clusterNo)
-        self.assertEqual(len(self.intronDb), 5)
+        gimme.add_introns(self.exons, self.intron_db, {}, 0)
+
+        self.assertEqual(len(self.intron_db), 5)
 
 
 class TestMergeExons(TestCase):
@@ -775,76 +771,61 @@ class TestSplitExonGroups(TestCase):
     max_intron = 200
 
     def setUp(self):
-        self.exon_db = {}
         self.exons = []
         e1 = gimme.ExonObj('chr1', 1000, 1100)
         e2 = gimme.ExonObj('chr1', 1200, 1300)
 
-        self.exon_db[str(e1)] = e1
-        self.exons.append(str(e1))
-
-        self.exon_db[str(e2)] = e2
-        self.exons.append(str(e2))
-
-        self.exon_db[self.exons[0]].terminal = 1 # mark a left terminal
-        self.exon_db[self.exons[-1]].terminal = 2 # mark a right terminal
+        self.exons.append(e1)
+        self.exons.append(e2)
 
     def test_no_split_one_exon(self):
         self.exons = []
-        self.exon_db = {}
         e1 = gimme.ExonObj('chr1', 1000, 1100)
 
-        self.exon_db[str(e1)] = e1
-        self.exons.append(str(e1))
+        self.exons.append(e1)
 
-        split = gimme.split_exon_groups(self.exons,
-                                        self.exon_db,
-                                        TestSplitExonGroups.max_intron)
+        split = gimme.remove_large_intron(self.exons,
+                                            TestSplitExonGroups.max_intron,
+                                        )
         self.assertEqual(len(split), 1)
 
     def test_no_split_two_exons(self):
-        split = gimme.split_exon_groups(self.exons,
-                                        self.exon_db,
-                                        TestSplitExonGroups.max_intron)
+        split = gimme.remove_large_intron(self.exons,
+                                            TestSplitExonGroups.max_intron,
+                                        )
         self.assertEqual(len(split), 1)
 
     def test_split_one_two_exons(self):
         self.exons = []
-        self.exon_db = {}
         e1 = gimme.ExonObj('chr1', 1000, 1100)
         e2 = gimme.ExonObj('chr1', 2800, 2900)
 
-        self.exon_db[str(e1)] = e1
-        self.exons.append(str(e1))
+        self.exons.append(e1)
+        self.exons.append(e2)
 
-        self.exon_db[str(e2)] = e2
-        self.exons.append(str(e2))
-
-        split = gimme.split_exon_groups(self.exons,
-                                        self.exon_db,
-                                        TestSplitExonGroups.max_intron)
+        split = gimme.remove_large_intron(self.exons,
+                                            TestSplitExonGroups.max_intron,
+                                        )
         self.assertEqual(len(split), 2)
 
     def test_split_one_back(self):
         e3 = gimme.ExonObj('chr1', 1800, 1900)
 
-        self.exon_db[str(e3)] = e3
-        self.exons.append(str(e3))
+        self.exons.append(e3)
 
-        split = gimme.split_exon_groups(self.exons,
-                                        self.exon_db,
-                                        TestSplitExonGroups.max_intron)
+        split = gimme.remove_large_intron(self.exons,
+                                            TestSplitExonGroups.max_intron,
+                                        )
         self.assertEqual(len(split), 2)
 
     def test_split_one_front(self):
         e3 = gimme.ExonObj('chr1', 500, 700)
 
-        self.exon_db[str(e3)] = e3
-        self.exons.insert(0, str(e3))
+        self.exons.insert(0, e3)
 
-        split = gimme.split_exon_groups(self.exons,
-                                        self.exon_db,
-                                        TestSplitExonGroups.max_intron)
+        split = gimme.remove_large_intron(self.exons,
+                                            TestSplitExonGroups.max_intron,
+                                        )
         self.assertEqual(len(split), 2)
 
     def test_split_two(self):
@@ -853,18 +834,11 @@ class TestSplitExonGroups(TestCase):
         e5 = gimme.ExonObj('chr1', 3000, 3400)
         e6 = gimme.ExonObj('chr1', 3500, 3600)
 
-        self.exon_db[str(e3)] = e3
-        self.exon_db[str(e4)] = e4
-        self.exon_db[str(e5)] = e5
-        self.exon_db[str(e6)] = e6
-        self.exons.append(str(e3))
-        self.exons.append(str(e4))
-        self.exons.append(str(e5))
-        self.exons.append(str(e6))
+        self.exons += [e3, e4, e5, e6]
 
-        split = gimme.split_exon_groups(self.exons,
-                                        self.exon_db,
-                                        TestSplitExonGroups.max_intron)
+        split = gimme.remove_large_intron(self.exons,
+                                            TestSplitExonGroups.max_intron,
+                                        )
         self.assertEqual(len(split), 3)
 
 if __name__=='__main__':
