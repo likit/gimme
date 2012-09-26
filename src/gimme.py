@@ -106,14 +106,14 @@ def parse_psl(psl_file):
         yield exons
 
 
-def split_exon_groups(exons, max_intron=MAX_INTRON):
-    '''Returns groups of exons split by excessively large
-    introns.
+def remove_large_intron(exons, max_intron=MAX_INTRON):
+    '''Returns groups of exons split by introns longer than
+    MAX_INTRON or return a list containing the original exons.
 
     Exons is a list of exons sorted by start position.
 
     '''
-    if MAX_INTRON < 0: return [exons] # disable
+    if MAX_INTRON < 0: return [exons]  # disable
 
     all_exon_groups = []
     subgroup = []
@@ -143,80 +143,78 @@ def split_exon_groups(exons, max_intron=MAX_INTRON):
 def add_introns(exons, intron_db, clusters, cluster_no):
     '''Get introns from a set of exons.'''
 
-    all_exon_groups = split_exon_groups(exons, MAX_INTRON)
+    introns = []
+    existing_clusters = set()
 
-    for subgroup in all_exon_groups:
-        introns = []
-        existing_clusters = set()
-        for i in range(len(subgroup)):
-            curr_exon = subgroup[i]
+    for i in range(len(exons)):
+        curr_exon = exons[i]
+        try:
+            next_exon = exons[i + 1]
+        except IndexError:
+            pass
+        else:
+            intron_start = curr_exon.end + 1
+            intron_end = next_exon.start - 1
+
+            curr_exon.next_exons.add(str(next_exon))
+
+            intron_name = '%s:%d-%d' % (curr_exon.chrom,
+                                            intron_start,
+                                            intron_end)
+            intron = nx.DiGraph(name=intron_name, cluster=None)
+
             try:
-                next_exon = subgroup[i + 1]
-            except IndexError:
-                pass
+                intron_ = intron_db[intron.graph['name']]
+            except KeyError:
+                intron_db[intron.graph['name']] = intron
+                intron.add_edge(str(curr_exon), str(next_exon))
+                introns.append(intron)
+
+                curr_exon.introns.add(intron.graph['name'])
+                next_exon.introns.add(intron.graph['name'])
             else:
-                intron_start = curr_exon.end + 1
-                intron_end = next_exon.start - 1
+                intron_.add_edge(str(curr_exon), str(next_exon))
+                introns.append(intron_)
+                existing_clusters.add(intron_.graph['cluster'])
 
-                curr_exon.next_exons.add(str(next_exon))
+                curr_exon.introns.add(intron_.graph['name'])
+                next_exon.introns.add(intron_.graph['name'])
 
-                intron_name = '%s:%d-%d' % (curr_exon.chrom,
-                                                intron_start,
-                                                intron_end)
-                intron = nx.DiGraph(name=intron_name, cluster=None)
-
-                try:
-                    intron_ = intron_db[intron.graph['name']]
-                except KeyError:
-                    intron_db[intron.graph['name']] = intron
-                    intron.add_edge(str(curr_exon), str(next_exon))
-                    introns.append(intron)
-
-                    curr_exon.introns.add(intron.graph['name'])
-                    next_exon.introns.add(intron.graph['name'])
-                else:
-                    intron_.add_edge(str(curr_exon), str(next_exon))
-                    introns.append(intron_)
-                    existing_clusters.add(intron_.graph['cluster'])
-
-                    curr_exon.introns.add(intron_.graph['name'])
-                    next_exon.introns.add(intron_.graph['name'])
-
-        if introns:
-            cluster_no += 1 # create new cluster index
-            if not existing_clusters:
-                cluster = nx.DiGraph()
-                if len(introns) > 1:
-                    cluster.add_path([i.graph['name'] for i in introns])
-                    for intron in introns:
-                        intron.graph['cluster'] = cluster_no
-                else:
-                    cluster.add_node(introns[0].graph['name'])
-                    introns[0].graph['cluster'] = cluster_no
+    if introns:
+        cluster_no += 1 # create new cluster index
+        if not existing_clusters:
+            cluster = nx.DiGraph()
+            if len(introns) > 1:
+                cluster.add_path([i.graph['name'] for i in introns])
+                for intron in introns:
+                    intron.graph['cluster'] = cluster_no
             else:
-                cluster = nx.DiGraph(exons=set())
-                for cl in existing_clusters:
-                    cluster.add_edges_from(clusters[cl].edges())
-                    clusters.pop(cl)
+                cluster.add_node(introns[0].graph['name'])
+                introns[0].graph['cluster'] = cluster_no
+        else:
+            cluster = nx.DiGraph(exons=set())
+            for cl in existing_clusters:
+                cluster.add_edges_from(clusters[cl].edges())
+                clusters.pop(cl)
 
-                for intron in cluster.nodes():
-                    intron_db[intron].graph['cluster'] = cluster_no
+            for intron in cluster.nodes():
+                intron_db[intron].graph['cluster'] = cluster_no
 
-                if len(introns) > 1:
-                    cluster.add_path([i.graph['name'] for i in introns])
+            if len(introns) > 1:
+                cluster.add_path([i.graph['name'] for i in introns])
 
-                    for intron in introns:
-                        intron.graph['cluster'] = cluster_no
-                else:
-                    cluster.add_node(introns[0].graph['name'])
-                    introns[0].graph['cluster'] = cluster_no
+                for intron in introns:
+                    intron.graph['cluster'] = cluster_no
+            else:
+                cluster.add_node(introns[0].graph['name'])
+                introns[0].graph['cluster'] = cluster_no
 
-            clusters[cluster_no] = cluster
+        clusters[cluster_no] = cluster
 
-    return cluster_no, all_exon_groups
+    return cluster_no
 
 def collapse_exons(g, exon_db, single_exons):
-    # g = an exon graph.
+    '''g = an exon graph.'''
 
     exons = [exon_db[e] for e in g.nodes()]
     sorted_exons = sorted(exons, key=lambda x: (x.end, x.start))
@@ -277,11 +275,18 @@ def collapse_exons(g, exon_db, single_exons):
             else:
                 curr_exon = next_exon
         i += 1
+    try:
+        '''If there is any single exon in this chromosome,
+        remove or extend them accordingly.
 
-    for node in g.nodes():
-        exon = exon_db[node]
+        '''
         singles = single_exons[chromosome]
-        extend_exons(exon, singles, set())
+    except KeyError:
+        pass
+    else:
+        for node in g.nodes():
+            exon = exon_db[node]
+            extend_exons(exon, singles, set())
 
 def extend_exons(exon, singles, unmergables):
         overlaps = [o for o in singles.find(exon.start, exon.end) \
@@ -480,10 +485,10 @@ def build_gene_models(exon_db, intron_db, clusters,
             if len(transcript) == 2:
                 trns = ','.join(transcript)
                 if trns in two_exon_trns:
-                    return False
+                    return False  # fail
                 else:
                     two_exon_trns.add(trns)
-                    return True # pass
+                    return True  # pass
             else:
                 return True
 
@@ -496,7 +501,6 @@ def build_gene_models(exon_db, intron_db, clusters,
             visited_clusters.add(cl)
 
             for neighbor in nx.dfs_tree(big_cluster, cl):
-                # if neighbor != cl: # chances are node connects to itself.
                 neighbor_cluster = clusters[neighbor]
                 for intron in neighbor_cluster.nodes():
                     g.add_edges_from(intron_db[intron].edges())
@@ -636,20 +640,19 @@ def main(input_files):
 
         print >> stderr, 'Input\t\t\t%s' % input_file
         for n, exons in enumerate(parse(open(input_file)), start=1):
-            cluster_no, all_exon_groups = add_introns(exons,
-                                                        intron_db,
-                                                        clusters,
-                                                        cluster_no)
-            for subgroup in all_exon_groups:
-                if len(subgroup) > 1: # more than one exon
-                    add_exon(exon_db, subgroup)
+            for group in remove_large_intron(exons, MAX_INTRON):
+                if len(group) > 1:
+                    add_exon(exon_db, group)  # add them to exon db
+                    cluster_no = add_introns(group,
+                                            intron_db,
+                                            clusters,
+                                            cluster_no)
                 else:
-                    exon = exons[0]
+                    exon = group[0]  # add a lone exon to single exon db
                     if exon.chrom not in single_exons_db:
                         single_exons_db[exon.chrom] = [exon]
                     else:
                         single_exons_db[exon.chrom].append(exon)
-
 
             if n % 100 == 0:
                 print >> stderr, '\r  |--Parsing\t\t%d alignments' % n,
