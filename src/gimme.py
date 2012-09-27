@@ -40,7 +40,7 @@ MIN_SINGLE_EXON_LEN = 500 # a minimum length for a single exon(bp)
 MAX_ISOFORMS = 20   # minimal isoforms will be searched
                     #if the number of isoforms exceed this number
 VERSION = '0.97'
-SHA = '91a00edd2a' # git commit SHA
+SHA = '81a45d8' # git commit SHA
 
 
 class ExonObj:
@@ -791,10 +791,10 @@ if __name__=='__main__':
 
         '''
         GAP_SIZE = 0
-        MAX_INTRON = 1e20
+        MAX_INTRON = -1 
         MIN_UTR = 0
         MIN_TRANSCRIPT_LEN = 1
-        MIN_SINGLE_TRANSCRIPT_LEN = 1
+        MIN_SINGLE_EXON_LEN = 1
         args.max = True
     else:
         if args.min_utr <=0:
