@@ -7,11 +7,9 @@ second_sp.txt respectively.
 
 Differential introns are written in first_diff_sp.txt and
 second_diff_sp.txt.
+
 These files will not be created if there is no differential splice
 junctions.
-
-Author: Likit Preeyanon
-Email: preeyano@msu.edu
 
 '''
 
@@ -83,11 +81,11 @@ def parsePSL(filename):
 
     for pslObj in pslparser.read(open(filename)):
         exons = []
-        for i in range(len(pslObj.attrib['tStarts'])):
-            exonStart = pslObj.attrib['tStarts'][i]
-            exonEnd = exonStart + pslObj.attrib['blockSizes'][i]
+        for i in range(len(pslObj.tStarts)):
+            exonStart = pslObj.tStarts[i]
+            exonEnd = exonStart + pslObj.blockSizes[i]
 
-            exon = Exon(pslObj.attrib['tName'], exonStart, exonEnd)
+            exon = Exon(pslObj.tName, exonStart, exonEnd)
             exons.append(exon)
 
         yield exons
@@ -101,12 +99,15 @@ def addIntron(exons, intronDb):
         except IndexError:
             continue
         else:
-            intron = "%s:%d-%d" % \
-                        (currExon.chrom, currExon.end, nextExon.start)
+            intron = "%s:%d-%d" % (currExon.chrom,
+                                        currExon.end,
+                                        nextExon.start)
 
             try:
                 assert currExon.end < nextExon.start, \
-                                '%s %s %s' % (currExon, nextExon, intron)
+                                '%s %s %s' % (currExon,
+                                                nextExon,
+                                                intron)
             except AssertionError:
                 pass
             else:
