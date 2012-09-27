@@ -26,14 +26,6 @@ Publication
 
 Gimme is unpublished. A manuscript is in preparation.
 
-Required package
-----------------
-
-Gimme requires Networkx package to manipulate a graph data structure.
-You can download Networkx from http://networkx.lanl.gov/download.html.
-Please make sure networkx is in your PYTHONPATH or standard Python libraries
-on your computer.
-
 Download
 --------
 
@@ -50,7 +42,7 @@ Running Gimme
 Gimme should be able to run on any platform with Python 2.7 interpreter.
 You can simply run::
 
-    $ python gimme.py [input file].
+    $ python ./src/gimme.py <input file>
 
 Input
 -----
