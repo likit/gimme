@@ -1,8 +1,5 @@
-'''The program converts alignments from PSL format to BED format.
-
-Author: Likit Preeyanon
-Email: preeyano@msu.edu
-
+'''
+    The script converts alignments in PSL format to BED format.
 '''
 
 import sys
@@ -11,14 +8,15 @@ import pslparser
 
 def parsePSL(filename):
     for pslObj in pslparser.read(open(filename)):
-        strand = pslObj.attrib['strand']
-        chrom = pslObj.attrib['tName']
-        name = pslObj.attrib['qName']
-        chromStart = pslObj.attrib['tStart']
-        chromEnd = pslObj.attrib['tEnd']
-        blockCount = pslObj.attrib['blockCount']
-        blockSizes = ','.join([str(i) for i in pslObj.attrib['blockSizes']])
-        blockStarts = ','.join([str(i - chromStart) for i in pslObj.attrib['tStarts']])
+        strand = pslObj.strand
+        chrom = pslObj.tName
+        name = pslObj.qName
+        chromStart = pslObj.tStart
+        chromEnd = pslObj.tEnd
+        blockCount = pslObj.blockCount
+        blockSizes = ','.join([str(i) for i in pslObj.blockSizes])
+        blockStarts = ','.join([str(i - chromStart) \
+                                        for i in pslObj.tStarts])
         thickStart = chromStart
         thickEnd = chromEnd
 
