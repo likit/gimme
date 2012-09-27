@@ -1,7 +1,7 @@
 #! /usr/local/bin/python
-'''
-    This parser is used to parse PSL file (i.e. from BLAT output).
-    read() return an object containing all information of one line of PSL format.
+'''The script parses PSL file (i.e. from BLAT output).
+read method returns each alignment stored in an PSL object.
+
 '''
 
 import sys
@@ -10,10 +10,18 @@ class PSL(object):
     def __init__(self, **kwargs):
         self.attrib = kwargs
 
+    def __getattr__(self, key):
+        return self.attrib[key]
+
+
 def read(fobj, comment=None):
-    '''
-        fobj = file object.
-        comment = read() will ignore the line starting with comment character.
+    '''Return an object of an alignment.
+
+    fobj = file object.
+
+    comment = read() will ignore the line starting
+    with comment character.
+
     '''
     n = 0
     for line in fobj:
