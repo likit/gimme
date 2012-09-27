@@ -20,11 +20,14 @@
 '''
 #!/usr/bin/env python
 
-import sys, csv
+import sys
+import csv
 import argparse
+
 from sys import stderr, stdout
 
 import networkx as nx
+
 from utils import pslparser, get_min_isoforms
 from bx.intervals.intersection import Interval, IntervalTree
 
@@ -39,10 +42,6 @@ MAX_ISOFORMS = 20   # minimal isoforms will be searched
 VERSION = '0.97'
 SHA = '91a00edd2a' # git commit SHA
 
-
-exon_db = {}
-intron_db = {}
-clusters = {}
 
 class ExonObj:
     def __init__(self, chrom, start, end):
@@ -60,6 +59,14 @@ class ExonObj:
 
     def get_size(self):
         return self.end - self.start
+
+
+class AlignmentDB(object):
+    def __init__(self):
+        self.exon_db = {}  # store all exon objects
+        self.intron_db = {}  # store all intron objects
+        self.single_exons_db = {}  # store all single exon objects
+        self.single_exons_intervals = {}
 
 
 def parse_bed(bed_file):
@@ -140,7 +147,7 @@ def remove_large_intron(exons, max_intron=MAX_INTRON):
     return all_exon_groups
 
 
-def add_introns(exons, intron_db, clusters, cluster_no):
+def add_introns(exons, align_db, clusters, cluster_no):
     '''Get introns from a set of exons.'''
 
     introns = []
@@ -164,9 +171,9 @@ def add_introns(exons, intron_db, clusters, cluster_no):
             intron = nx.DiGraph(name=intron_name, cluster=None)
 
             try:
-                intron_ = intron_db[intron.graph['name']]
+                intron_ = align_db.intron_db[intron.graph['name']]
             except KeyError:
-                intron_db[intron.graph['name']] = intron
+                align_db.intron_db[intron.graph['name']] = intron
                 intron.add_edge(str(curr_exon), str(next_exon))
                 introns.append(intron)
 
@@ -198,7 +205,7 @@ def add_introns(exons, intron_db, clusters, cluster_no):
                 clusters.pop(cl)
 
             for intron in cluster.nodes():
-                intron_db[intron].graph['cluster'] = cluster_no
+                align_db.intron_db[intron].graph['cluster'] = cluster_no
 
             if len(introns) > 1:
                 cluster.add_path([i.graph['name'] for i in introns])
@@ -213,10 +220,10 @@ def add_introns(exons, intron_db, clusters, cluster_no):
 
     return cluster_no
 
-def collapse_exons(g, exon_db, single_exons):
+def collapse_exons(g, align_db):
     '''g = an exon graph.'''
 
-    exons = [exon_db[e] for e in g.nodes()]
+    exons = [align_db.exon_db[e] for e in g.nodes()]
     sorted_exons = sorted(exons, key=lambda x: (x.end, x.start))
     chromosome = exons[0].chrom
 
@@ -247,7 +254,7 @@ def collapse_exons(g, exon_db, single_exons):
         i += 1
 
     i = 0
-    exons = [exon_db[e] for e in g.nodes()]
+    exons = [align_db.exon_db[e] for e in g.nodes()]
     sorted_exons = sorted(exons, key=lambda x: (x.start, x.end))
     curr_exon = sorted_exons[0]
     while i <= len(sorted_exons):
@@ -280,12 +287,12 @@ def collapse_exons(g, exon_db, single_exons):
         remove or extend them accordingly.
 
         '''
-        singles = single_exons[chromosome]
+        singles = align_db.single_exons_intervals[chromosome]
     except KeyError:
         pass
     else:
         for node in g.nodes():
-            exon = exon_db[node]
+            exon = align_db.exon_db[node]
             extend_exons(exon, singles, set())
 
 def extend_exons(exon, singles, unmergables):
@@ -348,7 +355,7 @@ def delete_gap(exons):
     return new_exons
 
 
-def add_exon(db, exons):
+def add_exon(align_db, exons):
     '''1.Change a terminal attribute of a leftmost exon
     and a rightmost exon to 1 and 2 respectively.
 
@@ -362,9 +369,9 @@ def add_exon(db, exons):
 
     for exon in exons:
         try:
-            exon_ = db[str(exon)]
+            exon_ = align_db.exon_db[str(exon)]
         except KeyError:
-            db[str(exon)] = exon
+            align_db.exon_db[str(exon)] = exon
         else:
             if ((exon.terminal and exon_.terminal) and 
                         exon.terminal != exon_.terminal):
@@ -374,13 +381,13 @@ def add_exon(db, exons):
                 exon_.terminal = None
 
 
-def merge_clusters(exon_db):
+def merge_clusters(align_db):
     big_cluster = nx.Graph()
     paths = []
-    for exon in exon_db.itervalues():
+    for exon in align_db.exon_db.itervalues():
         pth = []
         for intron in exon.introns:
-            cluster = intron_db[intron].graph['cluster']
+            cluster = align_db.intron_db[intron].graph['cluster']
             pth.append(cluster)
             # exon.clusters.add(cluster)
         paths.append(pth)
@@ -398,10 +405,10 @@ def merge_clusters(exon_db):
     return big_cluster
 
 
-def print_bed_graph(transcript, gene_id, tran_id):
+def print_bed_graph(align_db, transcript, gene_id, tran_id):
     '''Print a splice graph in BED format.'''
 
-    exons = [exon_db[e] for e in transcript]
+    exons = [align_db.exon_db[e] for e in transcript]
 
     chrom_start = exons[0].start
     chrom_end = exons[-1].end
@@ -464,8 +471,7 @@ def print_bed_graph_single(exon, gene_id, tran_id):
                     block_sizes,
                     block_starts))
 
-def build_gene_models(exon_db, intron_db, clusters,
-                            big_cluster, single_exons, find_max):
+def build_gene_models(align_db, clusters, big_cluster, find_max):
     visited_clusters = set()
     transcripts_num = 0
     gene_id = 0
@@ -477,7 +483,8 @@ def build_gene_models(exon_db, intron_db, clusters,
         fail the criteria.
 
         '''
-        transcript_length = sum([exon_db[e].get_size() for e in transcript])
+        transcript_length = sum([align_db.exon_db[e].get_size() \
+                                                for e in transcript])
 
         if transcript_length <= MIN_TRANSCRIPT_LEN:
             return False # fail
@@ -496,21 +503,21 @@ def build_gene_models(exon_db, intron_db, clusters,
         if cl not in visited_clusters:
             g = nx.DiGraph()
             for intron in clusters[cl].nodes():
-                g.add_edges_from(intron_db[intron].edges())
+                g.add_edges_from(align_db.intron_db[intron].edges())
 
             visited_clusters.add(cl)
 
             for neighbor in nx.dfs_tree(big_cluster, cl):
                 neighbor_cluster = clusters[neighbor]
                 for intron in neighbor_cluster.nodes():
-                    g.add_edges_from(intron_db[intron].edges())
+                    g.add_edges_from(align_db.intron_db[intron].edges())
 
                 visited_clusters.add(neighbor)
 
             if g.nodes():
                 trans_id = 0
                 gene_id += 1
-                collapse_exons(g, exon_db, single_exons)
+                collapse_exons(g, align_db)
                 for node in g.nodes():
                     if not g.predecessors(node):
                         g.add_edge('Start', node)
@@ -528,7 +535,8 @@ def build_gene_models(exon_db, intron_db, clusters,
                         if check_criteria(transcript, two_exon_trns):
                             transcripts_num += 1
                             trans_id += 1
-                            print_bed_graph(transcript, gene_id, trans_id)
+                            print_bed_graph(align_db, transcript,
+                                                    gene_id, trans_id)
                         else:
                             excluded += 1
                 else:
@@ -542,7 +550,8 @@ def build_gene_models(exon_db, intron_db, clusters,
                             if check_criteria(transcript, two_exon_trns):
                                 transcripts_num += 1
                                 trans_id += 1
-                                print_bed_graph(transcript, gene_id, trans_id)
+                                print_bed_graph(align_db, transcript,
+                                                        gene_id, trans_id)
                             else:
                                 excluded += 1
                     else:
@@ -551,7 +560,8 @@ def build_gene_models(exon_db, intron_db, clusters,
                             if check_criteria(transcript, two_exon_trns):
                                 transcripts_num += 1
                                 trans_id += 1
-                                print_bed_graph(transcript, gene_id, trans_id)
+                                print_bed_graph(align_db, transcript,
+                                                        gene_id, trans_id)
                             else:
                                 excluded += 1
 
@@ -564,11 +574,11 @@ def build_gene_models(exon_db, intron_db, clusters,
     return gene_id, transcripts_num, excluded
 
 
-def merge_exons(single_exons_db):
+def merge_exons(align_db):
     exons = {}
-    for chrom in single_exons_db:
+    for chrom in align_db.single_exons_db:
         exons[chrom] = []
-        for exn in single_exons_db[chrom]:
+        for exn in align_db.single_exons_db[chrom]:
             if not exn.remove:
                 exons[chrom].append(exn)
         exons[chrom] = sorted(exons[chrom], key=lambda x: x.start)
@@ -624,8 +634,9 @@ def main(input_files):
     print >> stderr, '[Run...]'
 
     cluster_no = 0
-    single_exons_db = {}
-    single_exons_intervals = {}
+    clusters = {}
+    align_db = AlignmentDB()
+
 
     for input_file in input_files:
         input_format = detect_format(input_file)
@@ -642,39 +653,37 @@ def main(input_files):
         for n, exons in enumerate(parse(open(input_file)), start=1):
             for group in remove_large_intron(exons, MAX_INTRON):
                 if len(group) > 1:
-                    add_exon(exon_db, group)  # add them to exon db
+                    add_exon(align_db, group)  # add them to exon db
                     cluster_no = add_introns(group,
-                                            intron_db,
+                                            align_db,
                                             clusters,
                                             cluster_no)
                 else:
                     exon = group[0]  # add a lone exon to single exon db
-                    if exon.chrom not in single_exons_db:
-                        single_exons_db[exon.chrom] = [exon]
+                    if exon.chrom not in align_db.single_exons_db:
+                        align_db.single_exons_db[exon.chrom] = [exon]
                     else:
-                        single_exons_db[exon.chrom].append(exon)
+                        align_db.single_exons_db[exon.chrom].append(exon)
 
             if n % 100 == 0:
                 print >> stderr, '\r  |--Parsing\t\t%d alignments' % n,
         print >> stderr, '\r  |--Parsing\t\t%d alignments' % n
 
-    big_cluster = merge_clusters(exon_db)
+    big_cluster = merge_clusters(align_db)
 
-    merged_single_exons = merge_exons(single_exons_db)
+    merged_single_exons = merge_exons(align_db)
 
     '''Build intervals from single exons.'''
     for chrom in merged_single_exons:
-        single_exons_intervals[chrom] = IntervalTree()
+        align_db.single_exons_intervals[chrom] = IntervalTree()
         for exon in merged_single_exons[chrom]:
             interval = Interval(exon.start, exon.end, value={'exon':exon})
-            single_exons_intervals[chrom].insert_interval(interval)
+            align_db.single_exons_intervals[chrom].insert_interval(interval)
 
     print >> stderr, 'Constructing'
-    return_items = build_gene_models(exon_db,
-                                        intron_db,
+    return_items = build_gene_models(align_db,
                                         clusters,
                                         big_cluster,
-                                        single_exons_intervals,
                                         args.max,
                                         )
 
