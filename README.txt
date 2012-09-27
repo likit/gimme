@@ -12,7 +12,7 @@ and development (GED lab), Michigan State University.
 :Web site: http://ged.msu.edu.
 
 :Author: Likit Preeyanon, preeyano@msu.edu
-:Supervisor: C. Titus Brown, ctb@msu.edu
+:Advisor: C. Titus Brown, ctb@msu.edu
 
 Copyright and license
 ---------------------
@@ -37,12 +37,12 @@ on your computer.
 Download
 --------
 
-Gimme is available on Github at git://github.com/likit/gimme.git.
+Source code is available at https://github.com/ged-lab/gimme.git.
 
 Installation
 ------------
 
-No installation is required. However, you need to have Python 2.7 installed.
+Run python setup.py in the main directory to download and install required packages.
 
 Running Gimme
 -------------
@@ -55,7 +55,8 @@ You can simply run::
 Input
 -----
 
-Gimme reads input file in PSL format (BLAT and GMAP support this format).
+Gimme can read an input file in PSL or BED format.
+Use gff2bed.py in utils directory to convert GFF file to BED file.
 
 Output
 ------
@@ -75,10 +76,9 @@ Example
 
     $ python ./src/gimme.py sample_data/sample.psl > sample.bed
 
+2. Obtain a maximum number of isoforms::
 
-2. Obtain a minimum number of isoforms::
-
-    $ python ./src/gimme.py --min sample_data/sample.psl > sample.bed
+    $ python ./src/gimme.py -x sample_data/sample.psl > sample.max.bed
 
 3. Run Gimme with multiple input files::
 
@@ -86,7 +86,7 @@ Example
 
 4. Run Gimme with user defined parameters::
 
-    $ python ./src/gimme.py --MIN_UTR-200 --MAX_INTRON=100000 --GAP_SIZE=15 sample.psl > sample.all.bed
+    $ python ./src/gimme.py --min_utr=200 --max_intron=100000 --gap_size=15 sample.psl > sample.all.bed
 
 5. See a program's help::
 
@@ -95,19 +95,42 @@ Example
 Parameters
 ----------
 
-This version of Gimme fills up all small gaps in alignments.
-The default gap is 21bp and is specified in GAP_SIZE parameter.
+GAP_SIZE, --gap_size=50
+Introns smaller than GAP_SIZE) are filled to construct a more complete exon.
 
-You can also modify a length of minimal UTR by specifying a MIN_UTR value.
-The default is 100 bp.
-This value only is used as a cut off for alternative UTRs.
+MAX_INTRON, --max_intron=300000
+The maximum intron size (bp) allowed. A transcript is split into smaller parts
+if it contains an intron longer than MAX_INTRON.
 
-MAX_INTRON is a maximum size of an intron.
-Oversized introns will be excluded.
+MIN_UTR, --min_utr=100
+Alternative UTRs smaller than MIN_UTR are merged to overlapping exons.
+
+MIN_TRANSCRIPT_LEN, --min_transcript_len=300
+The minimum length (bp) for multiple exon transcript.
+
+MIN_SINGLE_EXON_LEN, --min_single_exon_len=500
+The minimum length (bp) for a single exon gene.
+
+MAX_ISOFORMS, --max_isoforms=20
+The maximum number of isoforms allowed without -x option.
+Gimme searches for a minimum number of isoforms if the maximum number exceeds MAX_ISOFORMS.
+
+-x, --max
+Tell Gimme to search for report all putative isoforms.
+
+--debug
+Run Gimme with parameters set for debugging.
+
+-v, --version
+Print out a version number.
+
+-h, --help
+Print out a help message.
 
 Running Tests
+-------------
 
-Run nosetests in the main directory to run all tests in tests directory.
+Run nosetests in the main directory to run all tests.
 
 Utilities
 ---------
