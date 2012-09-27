@@ -306,7 +306,7 @@ and development (GED lab), Michigan State University.</p>
 <tr class="field"><th class="field-name">Author:</th><td class="field-body"><p class="first">Likit Preeyanon, <a class="reference" href="mailto:preeyano&#64;msu.edu">preeyano&#64;msu.edu</a></p>
 </td>
 </tr>
-<tr class="field"><th class="field-name">Supervisor:</th><td class="field-body"><ol class="first last upperalpha simple" start="3">
+<tr class="field"><th class="field-name">Advisor:</th><td class="field-body"><ol class="first last upperalpha simple" start="3">
 <li>Titus Brown, <a class="reference" href="mailto:ctb&#64;msu.edu">ctb&#64;msu.edu</a></li>
 </ol>
 </td>
@@ -325,31 +325,25 @@ See LICENSE.txt or <a class="reference" href="http://www.gnu.org/licenses/">http
 <p>Gimme is unpublished. A manuscript is in preparation.</p>
 </div>
 <div class="section">
-<h1><a id="required-package" name="required-package">Required package</a></h1>
-<p>Gimme requires Networkx package to manipulate a graph data structure.
-You can download Networkx from <a class="reference" href="http://networkx.lanl.gov/download.html">http://networkx.lanl.gov/download.html</a>.
-Please make sure networkx is in your PYTHONPATH or standard Python libraries
-on your computer.</p>
-</div>
-<div class="section">
 <h1><a id="download" name="download">Download</a></h1>
-<p>Gimme is available on Github at git://github.com/likit/gimme.git.</p>
+<p>Source code is available at <a class="reference" href="https://github.com/ged-lab/gimme.git">https://github.com/ged-lab/gimme.git</a>.</p>
 </div>
 <div class="section">
 <h1><a id="installation" name="installation">Installation</a></h1>
-<p>No installation is required. However, you need to have Python 2.7 installed.</p>
+<p>Run python setup.py in the main directory to download and install required packages.</p>
 </div>
 <div class="section">
 <h1><a id="running-gimme" name="running-gimme">Running Gimme</a></h1>
 <p>Gimme should be able to run on any platform with Python 2.7 interpreter.
 You can simply run:</p>
 <pre class="literal-block">
-$ python gimme.py [input file].
+$ python ./src/gimme.py &lt;input file&gt;
 </pre>
 </div>
 <div class="section">
 <h1><a id="input" name="input">Input</a></h1>
-<p>Gimme reads input file in PSL format (BLAT and GMAP support this format).</p>
+<p>Gimme can read an input file in PSL or BED format.
+Use gff2bed.py in utils directory to convert GFF file to BED file.</p>
 </div>
 <div class="section">
 <h1><a id="output" name="output">Output</a></h1>
@@ -368,9 +362,9 @@ See Utilities for more detail.</p>
 $ python ./src/gimme.py sample_data/sample.psl &gt; sample.bed
 </pre>
 </li>
-<li><p class="first">Obtain a minimum number of isoforms:</p>
+<li><p class="first">Obtain a maximum number of isoforms:</p>
 <pre class="literal-block">
-$ python ./src/gimme.py --min sample_data/sample.psl &gt; sample.bed
+$ python ./src/gimme.py -x sample_data/sample.psl &gt; sample.max.bed
 </pre>
 </li>
 <li><p class="first">Run Gimme with multiple input files:</p>
@@ -380,7 +374,7 @@ $ python ./src/gimme.py sample1.psl sample2.psl sample3.psl &gt; sample.all.bed
 </li>
 <li><p class="first">Run Gimme with user defined parameters:</p>
 <pre class="literal-block">
-$ python ./src/gimme.py --MIN_UTR-200 --MAX_INTRON=100000 --GAP_SIZE=15 sample.psl &gt; sample.all.bed
+$ python ./src/gimme.py --min_utr=200 --max_intron=100000 --gap_size=15 sample.psl &gt; sample.all.bed
 </pre>
 </li>
 <li><p class="first">See a program's help:</p>
@@ -392,15 +386,32 @@ $ python ./src/gimme.py -h or --help
 </div>
 <div class="section">
 <h1><a id="parameters" name="parameters">Parameters</a></h1>
-<p>This version of Gimme fills up all small gaps in alignments.
-The default gap is 21bp and is specified in GAP_SIZE parameter.</p>
-<p>You can also modify a length of minimal UTR by specifying a MIN_UTR value.
-The default is 100 bp.
-This value only is used as a cut off for alternative UTRs.</p>
-<p>MAX_INTRON is a maximum size of an intron.
-Oversized introns will be excluded.</p>
-<p>Running Tests</p>
-<p>Run nosetests in the main directory to run all tests in tests directory.</p>
+<p>GAP_SIZE, --gap_size=50
+Introns smaller than GAP_SIZE) are filled to construct a more complete exon.</p>
+<p>MAX_INTRON, --max_intron=300000
+The maximum intron size (bp) allowed. A transcript is split into smaller parts
+if it contains an intron longer than MAX_INTRON.</p>
+<p>MIN_UTR, --min_utr=100
+Alternative UTRs smaller than MIN_UTR are merged to overlapping exons.</p>
+<p>MIN_TRANSCRIPT_LEN, --min_transcript_len=300
+The minimum length (bp) for multiple exon transcript.</p>
+<p>MIN_SINGLE_EXON_LEN, --min_single_exon_len=500
+The minimum length (bp) for a single exon gene.</p>
+<p>MAX_ISOFORMS, --max_isoforms=20
+The maximum number of isoforms allowed without -x option.
+Gimme searches for a minimum number of isoforms if the maximum number exceeds MAX_ISOFORMS.</p>
+<p>-x, --max
+Tell Gimme to search for report all putative isoforms.</p>
+<p>--debug
+Run Gimme with parameters set for debugging.</p>
+<p>-v, --version
+Print out a version number.</p>
+<p>-h, --help
+Print out a help message.</p>
+</div>
+<div class="section">
+<h1><a id="running-tests" name="running-tests">Running Tests</a></h1>
+<p>Run nosetests in the main directory to run all tests.</p>
 </div>
 <div class="section">
 <h1><a id="utilities" name="utilities">Utilities</a></h1>
