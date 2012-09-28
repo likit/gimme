@@ -57,6 +57,8 @@ def parseBed(filename):
 
 
 def parseCDS(filename):
+    print >> sys.stderr, 'Parsing FASTA file...'
+
     cds = {}
     for line in open(filename):
         if line.startswith('>'):
@@ -122,6 +124,8 @@ def findCDS(bedFile, cds):
 
 
 if __name__=='__main__':
-    print >> sys.stderr, 'Parsing FASTA file...'
-    cds = parseCDS(sys.argv[1])
+    fasta_file = sys.argv[1]
+    bedfile = sys.argv[2]
+
+    cds = parseCDS(fasta_file)
     findCDS(sys.argv[2], cds)
