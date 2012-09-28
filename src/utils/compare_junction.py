@@ -19,7 +19,8 @@ from collections import namedtuple
 
 import pslparser
 
-MIN_INTRON = 0
+MIN_INTRON = 50
+MAX_INTRON = 300000
 
 Transcript = namedtuple('Transcript', [
                                         'chrom',
@@ -102,20 +103,30 @@ def add_intron(exons, intron_db, all=False):
         except IndexError:
             continue
         else:
+            intron_start = curr_exon.end + 1
+            intron_end = next_exon.start - 1
+            intron_strand = curr_exon.strand
+            intron_chrom = curr_exon.chrom
+            intron_size = intron_end - intron_start
             if all:
-                intron = "%s:%d-%d\t%s" % (curr_exon.chrom, curr_exon.end,
-                                        next_exon.start, curr_exon.strand)
+                intron = "%s:%d-%d\t%s" % (intron_chrom,
+                                                intron_start,
+                                                intron_end,
+                                                intron_strand,
+                                            )
             else:
-                intron = "%s:%d-%d" % (curr_exon.chrom,
-                                        curr_exon.end, next_exon.start)
+                intron = "%s:%d-%d" % (intron_chrom,
+                                            intron_start,
+                                            intron_end,
+                                        )
 
             try:
-                assert curr_exon.end < next_exon.start, '%s %s %s' % \
-                                            (curr_exon, next_exon, intron)
+                assert intron_start < intron_end
             except AssertionError:
                 pass
             else:
-                if next_exon.start - curr_exon.end > MIN_INTRON:
+                if (intron_size > MIN_INTRON
+                        and intron_size < MAX_INTRON):
                     intron_db.add(intron)
 
 
@@ -199,7 +210,7 @@ def main(args):
         db2= set([])
 
         if not args.bed and not args.psl:
-            raise ValueError, 'No input file found.'
+            raise ValueError('No input file found.')
         elif not args.bed and args.psl:
             first_file, second_file = args.psl
             first, second = adjust_parser(first_file, 'psl',
@@ -222,10 +233,10 @@ def main(args):
                                                 db2
                                             )
         elif len(args.bed) + len(args.psl) < 2:
-            raise ValueError, 'Need two input files to compare.'
+            raise ValueError('Need two input files to compare.')
 
         elif len(args.bed) + len(args.psl) > 2:
-            raise ValueError, 'Too many input files.'
+            raise ValueError('Too many input files.')
 
         for filename, parser, db in ((first), (second)):
             print >> sys.stderr, "Parsing alignment from %s ..." % (filename)
