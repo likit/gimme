@@ -1,3 +1,8 @@
+'''The script reads gene models in BED format and translated proteins
+in FASTA from ESTScan and reports gene models in BED format with ORFs
+according to corresponding translated proteins.
+
+'''
 import sys, csv
 from bx.intervals.intersection import Interval, Intersecter
 
@@ -34,9 +39,6 @@ def parseBed(filename):
                                 for i in range(len(blockSizes))]
             size = sum(blockSizes)
 
-            if len(blockSizes) == 1:
-                continue
-            
             i = 0
             start = i
             while i in range(len(blockSizes)):
@@ -98,7 +100,8 @@ def findCDS(bedFile, cds):
                 new_start = trans_size - end
                 start = new_start
                 end = new_end
-                assert start < end, "%d-%d %d %s" % (start, end, trans_size, exon.seqId)
+                assert start < end, "%d-%d %d %s" % \
+                            (start, end, trans_size, exon.seqId)
 
         except KeyError:
             row[5] = '.'
