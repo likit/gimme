@@ -28,125 +28,132 @@ Transcript = namedtuple('Transcript', [
                                         'blockSizes',
                                         'blockStarts',
                                         'name',
+                                        'strand',
                                     ])
 
 class Exon(object):
-    def __init__(self, chrom, start, end):
+    def __init__(self, chrom, start, end, strand):
         self.chrom = chrom
         self.start = start
         self.end = end
-        self.setName()
-        self.introns = set([])
+        self.strand = strand
+        self.set_name()
+        self.introns = set()
         self.terminal = None
-        self.nextExons = set([])
-        self.prevExons = set([])
+        self.next_exons = set()
+        self.prevExons = set()
     
-    def setName(self):
+    def set_name(self):
         self.name = self.__str__()
 
     def __str__(self):
-        return '%s:%d-%d' % (self.chrom, self.start, self.end)
+        return '%s:%d-%d\t%s' % (self.chrom, self.start,
+                                        self.end, self.strand)
 
 
-def deleteGap(exons):
+def delete_gap(exons):
     i = 0
 
-    newExon = []
-    currExon = exons[i]
+    new_exon = []
+    curr_exon = exons[i]
 
     while True:
         try:
-            nextExon = exons[i + 1]
+            next_exon = exons[i + 1]
         except IndexError:
             break
         else:
-            if nextExon.start - currExon.end <= MIN_INTRON:
-                currExon.end = nextExon.end
+            if next_exon.start - curr_exon.end <= MIN_INTRON:
+                curr_exon.end = next_exon.end
             else:
-                newExon.append(currExon)
-                currExon = nextExon
+                new_exon.append(curr_exon)
+                curr_exon = next_exon
 
-            currExon.setName()
+            curr_exon.set_name()
         i += 1
 
-    newExon.append(currExon)
-    return newExon
+    new_exon.append(curr_exon)
+    return new_exon
 
 
-def parsePSL(filename):
+def parse_psl(filename):
     '''Reads alignments from PSL format and create
     exon objects from each transcript.
 
     '''
 
-    for pslObj in pslparser.read(open(filename)):
+    for pslobj in pslparser.read(open(filename)):
         exons = []
-        for i in range(len(pslObj.tStarts)):
-            exonStart = pslObj.tStarts[i]
-            exonEnd = exonStart + pslObj.blockSizes[i]
+        for i in range(len(pslobj.tStarts)):
+            start = pslobj.tStarts[i]
+            end = start + pslobj.blockSizes[i]
+            strand = pslobj.strand
 
-            exon = Exon(pslObj.tName, exonStart, exonEnd)
+            exon = Exon(pslobj.tName, start, end, strand)
             exons.append(exon)
-
         yield exons
 
 
-def addIntron(exons, intronDb):
+def add_intron(exons, intron_db, all=False):
     for i in range(len(exons)):
-        currExon = exons[i]
+        curr_exon = exons[i]
         try:
-            nextExon = exons[i + 1]
+            next_exon = exons[i + 1]
         except IndexError:
             continue
         else:
-            intron = "%s:%d-%d" % (currExon.chrom,
-                                        currExon.end,
-                                        nextExon.start)
+            if all:
+                intron = "%s:%d-%d\t%s" % (curr_exon.chrom, curr_exon.end,
+                                        next_exon.start, curr_exon.strand)
+            else:
+                intron = "%s:%d-%d" % (curr_exon.chrom,
+                                        curr_exon.end, next_exon.start)
 
             try:
-                assert currExon.end < nextExon.start, \
-                                '%s %s %s' % (currExon,
-                                                nextExon,
-                                                intron)
+                assert curr_exon.end < next_exon.start, '%s %s %s' % \
+                                            (curr_exon, next_exon, intron)
             except AssertionError:
                 pass
             else:
-                if nextExon.start - currExon.end > MIN_INTRON:
-                    intronDb.add(intron)
+                if next_exon.start - curr_exon.end > MIN_INTRON:
+                    intron_db.add(intron)
 
 
-def parseBED(bedFile):
-
+def parse_bed(bedFile):
     with open(bedFile) as fp:
         for row in csv.reader(fp, dialect='excel-tab'):
             blockStarts = [int(i) for i in row[11].split(',')]
             blockSizes = [int(i) for i in row[10].split(',')]
-
+            strand = row[5]
             transcript = Transcript(row[0],
-                                    int(row[1]),
-                                    int(row[2]),
-                                    blockSizes,
-                                    blockStarts,
-                                    row[3],
+                                        int(row[1]),
+                                        int(row[2]),
+                                        blockSizes,
+                                        blockStarts,
+                                        row[3],
+                                        strand,
                                     )
             yield transcript
 
 
-def addIntronBed(transcript, modelIntronDb):
+def add_intron_bed(transcript, modelintron_db, all=False):
     exons = []
 
     for i in range(len(transcript.blockStarts)):
         start = transcript.blockStarts[i] + transcript.start
         end = transcript.blockSizes[i] + start
-        exon = Exon(transcript.chrom, start, end)
+        strand = transcript.strand
+        exon = Exon(transcript.chrom, start, end, strand)
 
         exons.append(exon)
 
-    addIntron(exons, modelIntronDb)
+    add_intron(exons, modelintron_db, all)
 
 
-def adjustParser(inputFile1, format1, inputFile2, format2, db1, db2):
-    parsers = {'psl':parsePSL, 'bed':parseBED}
+def adjust_parser(inputFile1, format1,
+                    inputFile2, format2, db1, db2):
+
+    parsers = {'psl':parse_psl, 'bed':parse_bed}
 
     parser1 = parsers[format1]
     parser2 = parsers[format2]
@@ -156,46 +163,36 @@ def adjustParser(inputFile1, format1, inputFile2, format2, db1, db2):
     return first, second
 
 def main(args):
-    db1 = set([])
-    if args.all:
-        '''Only print out all junctions without comparing junctions.
-
-        Only one input file needed.
-
-        '''
+    db1 = set()
+    if args.all:  # Print out all splice junctions.
         if args.psl:
-            parser = parsePSL
-            inputFileName1 = args.psl[0]
+            parser = parse_psl
+            input_filename1 = args.psl[0]
         elif args.bed:
-            parser = parseBED
-            inputFileName1 = args.bed[0]
-        else: # default format
-            parser = parseBED
-            inputFileName1 = args.bed[0]
+            parser = parse_bed
+            input_filename1 = args.bed[0]
+        else:  # default format
+            parser = parse_bed
+            input_filename1 = args.bed[0]
 
-        outputFileName1 = inputFileName1 + '_all_sp.txt'
+        output_filename1 = input_filename1 + '_all_sp.txt'
 
-        print >> sys.stderr, \
-                "Parsing alignment from %s ..." % (inputFileName1)
-        for n, exons in enumerate(parser(inputFileName1), start=1):
-
+        print >> sys.stderr, "Parsing alignment from %s ..." % \
+                                                        (input_filename1)
+        for n, exons in enumerate(parser(input_filename1), start=1):
             if len(exons) > 1:
-                '''Skip a single exon.'''
-
-                if parser == parsePSL:
-                    addIntron(exons, db1)
+                if parser == parse_psl:
+                    add_intron(exons, db1, args.all)
                 else:
-                    addIntronBed(exons, db1)
+                    add_intron_bed(exons, db1, args.all)
 
             if n % 1000 == 0:
                 print >> sys.stderr, '...', n
 
-        print >> sys.stderr, \
-                "Total introns in %s = %d\n" % (inputFileName1, len(db1))
-
-        op = open(outputFileName1, 'w')
-        for junc in db1:
-            print >> op, junc
+        print >> sys.stderr, "Total introns in %s = %d\n" % \
+                                            (input_filename1, len(db1))
+        op = open(output_filename1, 'w')
+        for junc in db1: print >> op, junc
         op.close()
 
     else:
@@ -204,24 +201,26 @@ def main(args):
         if not args.bed and not args.psl:
             raise ValueError, 'No input file found.'
         elif not args.bed and args.psl:
-            firstFile, secondFile = args.psl
-            first, second = adjustParser(firstFile, 'psl',
-                                            secondFile, 'psl',
+            first_file, second_file = args.psl
+            first, second = adjust_parser(first_file, 'psl',
+                                            second_file, 'psl',
                                             db1,
                                             db2)
         elif not args.psl and args.bed:
-            firstFile, secondFile = args.bed
-            first, second = adjustParser(firstFile, 'bed',
-                                            secondFile, 'bed',
+            first_file, second_file = args.bed
+            first, second = adjust_parser(first_file, 'bed',
+                                            second_file, 'bed',
                                             db1,
                                             db2)
         elif len(args.bed) == 1 and len(args.psl) == 1:
-            firstFile = args.bed[0]
-            secondFile = args.psl[0]
-            first, second = adjustParser(firstFile, 'bed',
-                                            secondFile, 'psl',
-                                            db1,
-                                            db2)
+            first_file = args.bed[0]
+            second_file = args.psl[0]
+            first, second = adjust_parser(first_file,
+                                                'bed',
+                                                second_file, 'psl',
+                                                db1,
+                                                db2
+                                            )
         elif len(args.bed) + len(args.psl) < 2:
             raise ValueError, 'Need two input files to compare.'
 
@@ -231,47 +230,44 @@ def main(args):
         for filename, parser, db in ((first), (second)):
             print >> sys.stderr, "Parsing alignment from %s ..." % (filename)
             for n, exons in enumerate(parser(filename), start=1):
-
                 if len(exons) > 1:
-                    '''Skip a single exon.'''
-
-                    if parser == parsePSL:
-                        addIntron(exons, db)
+                    if parser == parse_psl:
+                        add_intron(exons, db)
                     else:
-                        addIntronBed(exons, db)
+                        add_intron_bed(exons, db)
 
                 if n % 1000 == 0:
                     print >> sys.stderr, '...', n
 
         print >> sys.stderr, \
-                    "Total introns in %s = %d\n" % (firstFile, len(db1))
+                    "Total introns in %s = %d\n" % (first_file, len(db1))
         print >> sys.stderr, \
-                    "Total introns in %s = %d\n" % (secondFile, len(db2))
+                    "Total introns in %s = %d\n" % (second_file, len(db2))
 
-        firstDiff = db1.difference(db2)
-        secondDiff = db2.difference(db1)
+        first_diff = db1.difference(db2)
+        second_diff = db2.difference(db1)
 
         print >> sys.stderr, "Total introns not in %s = %d" % \
-                                    (secondFile, len(firstDiff))
+                                    (second_file, len(first_diff))
         print >> sys.stderr, "Total introns not in %s = %d" % \
-                                    (firstFile, len(secondDiff))
+                                    (first_file, len(second_diff))
 
-        inputFileName1 = os.path.basename(firstFile)
-        inputFileName2 = os.path.basename(secondFile)
+        input_filename1 = os.path.basename(first_file)
+        input_filename2 = os.path.basename(second_file)
 
 
-        outputFileName1 = inputFileName1 + '_diff_sp.txt'
-        outputFileName2 = inputFileName2 + '_diff_sp.txt'
+        output_filename1 = input_filename1 + '_diff_sp.txt'
+        output_filename2 = input_filename2 + '_diff_sp.txt'
 
-        if firstDiff:
-            op = open(outputFileName1, 'w')
-            for junc in firstDiff:
+        if first_diff:
+            op = open(output_filename1, 'w')
+            for junc in first_diff:
                 print >> op, junc
             op.close()
 
-        if secondDiff:
-            op = open(outputFileName2, 'w')
-            for junc in secondDiff:
+        if second_diff:
+            op = open(output_filename2, 'w')
+            for junc in second_diff:
                 print >> op, junc
             op.close()
 
