@@ -15,7 +15,7 @@ import gimme
 
 class TestCollapseExons(TestCase):
     def setUp(self):
-        self.exon_db = {}
+        self.align_db = gimme.AlignmentDB()
         self.singles = {}
         start = 1000
         n = 1
@@ -23,19 +23,19 @@ class TestCollapseExons(TestCase):
 
         while n < 7:
             e = gimme.ExonObj('chr1', start, start + 100)
-            self.exon_db[str(e)] = e
+            self.align_db.exon_db[str(e)] = e
             exons.append(str(e))
             start += 300
             n += 1
 
-        self.exon_db[exons[0]].terminal = 1 # mark a left terminal
-        self.exon_db[exons[-1]].terminal = 2 # mark a right terminal
+        self.align_db.exon_db[exons[0]].terminal = 1 # mark a left terminal
+        self.align_db.exon_db[exons[-1]].terminal = 2 # mark a right terminal
 
         self.exon_graph = nx.DiGraph()
         self.exon_graph.add_path(exons)
 
     def test_building_base_exon_db_and_exon_graph(self):
-        self.assertEqual(len(self.exon_db), 6)
+        self.assertEqual(len(self.align_db.exon_db), 6)
         self.assertEqual(len(self.exon_graph.nodes()), 6)
         self.assertEqual(len(self.exon_graph.edges()), 5)
         self.assertItemsEqual(self.exon_graph.nodes(), ['chr1:1000-1100',
@@ -65,12 +65,12 @@ class TestCollapseExons(TestCase):
 
         e = gimme.ExonObj('chr1', 1050, 1100)
         e.terminal = 1
-        self.exon_db[str(e)] = e
+        self.align_db.exon_db[str(e)] = e
         self.exon_graph.add_edge(str(e), 'chr1:1300-1400')
         self.assertEqual(len(self.exon_graph.nodes()), 7)
         self.assertEqual(len(self.exon_graph.edges()), 6)
 
-        gimme.collapse_exons(self.exon_graph, self.exon_db, self.singles)
+        gimme.collapse_exon(self.exon_graph, self.align_db)
 
         self.assertEqual(len(self.exon_graph.nodes()), 6)
         self.assertEqual(len(self.exon_graph.edges()), 5)
@@ -88,12 +88,12 @@ class TestCollapseExons(TestCase):
 
         e = gimme.ExonObj('chr1', 2500, 2550)
         e.terminal = 2
-        self.exon_db[str(e)] = e
+        self.align_db.exon_db[str(e)] = e
         self.exon_graph.add_edge('chr1:2200-2300', str(e))
         self.assertEqual(len(self.exon_graph.nodes()), 7)
         self.assertEqual(len(self.exon_graph.edges()), 6)
 
-        gimme.collapse_exons(self.exon_graph, self.exon_db, self.singles)
+        gimme.collapse_exon(self.exon_graph, self.align_db)
 
         self.assertEqual(len(self.exon_graph.nodes()), 6)
         self.assertEqual(len(self.exon_graph.edges()), 5)
@@ -111,17 +111,17 @@ class TestCollapseExons(TestCase):
 
         e1 = gimme.ExonObj('chr1', 700, 800)
         e1.terminal = 1
-        self.exon_db[str(e1)] = e1
+        self.align_db.exon_db[str(e1)] = e1
 
         e2 = gimme.ExonObj('chr1', 900, 1100)
         e2.terminal = 2
-        self.exon_db[str(e2)] = e2
+        self.align_db.exon_db[str(e2)] = e2
         self.exon_graph.add_edge(str(e1), str(e2))
 
         self.assertEqual(len(self.exon_graph.nodes()), 8)
         self.assertEqual(len(self.exon_graph.edges()), 6)
 
-        gimme.collapse_exons(self.exon_graph, self.exon_db, self.singles)
+        gimme.collapse_exon(self.exon_graph, self.align_db)
 
 
         self.assertEqual(len(self.exon_graph.nodes()), 7)
@@ -148,17 +148,17 @@ class TestCollapseExons(TestCase):
 
         e1 = gimme.ExonObj('chr1', 2550, 2600)
         e1.terminal = 1
-        self.exon_db[str(e1)] = e1
+        self.align_db.exon_db[str(e1)] = e1
 
         e2 = gimme.ExonObj('chr1', 2800, 2900)
         e2.terminal = 2
-        self.exon_db[str(e2)] = e2
+        self.align_db.exon_db[str(e2)] = e2
         self.exon_graph.add_edge(str(e1), str(e2))
 
         self.assertEqual(len(self.exon_graph.nodes()), 8)
         self.assertEqual(len(self.exon_graph.edges()), 6)
 
-        gimme.collapse_exons(self.exon_graph, self.exon_db, self.singles)
+        gimme.collapse_exon(self.exon_graph, self.align_db)
 
 
         self.assertEqual(len(self.exon_graph.nodes()), 7)
@@ -187,17 +187,17 @@ class TestCollapseExons(TestCase):
 
         e1 = gimme.ExonObj('chr1', 1900, 2000)
         e1.terminal = 1
-        self.exon_db[str(e1)] = e1
+        self.align_db.exon_db[str(e1)] = e1
 
         e2 = gimme.ExonObj('chr1', 2500, 2550)
         e2.terminal = 2
-        self.exon_db[str(e2)] = e2
+        self.align_db.exon_db[str(e2)] = e2
         self.exon_graph.add_edge(str(e1), str(e2))
 
         self.assertEqual(len(self.exon_graph.nodes()), 7)
         self.assertEqual(len(self.exon_graph.edges()), 6)
 
-        gimme.collapse_exons(self.exon_graph, self.exon_db, self.singles)
+        gimme.collapse_exon(self.exon_graph, self.align_db)
 
         #print >> sys.stderr, self.exon_graph.edges()
 
@@ -231,17 +231,17 @@ class TestCollapseExons(TestCase):
 
         e1 = gimme.ExonObj('chr1', 1050, 1100)
         e1.terminal = 1
-        self.exon_db[str(e1)] = e1
+        self.align_db.exon_db[str(e1)] = e1
 
         e2 = gimme.ExonObj('chr1', 1600, 1700)
         e2.terminal = 2
-        self.exon_db[str(e2)] = e2
+        self.align_db.exon_db[str(e2)] = e2
         self.exon_graph.add_edge(str(e1), str(e2))
 
         self.assertEqual(len(self.exon_graph.nodes()), 7)
         self.assertEqual(len(self.exon_graph.edges()), 6)
 
-        gimme.collapse_exons(self.exon_graph, self.exon_db, self.singles)
+        gimme.collapse_exon(self.exon_graph, self.align_db)
 
         self.assertEqual(len(self.exon_graph.nodes()), 6)
         self.assertEqual(len(self.exon_graph.edges()), 6)
@@ -269,14 +269,14 @@ class TestCollapseExons(TestCase):
 
         e1 = gimme.ExonObj('chr1', 1050, 1100)
         e1.terminal = 1
-        self.exon_db[str(e1)] = e1
+        self.align_db.exon_db[str(e1)] = e1
 
         e2 = gimme.ExonObj('chr1', 1600, 1700)
-        self.exon_db[str(e2)] = e2
+        self.align_db.exon_db[str(e2)] = e2
 
         e3 = gimme.ExonObj('chr1', 1900, 1950)
         e3.terminal = 2
-        self.exon_db[str(e3)] = e3
+        self.align_db.exon_db[str(e3)] = e3
 
         self.exon_graph.add_edge(str(e1), str(e2))
         self.exon_graph.add_edge(str(e2), str(e3))
@@ -284,7 +284,7 @@ class TestCollapseExons(TestCase):
         self.assertEqual(len(self.exon_graph.nodes()), 8)
         self.assertEqual(len(self.exon_graph.edges()), 7)
 
-        gimme.collapse_exons(self.exon_graph, self.exon_db, self.singles)
+        gimme.collapse_exon(self.exon_graph, self.align_db)
         
         self.assertEqual(len(self.exon_graph.nodes()), 6)
         self.assertEqual(len(self.exon_graph.edges()), 6)
@@ -312,14 +312,14 @@ class TestCollapseExons(TestCase):
 
         e1 = gimme.ExonObj('chr1', 1190, 1400)
         e1.terminal = 1
-        self.exon_db[str(e1)] = e1
+        self.align_db.exon_db[str(e1)] = e1
 
         e2 = gimme.ExonObj('chr1', 1600, 1700)
-        self.exon_db[str(e2)] = e2
+        self.align_db.exon_db[str(e2)] = e2
 
         e3 = gimme.ExonObj('chr1', 1900, 1950)
         e3.terminal = 2
-        self.exon_db[str(e3)] = e3
+        self.align_db.exon_db[str(e3)] = e3
 
         self.exon_graph.add_edge(str(e1), str(e2))
         self.exon_graph.add_edge(str(e2), str(e3))
@@ -327,7 +327,7 @@ class TestCollapseExons(TestCase):
         self.assertEqual(len(self.exon_graph.nodes()), 8)
         self.assertEqual(len(self.exon_graph.edges()), 7)
 
-        gimme.collapse_exons(self.exon_graph, self.exon_db, self.singles)
+        gimme.collapse_exon(self.exon_graph, self.align_db)
 
         self.assertEqual(len(self.exon_graph.nodes()), 7)
         self.assertEqual(len(self.exon_graph.edges()), 6)
@@ -353,14 +353,14 @@ class TestCollapseExons(TestCase):
 
         e1 = gimme.ExonObj('chr1', 1250, 1400)
         e1.terminal = 1
-        self.exon_db[str(e1)] = e1
+        self.align_db.exon_db[str(e1)] = e1
 
         e2 = gimme.ExonObj('chr1', 1600, 1700)
-        self.exon_db[str(e2)] = e2
+        self.align_db.exon_db[str(e2)] = e2
 
         e3 = gimme.ExonObj('chr1', 1900, 1950)
         e3.terminal = 2
-        self.exon_db[str(e3)] = e3
+        self.align_db.exon_db[str(e3)] = e3
 
         self.exon_graph.add_edge(str(e1), str(e2))
         self.exon_graph.add_edge(str(e2), str(e3))
@@ -368,7 +368,7 @@ class TestCollapseExons(TestCase):
         self.assertEqual(len(self.exon_graph.nodes()), 8)
         self.assertEqual(len(self.exon_graph.edges()), 7)
 
-        gimme.collapse_exons(self.exon_graph, self.exon_db, self.singles)
+        gimme.collapse_exon(self.exon_graph, self.align_db)
 
         self.assertEqual(len(self.exon_graph.nodes()), 6)
         self.assertEqual(len(self.exon_graph.edges()), 5)
@@ -387,14 +387,14 @@ class TestCollapseExons(TestCase):
 
         e1 = gimme.ExonObj('chr1', 1050, 1100)
         e1.terminal = 1
-        self.exon_db[str(e1)] = e1
+        self.align_db.exon_db[str(e1)] = e1
 
         e2 = gimme.ExonObj('chr1', 1300, 1400)
-        self.exon_db[str(e2)] = e2
+        self.align_db.exon_db[str(e2)] = e2
 
         e3 = gimme.ExonObj('chr1', 1600, 1850)
         e3.terminal = 2
-        self.exon_db[str(e3)] = e3
+        self.align_db.exon_db[str(e3)] = e3
 
         self.exon_graph.add_edge(str(e1), str(e2))
         self.exon_graph.add_edge(str(e2), str(e3))
@@ -402,7 +402,7 @@ class TestCollapseExons(TestCase):
         self.assertEqual(len(self.exon_graph.nodes()), 8)
         self.assertEqual(len(self.exon_graph.edges()), 7)
 
-        gimme.collapse_exons(self.exon_graph, self.exon_db, self.singles)
+        gimme.collapse_exon(self.exon_graph, self.align_db)
 
         self.assertEqual(len(self.exon_graph.nodes()), 7)
         self.assertEqual(len(self.exon_graph.edges()), 6)
@@ -430,18 +430,18 @@ class TestCollapseExons(TestCase):
 
         e1 = gimme.ExonObj('chr1', 1150, 1400)
         e1.terminal = 1
-        self.exon_db[str(e1)] = e1
+        self.align_db.exon_db[str(e1)] = e1
 
         e2 = gimme.ExonObj('chr1', 1600, 1850)
         e2.terminal = 2
-        self.exon_db[str(e2)] = e2
+        self.align_db.exon_db[str(e2)] = e2
 
         self.exon_graph.add_edge(str(e1), str(e2))
 
         self.assertEqual(len(self.exon_graph.nodes()), 8)
         self.assertEqual(len(self.exon_graph.edges()), 6)
 
-        gimme.collapse_exons(self.exon_graph, self.exon_db, self.singles)
+        gimme.collapse_exon(self.exon_graph, self.align_db)
 
         self.assertEqual(len(self.exon_graph.nodes()), 8)
         self.assertEqual(len(self.exon_graph.edges()), 6)
@@ -467,18 +467,18 @@ class TestCollapseExons(TestCase):
 
         e1 = gimme.ExonObj('chr1', 1250, 1400)
         e1.terminal = 1
-        self.exon_db[str(e1)] = e1
+        self.align_db.exon_db[str(e1)] = e1
 
         e2 = gimme.ExonObj('chr1', 1600, 1750)
         e2.terminal = 2
-        self.exon_db[str(e2)] = e2
+        self.align_db.exon_db[str(e2)] = e2
 
         self.exon_graph.add_edge(str(e1), str(e2))
 
         self.assertEqual(len(self.exon_graph.nodes()), 8)
         self.assertEqual(len(self.exon_graph.edges()), 6)
 
-        gimme.collapse_exons(self.exon_graph, self.exon_db, self.singles)
+        gimme.collapse_exon(self.exon_graph, self.align_db)
 
         self.assertEqual(len(self.exon_graph.nodes()), 6)
         self.assertEqual(len(self.exon_graph.edges()), 5)
@@ -496,14 +496,14 @@ class TestCollapseExons(TestCase):
 
         e1 = gimme.ExonObj('chr1', 1050, 1100)
         e1.terminal = 1
-        self.exon_db[str(e1)] = e1
+        self.align_db.exon_db[str(e1)] = e1
 
         e2 = gimme.ExonObj('chr1', 1300, 1400)
-        self.exon_db[str(e2)] = e2
+        self.align_db.exon_db[str(e2)] = e2
 
         e3 = gimme.ExonObj('chr1', 1600, 1750)
         e3.terminal = 2
-        self.exon_db[str(e3)] = e3
+        self.align_db.exon_db[str(e3)] = e3
 
         self.exon_graph.add_edge(str(e1), str(e2))
         self.exon_graph.add_edge(str(e2), str(e3))
@@ -511,7 +511,7 @@ class TestCollapseExons(TestCase):
         self.assertEqual(len(self.exon_graph.nodes()), 8)
         self.assertEqual(len(self.exon_graph.edges()), 7)
 
-        gimme.collapse_exons(self.exon_graph, self.exon_db, self.singles)
+        gimme.collapse_exon(self.exon_graph, self.align_db)
 
         self.assertEqual(len(self.exon_graph.nodes()), 6)
         self.assertEqual(len(self.exon_graph.edges()), 5)
@@ -529,18 +529,18 @@ class TestCollapseExons(TestCase):
 
         e1 = gimme.ExonObj('chr1', 1350, 1400)
         e1.terminal = 1
-        self.exon_db[str(e1)] = e1
+        self.align_db.exon_db[str(e1)] = e1
 
         e2 = gimme.ExonObj('chr1', 1600, 1650)
         e2.terminal = 2
-        self.exon_db[str(e2)] = e2
+        self.align_db.exon_db[str(e2)] = e2
 
         self.exon_graph.add_edge(str(e1), str(e2))
 
         self.assertEqual(len(self.exon_graph.nodes()), 8)
         self.assertEqual(len(self.exon_graph.edges()), 6)
 
-        gimme.collapse_exons(self.exon_graph, self.exon_db, self.singles)
+        gimme.collapse_exon(self.exon_graph, self.align_db)
 
         self.assertEqual(len(self.exon_graph.nodes()), 6)
         self.assertEqual(len(self.exon_graph.edges()), 5)
@@ -559,18 +559,18 @@ class TestCollapseExons(TestCase):
         '''
         e1 = gimme.ExonObj('chr1', 990, 1010)
         e1.terminal = 1
-        self.exon_db[str(e1)] = e1
+        self.align_db.exon_db[str(e1)] = e1
 
         e2 = gimme.ExonObj('chr1', 1300, 1400)
         e2.terminal = 2
-        self.exon_db[str(e2)] = e2
+        self.align_db.exon_db[str(e2)] = e2
 
         e3 = gimme.ExonObj('chr1', 950, 1100)
         e3.terminal = 1
-        self.exon_db[str(e3)] = e3
+        self.align_db.exon_db[str(e3)] = e3
 
         e4 = gimme.ExonObj('chr1', 1030, 1040)
-        self.exon_db[str(e4)] = e4
+        self.align_db.exon_db[str(e4)] = e4
 
         self.exon_graph.add_edge(str(e1), str(e4))
         self.exon_graph.add_edge(str(e3), str(e2))
@@ -579,7 +579,7 @@ class TestCollapseExons(TestCase):
         self.assertEqual(len(self.exon_graph.nodes()), 9)
         self.assertEqual(len(self.exon_graph.edges()), 8)
 
-        gimme.collapse_exons(self.exon_graph, self.exon_db, self.singles)
+        gimme.collapse_exon(self.exon_graph, self.align_db)
 
         self.assertEqual(len(self.exon_graph.nodes()), 8)
         self.assertEqual(len(self.exon_graph.edges()), 7)
@@ -596,15 +596,15 @@ class TestCollapseExons(TestCase):
         '''
         e1 = gimme.ExonObj('chr1', 2510, 2520)
         e1.terminal = 1
-        self.exon_db[str(e1)] = e1
+        self.align_db.exon_db[str(e1)] = e1
 
         e2 = gimme.ExonObj('chr1', 2530, 2600)
         e2.terminal = 2
-        self.exon_db[str(e2)] = e2
+        self.align_db.exon_db[str(e2)] = e2
 
         e3 = gimme.ExonObj('chr1', 2700, 2800)
         e3.terminal = 1
-        self.exon_db[str(e3)] = e3
+        self.align_db.exon_db[str(e3)] = e3
 
         self.exon_graph.add_edge(str(e1), str(e2))
         self.exon_graph.add_edge(str(e2), str(e3))
@@ -612,7 +612,7 @@ class TestCollapseExons(TestCase):
         self.assertEqual(len(self.exon_graph.nodes()), 9)
         self.assertEqual(len(self.exon_graph.edges()), 7)
 
-        gimme.collapse_exons(self.exon_graph, self.exon_db, self.singles)
+        gimme.collapse_exon(self.exon_graph, self.align_db)
 
         self.assertEqual(len(self.exon_graph.nodes()), 9)
         self.assertEqual(len(self.exon_graph.edges()), 7)
@@ -629,15 +629,15 @@ class TestCollapseExons(TestCase):
         '''
         e1 = gimme.ExonObj('chr1', 2400, 2450)
         e1.terminal = 1
-        self.exon_db[str(e1)] = e1
+        self.align_db.exon_db[str(e1)] = e1
 
         e2 = gimme.ExonObj('chr1', 2500, 2600)
         e2.terminal = 2
-        self.exon_db[str(e2)] = e2
+        self.align_db.exon_db[str(e2)] = e2
 
         e3 = gimme.ExonObj('chr1', 2700, 2800)
         e3.terminal = 1
-        self.exon_db[str(e3)] = e3
+        self.align_db.exon_db[str(e3)] = e3
 
         self.exon_graph.add_edge(str(e1), str(e2))
         self.exon_graph.add_edge(str(e2), str(e3))
@@ -645,17 +645,17 @@ class TestCollapseExons(TestCase):
         self.assertEqual(len(self.exon_graph.nodes()), 8)
         self.assertEqual(len(self.exon_graph.edges()), 7)
 
-        gimme.collapse_exons(self.exon_graph, self.exon_db, self.singles)
+        gimme.collapse_exon(self.exon_graph, self.align_db)
 
         self.assertEqual(len(self.exon_graph.nodes()), 8)
         self.assertEqual(len(self.exon_graph.edges()), 7)
 
 class TestAddIntrons(TestCase):
     def setUp(self):
+        self.align_db = gimme.AlignmentDB()
         start = 1000
         n = 1
         self.exons = []
-        self.intron_db = {}
 
         while n < 7:
             e = gimme.ExonObj('chr1', start, start + 100)
@@ -667,24 +667,25 @@ class TestAddIntrons(TestCase):
         self.exons[-1].terminal = 2 # mark a right terminal
 
     def test_simple(self):
-        gimme.add_introns(self.exons, self.intron_db, {}, 0)
+        gimme.add_intron(self.exons, self.align_db, {}, 0)
 
-        self.assertEqual(len(self.intron_db), 5)
+        self.assertEqual(len(self.align_db.intron_db), 5)
 
 
 class TestMergeExons(TestCase):
     def setUp(self):
-        self.exons = {'chr1':[]}
+        self.align_db = gimme.AlignmentDB()
+        self.align_db.single_exons_db= {'chr1':[]}
         self.e1 = gimme.ExonObj('chr1', 1000, 2000)
         self.e2 = gimme.ExonObj('chr1', 3000, 4000)
         self.e3 = gimme.ExonObj('chr1', 5000, 6000)
         self.e4 = gimme.ExonObj('chr1', 7000, 8000)
 
 
-        self.exons['chr1'].append(self.e1)
-        self.exons['chr1'].append(self.e2)
-        self.exons['chr1'].append(self.e3)
-        self.exons['chr1'].append(self.e4)
+        self.align_db.single_exons_db['chr1'].append(self.e1)
+        self.align_db.single_exons_db['chr1'].append(self.e2)
+        self.align_db.single_exons_db['chr1'].append(self.e3)
+        self.align_db.single_exons_db['chr1'].append(self.e4)
 
     def print_items(self, items):
         for e in items['chr1']:
@@ -692,77 +693,77 @@ class TestMergeExons(TestCase):
         print >> sys.stderr, ''
 
     def test_no_merge_single_exons(self):
-        self.exons = {'chr1':[]}
-        self.exons['chr1'].append(self.e1)
-        self.merged_exons = gimme.merge_exons(self.exons)
+        self.align_db.single_exons_db = {'chr1':[]}
+        self.align_db.single_exons_db['chr1'].append(self.e1)
+        self.merged_exons = gimme.merge_exon(self.align_db)
 
         self.assertEqual(len(self.merged_exons['chr1']), 1)
 
     def test_no_merge_multiple_exons(self):
-        self.merged_exons = gimme.merge_exons(self.exons)
+        self.merged_exons = gimme.merge_exon(self.align_db)
 
         self.assertEqual(len(self.merged_exons['chr1']), 4)
 
     def test_subset_merge(self):
         self.e5 = gimme.ExonObj('chr1', 1100, 1800)
-        self.exons['chr1'].append(self.e5)
+        self.align_db.single_exons_db['chr1'].append(self.e5)
 
-        self.merged_exons = gimme.merge_exons(self.exons)
+        self.merged_exons = gimme.merge_exon(self.align_db)
 
         self.assertEqual(len(self.merged_exons['chr1']), 4)
 
     def test_extend_front(self):
         self.e5 = gimme.ExonObj('chr1', 500, 1800)
-        self.exons['chr1'].append(self.e5)
+        self.align_db.single_exons_db['chr1'].append(self.e5)
 
-        self.merged_exons = gimme.merge_exons(self.exons)
+        self.merged_exons = gimme.merge_exon(self.align_db)
 
         self.assertEqual(len(self.merged_exons['chr1']), 4)
 
     def test_extend_back_first(self):
         self.e5 = gimme.ExonObj('chr1', 1100, 2200)
-        self.exons['chr1'].append(self.e5)
-        self.merged_exons = gimme.merge_exons(self.exons)
+        self.align_db.single_exons_db['chr1'].append(self.e5)
+        self.merged_exons = gimme.merge_exon(self.align_db)
 
         self.assertEqual(len(self.merged_exons['chr1']), 4)
 
     def test_extend_back_last(self):
         self.e5 = gimme.ExonObj('chr1', 7100, 8200)
-        self.exons['chr1'].append(self.e5)
+        self.align_db.single_exons_db['chr1'].append(self.e5)
 
-        self.merged_exons = gimme.merge_exons(self.exons)
+        self.merged_exons = gimme.merge_exon(self.align_db)
         self.assertEqual(len(self.merged_exons['chr1']), 4)
 
     def test_extend_back_first_last(self):
         self.e5 = gimme.ExonObj('chr1', 7100, 8200)
         self.e6 = gimme.ExonObj('chr1', 1100, 2200)
-        self.exons['chr1'].append(self.e5)
-        self.exons['chr1'].append(self.e6)
+        self.align_db.single_exons_db['chr1'].append(self.e5)
+        self.align_db.single_exons_db['chr1'].append(self.e6)
 
-        self.merged_exons = gimme.merge_exons(self.exons)
+        self.merged_exons = gimme.merge_exon(self.align_db)
         self.assertEqual(len(self.merged_exons['chr1']), 4)
 
     def test_single_merge(self):
         self.e5 = gimme.ExonObj('chr1', 500, 8200)
-        self.exons['chr1'].append(self.e5)
+        self.align_db.single_exons_db['chr1'].append(self.e5)
 
-        self.merged_exons = gimme.merge_exons(self.exons)
+        self.merged_exons = gimme.merge_exon(self.align_db)
 
         self.assertEqual(len(self.merged_exons['chr1']), 1)
 
     def test_merge_two_exons(self):
         self.e5 = gimme.ExonObj('chr1', 1300, 3200)
-        self.exons['chr1'].append(self.e5)
+        self.align_db.single_exons_db['chr1'].append(self.e5)
 
-        self.merged_exons = gimme.merge_exons(self.exons)
+        self.merged_exons = gimme.merge_exon(self.align_db)
 
         self.assertEqual(len(self.merged_exons['chr1']), 3)
 
     def test_merge_two_exons_extend(self):
         self.e5 = gimme.ExonObj('chr1', 1300, 4200)
-        self.exons['chr1'].append(self.e5)
+        self.align_db.single_exons_db['chr1'].append(self.e5)
 
-        self.merged_exons = gimme.merge_exons(self.exons)
+        self.merged_exons = gimme.merge_exon(self.align_db)
 
         self.assertEqual(len(self.merged_exons['chr1']), 3)
 
@@ -771,6 +772,7 @@ class TestSplitExonGroups(TestCase):
     max_intron = 200
 
     def setUp(self):
+        self.align_db = gimme.AlignmentDB()
         self.exons = []
         e1 = gimme.ExonObj('chr1', 1000, 1100)
         e2 = gimme.ExonObj('chr1', 1200, 1300)
