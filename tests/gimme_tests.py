@@ -16,7 +16,6 @@ import gimme
 class TestCollapseExons(TestCase):
     def setUp(self):
         self.align_db = gimme.AlignmentDB()
-        self.singles = {}
         start = 1000
         n = 1
         exons = []
