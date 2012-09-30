@@ -32,12 +32,12 @@ from utils import pslparser, get_min_isoforms
 from bx.intervals.intersection import Interval, IntervalTree
 
 
-GAP_SIZE = 50 # a minimum intron size (bp)
-MAX_INTRON = 300000 # a maximum intron size (bp)
-MIN_UTR = 100 # a minimum UTR size (bp)
-MIN_TRANSCRIPT_LEN = 300 # a minimum length for multiple exon transcript(bp)
-MIN_SINGLE_EXON_LEN = 500 # a minimum length for a single exon(bp)
-MAX_ISOFORMS = 20   # minimal isoforms will be searched
+gap_size = 50 # a minimum intron size (bp)
+max_intron = 300000 # a maximum intron size (bp)
+min_utr = 100 # a minimum UTR size (bp)
+min_transcript_len = 300 # a minimum length for multiple exon transcript(bp)
+min_single_exon_len = 500 # a minimum length for a single exon(bp)
+max_isoforms = 20   # minimal isoforms will be searched
                     #if the number of isoforms exceed this number
 VERSION = '0.97'
 SHA = '81a45d8' # git commit SHA
@@ -91,7 +91,7 @@ def parse_bed(bed_file):
             exon = ExonObj(chrom, exon_start, exon_end)
             exons.append(exon)
 
-        exons = delete_gap(exons)
+        exons = delete_gap(exons, gap_size)
         yield exons
 
 
@@ -110,18 +110,18 @@ def parse_psl(psl_file):
             exon = ExonObj(pslobj.tName, exon_start, exon_end)
             exons.append(exon)
 
-        exons = delete_gap(exons)
+        exons = delete_gap(exons, gap_size)
         yield exons
 
 
-def remove_large_intron(exons, max_intron=MAX_INTRON):
+def remove_large_intron(exons, max_intron=1e6):
     '''Returns groups of exons split by introns longer than
-    MAX_INTRON or return a list containing the original exons.
+    max_intron or return a list containing the original exons.
 
     Exons is a list of exons sorted by start position.
 
     '''
-    if MAX_INTRON < 0: return [exons]  # disable
+    if max_intron < 0: return [exons]  # disable
 
     all_exon_groups = []
     subgroup = []
@@ -257,7 +257,7 @@ def collapse_exon(g, align_db):
                         curr_exon.terminal = None
                 else:
                     if (curr_exon.terminal == 1 and
-                            next_exon.start - curr_exon.start <= MIN_UTR):
+                            next_exon.start - curr_exon.start <= min_utr):
                         g.add_edges_from([(str(next_exon), n) for n in
                                             g.successors(str(curr_exon))])
                         g.remove_node(str(curr_exon))
@@ -284,7 +284,7 @@ def collapse_exon(g, align_db):
                     curr_exon = next_exon
                 else:
                     if next_exon.terminal == 2:
-                        if next_exon.end - curr_exon.end <= MIN_UTR:
+                        if next_exon.end - curr_exon.end <= min_utr:
                             g.add_edges_from([(n, str(curr_exon))\
                                     for n in g.predecessors(str(next_exon))])
                             g.remove_node(str(next_exon))
@@ -322,17 +322,17 @@ def remove_redundant_exon(exon, singles, unmergables):
         if o.start >= exon.start and o.end <= exon.end:
             o.value['exon'].remove = True  # mark the exon as removed
         elif o.start >= exon.start and o.end > exon.end:
-            if o.end - exon.end < MIN_UTR:
+            if o.end - exon.end < min_utr:
                 o.value['exon'].remove = True
             else:
                 unmergables.add(str(o.value['exon']))
         elif o.start < exon.start and o.end <= exon.end:
-            if exon.start - o.start < MIN_UTR:
+            if exon.start - o.start < min_utr:
                 o.value['exon'].remove = True
             else:
                 unmergables.add(str(o.value['exon']))
         elif o.start < exon.start and o.end > exon.end:
-            if (exon.start - o.start) + (o.end - exon.end) < MIN_UTR:
+            if (exon.start - o.start) + (o.end - exon.end) < min_utr:
                 o.value['exon'].remove = True
             else:
                 unmergables.add(str(o.value['exon']))
@@ -342,13 +342,13 @@ def remove_redundant_exon(exon, singles, unmergables):
     remove_redundant_exon(exon, singles, unmergables)
 
 
-def delete_gap(exons):
+def delete_gap(exons, gap_size=0):
     '''Alignments may contain small gaps from indels and etc.
 
     The program fills up gaps to obtain a complete exon.
 
     A maximum size of a gap can be adjusted by assigning a new
-    value to GAP_SIZE parameter on a command line.
+    value to gap_size parameter on a command line.
 
     '''
 
@@ -362,7 +362,7 @@ def delete_gap(exons):
         except IndexError:
             break
         else:
-            if next_exon.start - curr_exon.end <= GAP_SIZE:
+            if next_exon.start - curr_exon.end <= gap_size:
                 curr_exon.end = next_exon.end
             else:
                 new_exons.append(curr_exon)
@@ -493,7 +493,14 @@ def print_bed_single(exon, gene_id, tran_id):
                     block_starts))
 
 
-def build_gene_model(align_db, clusters, big_cluster, find_max):
+def build_gene_model(align_db,
+                        clusters,
+                        big_cluster,
+                        find_max,
+                        min_transcript_len=0,
+                        max_isoforms=1e6,
+                    ):
+
     '''Build and print out gene models.'''
 
     visited_clusters = set()
@@ -510,7 +517,7 @@ def build_gene_model(align_db, clusters, big_cluster, find_max):
         transcript_length = sum([align_db.exon_db[e].get_size() \
                                                 for e in transcript])
 
-        if transcript_length <= MIN_TRANSCRIPT_LEN:
+        if transcript_length <= min_transcript_len:
             return False # fail
         else:
             if len(transcript) == 2:
@@ -565,10 +572,10 @@ def build_gene_model(align_db, clusters, big_cluster, find_max):
                             excluded += 1
                 else:
                     '''Report minimal isoforms if maximum isoforms exceeds
-                    MAX_ISOFORMS.
+                    max_isoforms.
 
                     '''
-                    if len(max_paths) > MAX_ISOFORMS:
+                    if len(max_paths) > max_isoforms:
                         for transcript in \
                                 get_min_isoforms.get_min_paths(g, False):
                             if check_criteria(transcript, two_exon_trns):
@@ -681,7 +688,7 @@ def main(input_files):
         '''====Parse alignments and build exon objects===='''
         print >> stderr, 'Input\t\t\t%s' % input_file
         for n, exons in enumerate(parse(open(input_file)), start=1):
-            for group in remove_large_intron(exons, MAX_INTRON):
+            for group in remove_large_intron(exons, max_intron):
                 if len(group) > 1:
                     add_exon(align_db, group)  # add exons to exon db
                     cluster_no = add_intron(group, align_db,
@@ -716,7 +723,9 @@ def main(input_files):
                                         clusters,
                                         big_cluster,
                                         args.max,
-                                        )
+                                        min_transcript_len,
+                                        max_isoforms,
+                                    )
 
     print >> stderr, ''
     gene_id, transcripts_num, excluded = return_items
@@ -724,7 +733,7 @@ def main(input_files):
     single_exon_gene_num = 0
     for chrom in merged_single_exons:
         for exon in merged_single_exons[chrom]:
-            if (exon.get_size() > MIN_SINGLE_EXON_LEN
+            if (exon.get_size() > min_single_exon_len
                                     and not exon.remove):
                 gene_id += 1
                 transcripts_num += 1
@@ -754,25 +763,25 @@ def main(input_files):
 if __name__=='__main__':
     parser = argparse.ArgumentParser(prog='gimme.py')
     parser.add_argument('--min_utr', type=int, metavar='int',
-            default=MIN_UTR,
+            default=min_utr,
             help='a cutoff size of alternative UTRs (bp)' +
                     ' (default: %(default)s)')
     parser.add_argument('--gap_size', type=int, metavar='int',
-            default=GAP_SIZE,
+            default=gap_size,
             help='the maximum gap size (bp) (default: %(default)s)')
     parser.add_argument('--max_intron', type=int, metavar='int',
-            default=MAX_INTRON,
+            default=max_intron,
             help='the maximum intron size (bp) (default: %(default)s)')
     parser.add_argument('--max_isoforms', type=int, metavar='int',
-            default=MAX_ISOFORMS,
+            default=max_isoforms,
             help='the maximum number of isoforms reported ' +
             'without -x option (default: %(default)s)')
     parser.add_argument('--min_transcript_len', type=int,
-            metavar='int', default=MIN_TRANSCRIPT_LEN,
+            metavar='int', default=min_transcript_len,
             help='the minimum size of transcript (bp)' +
                     '(default: %(default)s)')
     parser.add_argument('--min_single_exon_len', type=int,
-            metavar='int', default=MIN_SINGLE_EXON_LEN,
+            metavar='int', default=min_single_exon_len,
             help='the minimum size of a transcript with a single exon (bp)' +
                     '(default: %(default)s)')
     parser.add_argument('-x', '--max', action='store_true',
@@ -790,48 +799,48 @@ if __name__=='__main__':
         debugging.
 
         '''
-        GAP_SIZE = 0
-        MAX_INTRON = -1 
-        MIN_UTR = 0
-        MIN_TRANSCRIPT_LEN = 1
-        MIN_SINGLE_EXON_LEN = 1
+        gap_size = 0
+        max_intron = -1 
+        min_utr = 0
+        min_transcript_len = 1
+        min_single_exon_len = 1
         args.max = True
     else:
         if args.min_utr <=0:
-            raise ValueError, 'Invalid UTRs size (<=0)'
-        elif args.min_utr != MIN_UTR:
-            MIN_UTR = args.min_utr
-            print >> sys.stderr, 'User defined MIN_UTR = %d' % MIN_UTR
+            raise ValueError('Invalid UTRs size (<=0)')
+        elif args.min_utr != min_utr:
+            min_utr = args.min_utr
+            print >> sys.stderr, 'User defined min_utr = %d' % min_utr
 
         if args.gap_size < 0:
-            raise ValueError, 'Invalid intron size (<0)'
-        elif args.gap_size != GAP_SIZE:
-            GAP_SIZE = args.gap_size
-            print >> sys.stderr, 'User defined GAP_SIZE = %d' % GAP_SIZE
+            raise ValueError('Invalid intron size (<0)')
+        elif args.gap_size != gap_size:
+            gap_size = args.gap_size
+            print >> sys.stderr, 'User defined gap_size = %d' % gap_size
 
         if args.max_intron <= 0:
-            raise ValueError, 'Invalid intron size (<=0)'
-        elif args.max_intron != MAX_INTRON:
-            MAX_INTRON = args.max_intron
-            print >> sys.stderr, 'User defined MAX_INTRON = %d' % MAX_INTRON
+            raise ValueError('Invalid intron size (<=0)')
+        elif args.max_intron != max_intron:
+            max_intron = args.max_intron
+            print >> sys.stderr, 'User defined max_intron = %d' % max_intron
 
         if args.max_isoforms <= 0:
-            raise ValueError, 'Invalid number of isoforms (<=0)'
-        elif args.max_isoforms != MAX_ISOFORMS:
-            MAX_ISOFORMS = args.max_isoforms
-            print >> sys.stderr, 'User defined MAX_ISOFORMS = %d' % MAX_ISOFORMS
+            raise ValueError('Invalid number of isoforms (<=0)')
+        elif args.max_isoforms != max_isoforms:
+            max_isoforms = args.max_isoforms
+            print >> sys.stderr, 'User defined max_isoforms = %d' % max_isoforms
 
         if args.min_transcript_len <= 0:
-            raise ValueError, 'Invalid transcript size (<=0)'
-        elif args.min_transcript_len != MIN_TRANSCRIPT_LEN:
-            MIN_TRANSCRIPT_LEN = args.min_transcript_len
-            print >> sys.stderr, 'User defined MIN_TRANSCRIPT_LEN = %d' % \
-                                                        MIN_TRANSCRIPT_LEN
+            raise ValueError('Invalid transcript size (<=0)')
+        elif args.min_transcript_len != min_transcript_len:
+            min_transcript_len = args.min_transcript_len
+            print >> sys.stderr, 'User defined min_transcript_len = %d' % \
+                                                        min_transcript_len
         if args.min_single_exon_len <= 0:
-            raise ValueError, 'Invalid transcript size (<=0)'
-        elif args.min_single_exon_len != MIN_SINGLE_EXON_LEN:
-            MIN_SINGLE_EXON_LEN = args.min_single_exon_len
-            print >> sys.stderr, 'User defined MIN_SINGLE_EXON_LEN = %d' % \
-                                                        MIN_SINGLE_EXON_LEN
+            raise ValueError('Invalid transcript size (<=0)')
+        elif args.min_single_exon_len != min_single_exon_len:
+            min_single_exon_len = args.min_single_exon_len
+            print >> sys.stderr, 'User defined min_single_exon_len = %d' % \
+                                                        min_single_exon_len
     if args.input:
         main(args.input)
