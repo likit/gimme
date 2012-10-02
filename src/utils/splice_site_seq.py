@@ -18,7 +18,11 @@ from pygr import seqdb
 def parse_input(infile):
     with open(infile) as fp:
         for line in fp:
-            _, junction, strand = line.split()
+            try:
+                _, junction, strand = line.split()
+            except ValueError:
+                junction, strand = line.split()
+
             chrom, coord = junction.split(':')
             start, end = coord.split('-')
             start = int(start)
@@ -68,11 +72,14 @@ def main():
     refseq = seqdb.SequenceFileDB(refseq)
     op1 = open('donor_sites', 'w')
     op2 = open('acceptor_sites', 'w')
-    for intron in parse_input(infile):
+    for n, intron in enumerate(parse_input(infile), start=1):
         intron_str = '%s:%d-%d' % intron[:-1]
         donor, acceptor = get_sequence(refseq, intron)
         print >> op1, '>%s\n%s' % (intron_str, donor)
-        print >> op1, '>%s\n%s' % (intron_str, acceptor)
+        print >> op2, '>%s\n%s' % (intron_str, acceptor)
+
+        if n % 1000 == 0: print >> sys.stderr, '...', n
+
     op1.close()
     op2.close()
 
