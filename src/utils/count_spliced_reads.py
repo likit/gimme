@@ -43,9 +43,8 @@ def get_junction_position(row, junction):
         except IndexError:
             pass
         else:
-            junc = '%s:%d-%d' % (chrom, end, next_start)
+            junc = '%s:%d-%d' % (chrom, end + 1, next_start - 1)
             junctions.append(junc)
-
     try:
         position = sum(block_sizes[:junctions.index(str(junction)) + 1])
     except ValueError:
@@ -70,8 +69,8 @@ def get_junction(row):
     block_sizes = [int(s) for s in row[-2].split(',')]
 
     for i in range(len(block_starts) - 1):
-        start = block_starts[i] + block_sizes[i] + chrom_start
-        end = block_starts[i + 1] + chrom_start
+        start = block_starts[i] + block_sizes[i] + chrom_start + 1
+        end = block_starts[i + 1] + chrom_start - 1
         junction = Junction(chrom, start, end)
 
         yield junction, transcript
@@ -94,13 +93,11 @@ def main(bedfile, samfile):
 
     for n, row in enumerate(reader, start=1):
         for junction, transcript in get_junction(row):
-            junction.transcript_pos = get_junction_position(
-                                                row, junction)
-            num_mapped_reads = samfile.count(
-                                    transcript,
-                                    junction.transcript_pos,
-                                    junction.transcript_pos + 1)
-
+            junction.transcript_pos = get_junction_position(row, junction)
+            num_mapped_reads = samfile.count(transcript,
+                                                junction.transcript_pos,
+                                                junction.transcript_pos + 1
+                                            )
             try:
                 junction_db[str(junction)] += num_mapped_reads
             except KeyError:
@@ -108,8 +105,6 @@ def main(bedfile, samfile):
 
         if (n % 1000) == 0:
             print >> sys.stderr, '...', n
-
-    '''Print output to standard output.'''
 
     for junction, num_mapped_reads in junction_db.iteritems():
         print('{0}\t{1}'.format(junction, num_mapped_reads))
