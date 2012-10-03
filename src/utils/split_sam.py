@@ -1,0 +1,33 @@
+'''The script reads BAM file and separate paired and single-end reads into
+different SAM files.
+
+Reads are written in paired.bam and unpaired.bam accordingly.
+
+Reads without a proper pair are ignored.
+
+'''
+
+import sys
+import pysam
+
+def split(infile):
+    bamfile = pysam.Samfile(infile, 'rb')
+    paired_file = pysam.Samfile('paired.bam', 'wb', template=bamfile)
+    unpaired_file = pysam.Samfile('unpaired.bam', 'wb', template=bamfile)
+    for read in bamfile.fetch():
+        if read.is_unmapped: continue
+        if read.is_paired:
+            if read.is_proper_pair:
+                paired_file.write(read)
+        else:
+            unpaired_file.write(read)
+    paired_file.close()
+    unpaired_file.close()
+
+def main():
+    infile = sys.argv[1]
+    split(infile)
+
+
+if __name__=='__main__':
+    main()
