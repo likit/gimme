@@ -1,5 +1,5 @@
-'''The script reads BAM file and separate paired and single-end reads into
-different SAM files.
+'''The script reads BAM file and separate reads mapped with and without
+mate into separate SAM files.
 
 Reads are written in paired.bam and unpaired.bam accordingly.
 
@@ -21,10 +21,12 @@ def split(infile):
         if read.is_unmapped:
             continue
         if read.is_paired:
-            if read.is_proper_pair:
-                paired_file.write(read)
-        else:
-            unpaired_file.write(read)
+            if read.mate_is_unmapped:
+                unpaired_file.write(read)
+            else:
+                if read.is_proper_pair:
+                    paired_file.write(read)
+
     paired_file.close()
     unpaired_file.close()
 
