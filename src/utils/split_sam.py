@@ -13,10 +13,10 @@ import pysam
 def split(infile):
     prefix = infile.strip('.bam')
     bamfile = pysam.Samfile(infile, 'rb')
-    paired_file = pysam.Samfile(prefix + '_paired.bam',
-                                        'wb', template=bamfile)
-    unpaired_file = pysam.Samfile(prefix + '_unpaired.bam',
-                                        'wb', template=bamfile)
+    paired_file = pysam.Samfile(prefix + '_paired.sam',
+                                        'w', template=bamfile)
+    unpaired_file = pysam.Samfile(prefix + '_unpaired.sam',
+                                        'w', template=bamfile)
     for read in bamfile.fetch():
         if read.is_unmapped:
             continue
