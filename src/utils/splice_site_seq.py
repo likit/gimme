@@ -14,6 +14,7 @@ Junctions without a transcriptional direction are ignored.
 import sys
 from pygr import seqdb
 
+SEQLEN = 21  # number of nucleotides on each side of the splice junction.
 
 def parse_input(infile):
     with open(infile) as fp:
@@ -37,27 +38,27 @@ def get_sequence(genome, intron):
     chrom, start, end, strand = intron
     ref = genome[chrom]
     if strand == '+':
-        donor_start = start - 5 if start - 5 > 0 else None
-        donor_end = start + 5 if start + 5 < len(ref) else None
+        donor_start = start - SEQLEN if start - SEQLEN > 0 else None
+        donor_end = start + SEQLEN if start + SEQLEN < len(ref) else None
         if donor_start and donor_end:
             donor_seq = ref[donor_start:donor_end]
 
-        acceptor_start = end - 5 if end - 5 > 0 else None
-        acceptor_end = end + 5 if end + 5 < len(ref) else None
+        acceptor_start = end - SEQLEN if end - SEQLEN > 0 else None
+        acceptor_end = end + SEQLEN if end + SEQLEN < len(ref) else None
         if acceptor_start and acceptor_end:
             acceptor_seq = ref[acceptor_start:acceptor_end]
 
         return str(donor_seq), str(acceptor_seq)
 
     if strand == '-':
-        acceptor_start = start - 5 if start - 5 > 0 else None
-        acceptor_end = start + 5 if start + 5 < len(ref) else None
+        acceptor_start = start - SEQLEN if start - SEQLEN > 0 else None
+        acceptor_end = start + SEQLEN if start + SEQLEN < len(ref) else None
         if acceptor_start and acceptor_end:
             acceptor_seq = ref[acceptor_start:acceptor_end]
             acceptor_seq = acceptor_seq.reverse_complement(str(acceptor_seq))
 
-        donor_start = end - 5 if end - 5 > 0 else None
-        donor_end = end + 5 if end + 5 < len(ref) else None
+        donor_start = end - SEQLEN if end - SEQLEN > 0 else None
+        donor_end = end + SEQLEN if end + SEQLEN < len(ref) else None
         if donor_start and donor_end:
             donor_seq = ref[donor_start:donor_end]
             donor_seq = donor_seq.reverse_complement(str(donor_seq))
