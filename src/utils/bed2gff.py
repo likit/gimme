@@ -13,14 +13,12 @@ def parseBED(filename):
     for row in reader:
         chrom = row[0]
         chrom_start = int(row[1]) + 1
-        chrom_end = int(row[2]) + 1
         transcript_id = row[3]
         strand = row[5]
         exon_sizes = [int(s) for s in row[10].split(',')]
         exon_starts = [int(s) for s in row[11].split(',')]
         yield (chrom,
                 chrom_start,
-                chrom_end,
                 transcript_id,
                 strand,
                 exon_sizes,
@@ -29,18 +27,17 @@ def parseBED(filename):
 def printGFF(transcript, source="custom"):
     chrom = transcript[0]
     chrom_start = transcript[1]
-    chrom_end = transcript[2]
-    transcript_id = transcript[3]
+    transcript_id = transcript[2]
     gene_id = transcript_id.split(".")[0]
-    strand = transcript[4]
-    exon_sizes = transcript[5]
-    exon_starts = transcript[6]
+    strand = transcript[3]
+    exon_sizes = transcript[4]
+    exon_starts = transcript[5]
 
     exons = []
 
     for i in range(len(exon_sizes)):
         exon_start = exon_starts[i] + chrom_start
-        exon_end = exon_start + exon_sizes[i]
+        exon_end = exon_start + exon_sizes[i] - 1
         exons.append((exon_start, exon_end))
 
     exon_id = 0
