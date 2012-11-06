@@ -11,7 +11,7 @@ import sys
 import pysam
 
 def split(infile):
-    prefix = infile.strip('.bam')
+    prefix = infile.rstrip(".bam")
     bamfile = pysam.Samfile(infile, 'rb')
     paired_file = pysam.Samfile(prefix + '_paired.sam',
                                         'w', template=bamfile)
