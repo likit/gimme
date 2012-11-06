@@ -82,11 +82,11 @@ def get_junction_seq(genome, intron):
         acceptor_seq = ref[acceptor_start:acceptor_end]
 
     if strand == '+':
-        return str(donor_seq) +  '-' + str(acceptor_seq)
+        return str(donor_seq) + str(acceptor_seq)
     else:
         donor_seq = donor_seq.reverse_complement(str(donor_seq))
         acceptor_seq = acceptor_seq.reverse_complement(str(acceptor_seq))
-        return str(acceptor_seq) + '-' + str(donor_seq) 
+        return str(acceptor_seq) + str(donor_seq) 
 
 def main():
     infile = sys.argv[1]
@@ -96,7 +96,7 @@ def main():
     # op1 = open('donor_sites', 'w')
     # op2 = open('acceptor_sites', 'w')
     for n, intron in enumerate(parse_input(infile), start=1):
-        intron_str = '%s:%d-%d\t%s' % intron
+        intron_str = '%s:%d-%d' % intron[:-1]
         # donor, acceptor = get_splice_site(refseq, intron)
         # print >> op1, '>%s\n%s' % (intron_str, donor)
         # print >> op2, '>%s\n%s' % (intron_str, acceptor)
