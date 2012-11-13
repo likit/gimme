@@ -12,23 +12,33 @@ from pygr import seqdb, sequtil
 
 Exon = namedtuple('Exon', 'chrom, start, end')
 
-def get_sequence_transcript(genome, exons):
+def get_sequence_transcript(genome, exons, strand='positive'):
     seq = ''
     for exon in exons:
         s = genome[exon.chrom][exon.start:exon.end]
         seq += str(s)
+    if strand == 'positive':
+        return seq
+    elif strand == 'negative':
+        return s.reverse_complement(seq)
+    else:
+        raise ValueError
 
-    return seq
-
-def get_sequence_exon(genome, exons):
+def get_sequence_exon(genome, exons, strand='positive'):
     seqs = []
     for exon in exons:
         s = genome[exon.chrom][exon.start:exon.end]
         seqs.append(str(s))
 
-    return seqs
+    if strand == 'positive':
+        return seqs
+    elif strand == 'negative':
+        rev_seqs = [s.reverse_complement(seq) for seq in seqs]
+        return rev_seqs
+    else:
+        raise ValueError
 
-def write_seq(filename, genome, output):
+def write_seq(filename, genome, output, strand):
     reader = csv.reader(open(filename), dialect='excel-tab')
 
     for n, line in enumerate(reader, start=1):
@@ -41,12 +51,11 @@ def write_seq(filename, genome, output):
         exons = [Exon(chrom, exon_starts[i], exon_ends[i]) for i in \
                 range(len(exon_starts))]
 
-        if (output == 'default'
-                or output == 'transcript'):
-            seq = get_sequence_transcript(genome, exons)
+        if output == 'transcript':
+            seq = get_sequence_transcript(genome, exons, strand)
             sequtil.write_fasta(sys.stdout, seq, id=gene_id)
         elif output == 'exon':
-            seqs = get_sequence_exon(genome, exons)
+            seqs = get_sequence_exon(genome, exons, strand)
 
             for n, seq in enumerate(seqs, start=1):
                 seq_id = gene_id + '_' + str(n)
@@ -58,12 +67,31 @@ def write_seq(filename, genome, output):
         if n % 1000 == 0: print >> sys.stderr, '...', n
 
 if __name__=='__main__':
+    options = {'-e':'exon', '-t':'transcript [default]', '-r':'reverse'}
+
+    if (len(sys.argv) == 1 or sys.argv[1] == '-h' or sys.argv[1] == '--help'):
+        print >> sys.stderr, \
+            'get_transcript_seq.py <bed file> <genome file>' + \
+            ' [option]'
+        print >> sys.stderr, \
+                '-e\tprint exon sequence per record\n' + \
+                '-r\tprint reverse complement.\n'
+        raise SystemExit
+
     filename = sys.argv[1]
     genome_file = sys.argv[2]
-    try:
-        output = sys.argv[3]
-    except IndexError:
-        output = 'default'
+    strand = 'positive'
+    output = 'transcript'
+    if len(sys.argv) > 3: # options specified
+        for opt in sys.argv[3:]:
+            if opt == '-e':
+                output = 'exon'
+            elif opt == '-r':
+                strand = 'negative'
+            else:
+                print >> sys.stderr, 'Unrecognized option %s' % opt
+                raise SystemExit
 
+    # print >> sys.stderr, filename, genome_file, output, strand
     genome = seqdb.SequenceFileDB(genome_file, verbose=False)
-    write_seq(filename, genome, output)
+    write_seq(filename, genome, output, strand)
