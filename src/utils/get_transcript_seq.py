@@ -67,15 +67,16 @@ def write_seq(filename, genome, output, strand):
         if n % 1000 == 0: print >> sys.stderr, '...', n
 
 if __name__=='__main__':
-    options = {'-e':'exon', '-t':'transcript [default]', '-r':'reverse'}
-
-    if (len(sys.argv) == 1 or sys.argv[1] == '-h' or sys.argv[1] == '--help'):
+    if (len(sys.argv) == 1 or sys.argv[1] == '-h'):
         print >> sys.stderr, \
-            'get_transcript_seq.py <bed file> <genome file>' + \
-            ' [option]'
+            'Usage: python get_transcript_seq.py <bed file> ' + \
+            '<genome file> [option]'
         print >> sys.stderr, \
-                '-e\tprint exon sequence per record\n' + \
-                '-r\tprint reverse complement.\n'
+            'Output options:\n' + \
+            '\t-t\toutput a transcript sequence per record [default]\n' + \
+            '\t-e\toutput an exon sequence per record\n' + \
+            '\t-r\toutput reverse complement.\n' + \
+            '\t-h\tprint help message.'
         raise SystemExit
 
     filename = sys.argv[1]
@@ -86,6 +87,8 @@ if __name__=='__main__':
         for opt in sys.argv[3:]:
             if opt == '-e':
                 output = 'exon'
+            elif opt == '-t':
+                pass
             elif opt == '-r':
                 strand = 'negative'
             else:
