@@ -28,7 +28,8 @@ from sys import stderr, stdout
 
 import networkx as nx
 
-from utils import pslparser, get_min_isoforms
+from matplotlib import pyplot as plt
+from utils import pslparser, get_min_isoforms, split_strand
 from bx.intervals.intersection import Interval, IntervalTree
 
 
@@ -425,7 +426,7 @@ def merge_cluster(align_db):
     return big_cluster
 
 
-def print_bed(align_db, transcript, gene_id, tran_id):
+def print_bed(align_db, transcript, strand, gene_id, tran_id):
     '''Print a splice graph in BED format.'''
 
     exons = [align_db.exon_db[e] for e in transcript]
@@ -442,7 +443,6 @@ def print_bed(align_db, transcript, gene_id, tran_id):
     item_RGB = '0,0,0'
     thick_start = chrom_start
     thick_end = chrom_end
-    strand = '+'
     block_count = len(exons)
 
     writer = csv.writer(stdout, dialect='excel-tab')
@@ -530,6 +530,12 @@ def build_gene_model(align_db,
             else:
                 return True
 
+    def exon_to_exonobj(exon):
+        '''Returns an exon objects from a given exon coordinate.'''
+        chrom, coord = exon.split(':')
+        start, end = coord.split('-')
+        return ExonObj(chrom, int(start), int(end))
+
     for cl_num, cl in enumerate(big_cluster.nodes(), start=1):
         if cl not in visited_clusters:
             g = nx.DiGraph()
@@ -544,60 +550,84 @@ def build_gene_model(align_db,
                     g.add_edges_from(align_db.intron_db[intron].edges())
 
                 visited_clusters.add(neighbor)
+            # # nx.draw_spring(nx.algorithms.dfs_tree(g))
+            # nx.draw_spring(g)
+            # plt.show()
+            # for node in g.nodes():
+            #     print node, g[node]
+            # raise SystemExit
 
-            if g.nodes():
-                trans_id = 0
-                gene_id += 1
-                collapse_exon(g, align_db)
-                for node in g.nodes():
-                    if not g.predecessors(node):
-                        g.add_edge('Start', node)
-                    if not g.successors(node):
-                        g.add_edge(node, 'End')
+            collapse_exon(g, align_db)
+            trans_id = 0
+            for g in split_strand.split(g):
+                if g.nodes():
+                    subalign_db = AlignmentDB()
+                    for edge in g.edges():
+                        exon1 = exon_to_exonobj(edge[0])
+                        exon2 = exon_to_exonobj(edge[1])
+                        add_exon(subalign_db, [exon1, exon2])
+                    collapse_exon(g, subalign_db)
 
-                max_paths = [path for path in \
+                    trans_id = 0
+                    gene_id += 1
+                    strand = g.graph['strand']
+                    for node in g.nodes():
+                        if not g.predecessors(node):
+                            g.add_edge('Start', node)
+                        if not g.successors(node):
+                            g.add_edge(node, 'End')
+
+                    max_paths = [path for path in \
                                     nx.all_simple_paths(g, 'Start', 'End')]
 
-                if find_max:
-                    '''Report all maximum isoforms.'''
+                    if find_max:
+                        '''Report all maximum isoforms.'''
 
-                    for transcript in max_paths:
-                        transcript = transcript[1:-1]
-                        if check_criteria(transcript, two_exon_trns):
-                            transcripts_num += 1
-                            trans_id += 1
-                            print_bed(align_db, transcript,
-                                                    gene_id, trans_id)
-                        else:
-                            excluded += 1
-                else:
-                    '''Report minimal isoforms if maximum isoforms exceeds
-                    max_isoforms.
-
-                    '''
-                    if len(max_paths) > max_isoforms:
-                        for transcript in \
-                                get_min_isoforms.get_min_paths(g, False):
-                            if check_criteria(transcript, two_exon_trns):
-                                transcripts_num += 1
-                                trans_id += 1
-                                print_bed(align_db, transcript,
-                                                        gene_id, trans_id)
-                            else:
-                                excluded += 1
-                    else:
                         for transcript in max_paths:
                             transcript = transcript[1:-1]
                             if check_criteria(transcript, two_exon_trns):
                                 transcripts_num += 1
                                 trans_id += 1
-                                print_bed(align_db, transcript,
-                                                        gene_id, trans_id)
+                                print_bed(align_db,
+                                            transcript,
+                                            strand,
+                                            gene_id,
+                                            trans_id)
                             else:
                                 excluded += 1
+                    else:
+                        '''Report minimal isoforms if maximum isoforms exceeds
+                        max_isoforms.
 
-            if trans_id == 0:
-                gene_id -= 1
+                        '''
+                        if len(max_paths) > max_isoforms:
+                            for transcript in \
+                                    get_min_isoforms.get_min_paths(g, False):
+                                if check_criteria(transcript, two_exon_trns):
+                                    transcripts_num += 1
+                                    trans_id += 1
+                                    print_bed(align_db,
+                                                transcript,
+                                                strand,
+                                                gene_id,
+                                                trans_id)
+                                else:
+                                    excluded += 1
+                        else:
+                            for transcript in max_paths:
+                                transcript = transcript[1:-1]
+                                if check_criteria(transcript, two_exon_trns):
+                                    transcripts_num += 1
+                                    trans_id += 1
+                                    print_bed(align_db,
+                                                transcript,
+                                                strand,
+                                                gene_id,
+                                                trans_id)
+                                else:
+                                    excluded += 1
+
+                if trans_id == 0: gene_id -= 1
 
         print >> stderr, '\r  |--Multi-exon\t\t%d genes, %d isoforms ' % \
                                             (gene_id, transcripts_num),
