@@ -62,18 +62,25 @@ def split(graph):
         i += 1
     score_matrix.append(sum(strand_scores[-3:]) / 3.0)
 
-    for i in range(len(sorted_edges)):
-        edge = edges[sorted_edges[i]]
-        print >> sys.stderr, \
-                sorted_edges[i], edge.ss, strand_scores[i], score_matrix[i]
+    # for i in range(len(sorted_edges)):
+    #     edge = edges[sorted_edges[i]]
+    #     print >> sys.stderr, \
+    #             sorted_edges[i], edge.ss, strand_scores[i], score_matrix[i]
+
+    '''If there is only one edge with unidentified strand,
+    return a graph with strand=".".
+    '''
+    if sum(score_matrix) == 0:
+        neutral_graph = nx.DiGraph(strand='.')
+        neutral_graph.add_edges_from(sorted_edges)
+        return (neutral_graph,)
 
     for i in range(len(sorted_edges)):
-        if score_matrix[i] > 0:
-            pos_graph.add_edge(*sorted_edges[i])
-        elif score_matrix[i] < 0:
-            neg_graph.add_edge(*sorted_edges[i])
+        if score_matrix[i] >= 0: pos_graph.add_edge(*sorted_edges[i])
+    for i in range(len(sorted_edges)):
+        if score_matrix[i] <= 0: neg_graph.add_edge(*sorted_edges[i])
 
-    neg_graph.remove_edges_from(pos_graph.edges())
-    pos_graph.remove_edges_from(neg_graph.edges())
+    # neg_graph.remove_edges_from(pos_graph.edges())
+    # pos_graph.remove_edges_from(neg_graph.edges())
 
     return pos_graph, neg_graph
