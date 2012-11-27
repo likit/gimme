@@ -556,9 +556,7 @@ def build_gene_model(align_db,
             # for node in g.nodes():
             #     print node, g[node]
             # raise SystemExit
-
             collapse_exon(g, align_db)
-            trans_id = 0
             for g in split_strand.split(g):
                 if g.nodes():
                     subalign_db = AlignmentDB()
@@ -626,8 +624,6 @@ def build_gene_model(align_db,
                                                 trans_id)
                                 else:
                                     excluded += 1
-
-                if trans_id == 0: gene_id -= 1
 
         print >> stderr, '\r  |--Multi-exon\t\t%d genes, %d isoforms ' % \
                                             (gene_id, transcripts_num),
