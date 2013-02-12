@@ -95,6 +95,6 @@ if __name__=='__main__':
                 print >> sys.stderr, 'Unrecognized option %s' % opt
                 raise SystemExit
 
-    # print >> sys.stderr, filename, genome_file, output, strand
-    genome = seqdb.SequenceFileDB(genome_file, verbose=False)
-    write_seq(filename, genome, output, strand)
+    print >> sys.stderr, filename, genome_file, output, strand
+    # genome = seqdb.SequenceFileDB(genome_file, verbose=False)
+    # write_seq(filename, genome, output, strand)
