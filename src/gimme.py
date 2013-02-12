@@ -28,9 +28,10 @@ from sys import stderr, stdout
 
 import networkx as nx
 
-from matplotlib import pyplot as plt
+#from matplotlib import pyplot as plt
 from utils import pslparser, get_min_isoforms, split_strand
 from bx.intervals.intersection import Interval, IntervalTree
+from pygr import seqdb
 
 
 gap_size = 50 # a minimum intron size (bp)
@@ -493,7 +494,8 @@ def print_bed_single(exon, gene_id, tran_id):
                     block_starts))
 
 
-def build_gene_model(align_db,
+def build_gene_model(genome,
+                        align_db,
                         clusters,
                         big_cluster,
                         find_max,
@@ -557,7 +559,7 @@ def build_gene_model(align_db,
             #     print node, g[node]
             # raise SystemExit
             collapse_exon(g, align_db)
-            for g in split_strand.split(g):
+            for g in split_strand.split(g, genome):
                 if g.nodes():
                     subalign_db = AlignmentDB()
                     for edge in g.edges():
@@ -688,6 +690,8 @@ def main(input_files):
     print >> stderr, 'Gimme : Alignment-based assembler'
     print >> stderr, 'Version : %s (%s)' % (VERSION, SHA)
     print >> stderr, 'Source code : https://github.com/ged-lab/gimme.git\n'
+    print >> stderr, 'Building a sequence DB...'
+    genome = seqdb.SequenceFileDB(args.reference)
 
     if args.debug:
         print >> stderr, 'DEBBUG MODE\t' + \
@@ -745,7 +749,8 @@ def main(input_files):
 
     '''====Build gene models===='''
     print >> stderr, 'Constructing'
-    return_items = build_gene_model(align_db,
+    return_items = build_gene_model(genome,
+                                        align_db,
                                         clusters,
                                         big_cluster,
                                         args.max,
@@ -818,8 +823,14 @@ if __name__=='__main__':
             help='input file(s) in PSL/BED format')
     parser.add_argument('-v', '--version', action='version',
             version='%(prog)s version ' + VERSION + ' (' + SHA + ')')
+    parser.add_argument('-r','--reference', type=str,
+            help='a reference genome in FASTA format')
 
     args = parser.parse_args()
+    if not args.reference:
+        print >> sys.stderr, "A reference file is required."
+        sys.exit()
+
     if args.debug:
         '''Parameters are set to retain all splice junctions for
         debugging.
