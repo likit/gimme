@@ -1,13 +1,10 @@
-import sys
 import string
 
 import networkx as nx
-from pygr import seqdb
 
-genome = seqdb.SequenceFileDB('../chick_4.fa')
 table = string.maketrans('ACGT', 'TGCA')
 
-def get_splice_sites(exon1, exon2):
+def get_splice_sites(genome, exon1, exon2):
     chrom, pos = exon1.split(':')
     start, end = [int(p) for p in pos.split('-')]
     donor = genome[chrom][end:end + 2]
@@ -33,7 +30,8 @@ def identify_strand(splice_sites):
 def compare_edges(edge):
     return int(edge[0].split(':')[1].split('-')[0])
 
-def split(graph):
+def split(graph, genome):
+    '''genome = pygr sequence DB object'''
 
     class Edgeobj(object):
         def __init__(self, edge, ss, strand):
@@ -50,7 +48,7 @@ def split(graph):
     strand_scores = []
     sorted_edges = sorted(graph.edges(), key=compare_edges)
     for edge in sorted_edges:
-        splice_sites = get_splice_sites(*edge)
+        splice_sites = get_splice_sites(genome, *edge)
         strand = identify_strand(splice_sites)
         edges[edge] = Edgeobj(edge, splice_sites, strand)
         strand_scores.append(strand)
