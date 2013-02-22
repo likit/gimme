@@ -9,6 +9,8 @@ import csv
 
 import networkx as nx
 
+MAX_ISOFORM = 10
+
 class Exon(object):
     def __init__(self, chrom, start, end, transcript_id, strand):
         self.chrom = chrom
@@ -72,44 +74,55 @@ def write_GFF(events, exonsDB, no_events):
             all_exons.add(exonsDB[exon])
     all_exons = sorted(list(all_exons), key=lambda x: x.end)
 
+    output_list = []
+
     first_exon = all_exons[0]
     last_exon = all_exons[-1]
     mrnaid = 1
     event_no = str(no_events[first_exon.geneID])
     geneID = first_exon.geneID + '.ev' + event_no
-    print "%s\tSE\tgene\t%d\t%d\t.\t%s\t.\tID=%s;Name=%s" % (
+    output =  "%s\tSE\tgene\t%d\t%d\t.\t%s\t.\tID=%s;Name=%s" % (
             first_exon.chrom, first_exon.start, last_exon.end,
             first_exon.strand, geneID, first_exon.geneID)
+    output_list.append(output)
     for event in events:
         event_exons = sorted([exonsDB[exon] for exon in event],
                                                 key=lambda x: x.end)
         first_exon = event_exons[0]
         last_exon = event_exons[-1]
-        print "%s\tSE\tmRNA\t%d\t%d\t.\t%s\t.\tID=%s.%d;Parent=%s" % (
+        output = "%s\tSE\tmRNA\t%d\t%d\t.\t%s\t.\tID=%s.%d;Parent=%s" % (
                         first_exon.chrom, first_exon.start, last_exon.end,
                         first_exon.strand, geneID, mrnaid, geneID)
+        output_list.append(output)
         exonid = 1
         for exon in event_exons:
-            print "%s\tSE\texon\t%d\t%d\t.\t%s\t.\tID=%s.%d.%d;Parent=%s.%d" \
+            output = "%s\tSE\texon\t%d\t%d\t.\t%s\t.\tID=%s.%d.%d;Parent=%s.%d" \
                             % (exon.chrom, exon.start, exon.end,
                                 exon.strand, geneID, mrnaid, exonid,
                                 geneID, mrnaid)
+            output_list.append(output)
             exonid += 1
         mrnaid += 1
 
     first_exon = all_exons[0]
     last_exon = all_exons[-1]
-    print "%s\tSE\tmRNA\t%d\t%d\t.\t%s\t.\tID=%s.%d;Parent=%s" % (
+    output = "%s\tSE\tmRNA\t%d\t%d\t.\t%s\t.\tID=%s.%d;Parent=%s" % (
                     first_exon.chrom, first_exon.start, last_exon.end,
                     first_exon.strand, geneID, mrnaid, geneID)
-    print "%s\tSE\texon\t%d\t%d\t.\t%s\t.\tID=%s.%d.%d;Parent=%s.%d" % \
+    output_list.append(output)
+    output = "%s\tSE\texon\t%d\t%d\t.\t%s\t.\tID=%s.%d.%d;Parent=%s.%d" % \
                     (exon.chrom, first_exon.start, first_exon.end,
                         first_exon.strand, geneID, mrnaid, 1,
                         geneID, mrnaid)
-    print "%s\tSE\texon\t%d\t%d\t.\t%s\t.\tID=%s.%d.%d;Parent=%s.%d" % \
+    output_list.append(output)
+    output =  "%s\tSE\texon\t%d\t%d\t.\t%s\t.\tID=%s.%d.%d;Parent=%s.%d" % \
                     (exon.chrom, last_exon.start, last_exon.end,
                         last_exon.strand, geneID, mrnaid, 2,
                         geneID, mrnaid)
+    output_list.append(output)
+    if mrnaid > MAX_ISOFORM:
+        for output in output_list:
+            print output
 
 def main():
     no_events = {} # number of events in a gene
