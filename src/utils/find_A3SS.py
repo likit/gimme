@@ -10,6 +10,8 @@ import csv
 import networkx as nx
 from bx.intervals.intersection import IntervalTree
 
+MAX_ISOFORM = 10
+
 class Exon(object):
     def __init__(self, chrom, start, end, transcript_id, strand):
         self.chrom = chrom
@@ -161,7 +163,8 @@ def write_GFF(events, exonsDB, no_events, redundant):
             mrnaid += 1
 
     if unique_event:
-        for output in output_list: print output
+        if mrnaid <= MAX_ISOFORM:
+            for output in output_list: print output
 
 def main():
     redundant = set()
