@@ -120,7 +120,7 @@ def write_GFF(events, exonsDB, no_events):
                         last_exon.strand, geneID, mrnaid, 2,
                         geneID, mrnaid)
     output_list.append(output)
-    if mrnaid > MAX_ISOFORM:
+    if mrnaid <= MAX_ISOFORM:
         for output in output_list:
             print output
 
