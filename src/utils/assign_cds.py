@@ -3,7 +3,8 @@ in FASTA from ESTScan and reports gene models in BED format with ORFs
 according to corresponding translated proteins.
 
 '''
-import sys, csv
+import sys
+import csv
 from bx.intervals.intersection import Interval, Intersecter
 
 
@@ -81,9 +82,10 @@ def buildIntervalTree(exons):
     tree = Intersecter()
     for exon in exons:
         tree.add_interval(Interval(exon.start, exon.end,
-                            value={'cStart':exon.cStart,
-                                    'cEnd':exon.cEnd}))
+                            value={'cStart': exon.cStart,
+                                    'cEnd': exon.cEnd}))
     return tree
+
 
 def findCDS(bedFile, cds):
     """docstring for findCDS"""
@@ -123,7 +125,7 @@ def findCDS(bedFile, cds):
                 writer.writerow(row)
 
 
-if __name__=='__main__':
+if __name__ == '__main__':
     fasta_file = sys.argv[1]
     bedfile = sys.argv[2]
 
