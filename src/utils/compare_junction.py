@@ -1,4 +1,4 @@
-''' This script reports differential splice junctions 
+''' This script reports differential splice junctions
 of two gene models. It can read models in PSL and BED format.
 Please adjust the parser function according to the data format.
 
@@ -14,7 +14,9 @@ junctions.
 '''
 
 
-import csv, os.path, sys
+import csv
+import os.path
+import sys
 from collections import namedtuple
 
 import pslparser
@@ -32,6 +34,7 @@ Transcript = namedtuple('Transcript', [
                                         'strand',
                                     ])
 
+
 class Exon(object):
     def __init__(self, chrom, start, end, strand):
         self.chrom = chrom
@@ -43,7 +46,7 @@ class Exon(object):
         self.terminal = None
         self.next_exons = set()
         self.prevExons = set()
-    
+
     def set_name(self):
         self.name = self.__str__()
 
@@ -164,7 +167,7 @@ def add_intron_bed(transcript, modelintron_db, all=False):
 def adjust_parser(inputFile1, format1,
                     inputFile2, format2, db1, db2):
 
-    parsers = {'psl':parse_psl, 'bed':parse_bed}
+    parsers = {'psl': parse_psl, 'bed': parse_bed}
 
     parser1 = parsers[format1]
     parser2 = parsers[format2]
@@ -172,6 +175,7 @@ def adjust_parser(inputFile1, format1,
     second = (inputFile2, parser2, db2)
 
     return first, second
+
 
 def main(args):
     db1 = set()
@@ -203,11 +207,12 @@ def main(args):
         print >> sys.stderr, "Total introns in %s = %d\n" % \
                                             (input_filename1, len(db1))
         op = open(output_filename1, 'w')
-        for junc in db1: print >> op, junc
+        for junc in db1:
+            print >> op, junc
         op.close()
 
     else:
-        db2= set([])
+        db2 = set([])
 
         if not args.bed and not args.psl:
             raise ValueError('No input file found.')
@@ -266,7 +271,6 @@ def main(args):
         input_filename1 = os.path.basename(first_file)
         input_filename2 = os.path.basename(second_file)
 
-
         output_filename1 = input_filename1 + '_diff_sp.txt'
         output_filename2 = input_filename2 + '_diff_sp.txt'
 
@@ -283,16 +287,16 @@ def main(args):
             op.close()
 
 
-if __name__=='__main__':
+if __name__ == '__main__':
 
     import argparse
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('-a', '--all', action='store_true', 
+    parser.add_argument('-a', '--all', action='store_true',
                             help='write all splice junctions to files')
-    parser.add_argument('-p', '--psl', action='append', 
+    parser.add_argument('-p', '--psl', action='append',
                             help='input file is in PSL format')
-    parser.add_argument('-b', '--bed', action='append', 
+    parser.add_argument('-b', '--bed', action='append',
                             help='input file is in BED format')
 
     args = parser.parse_args()

@@ -7,7 +7,8 @@ in this package.
 
 '''
 
-import sys, csv
+import sys
+import csv
 import pysam
 
 
@@ -39,7 +40,7 @@ def get_junction_position(row, junction):
         end = block_sizes[i] + start
 
         try:
-            next_start = chrom_start + block_starts[i+1]
+            next_start = chrom_start + block_starts[i + 1]
         except IndexError:
             pass
         else:
@@ -56,7 +57,7 @@ def get_junction_position(row, junction):
 
 def get_junction(row):
     '''Retreive all junctions from a given transcripts.
-    
+
     Argument:
         row : a list of all attributes of a transcript
 
@@ -110,7 +111,7 @@ def main(bedfile, samfile):
         print('{0}\t{1}'.format(junction, num_mapped_reads))
 
 
-if __name__=='__main__':
+if __name__ == '__main__':
     bedfile = sys.argv[1]
     samfile = pysam.Samfile(sys.argv[2], 'rb')
     main(bedfile, samfile)

@@ -3,17 +3,17 @@ The output is written to standard output.
 
 Usage gff2bed.py file.gtf/gff
 
-Author: Likit Preeyanon
-Email: preeyano@msu.edu
-
 '''
 
-import csv, sys
+import csv
+import sys
 from collections import namedtuple
 
 stderr = sys.stderr
 
-Transcript = namedtuple('Transcript', ['chrom', 'id', 'strand', 'exons', 'geneid'])
+Transcript = namedtuple('Transcript',
+        ['chrom', 'id', 'strand', 'exons', 'geneid'])
+
 
 def parse(filename):
     reader = csv.reader(open(filename), dialect='excel-tab')
@@ -76,6 +76,6 @@ def printBED(transcript):
                     ','.join([str(s) for s in blockStarts])])
 
 
-if __name__=='__main__':
+if __name__ == '__main__':
     for transcript in parse(sys.argv[1]):
         printBED(transcript)

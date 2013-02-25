@@ -10,7 +10,8 @@ Email   preeyano@msu.edu
 
 '''
 
-import sys, os
+import sys
+import os
 
 input_file = sys.argv[1]
 try:
@@ -18,7 +19,7 @@ try:
 except:
     prefix = ''
 else:
-    prefix = prefix+'-'
+    prefix = prefix + '-'
 
 n = 0
 

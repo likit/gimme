@@ -9,7 +9,7 @@ Note for a coordinate in SAM/BAM format:
 
 import sys
 import pysam
-# import matplotlib.pyplot as plot
+import matplotlib.pyplot as plot
 
 
 class Read(object):
@@ -44,7 +44,7 @@ def find_snp(aligned_read):
                 if not INSERT:
                     pos += 1
                     try:
-                        mm[pos] = aligned_read.seq[pos-1]
+                        mm[pos] = aligned_read.seq[pos - 1]
                     except IndexError:
                         print >> sys.stderr, aligned_read.seq, pos, md, mm
                         raise SystemExit
@@ -57,12 +57,12 @@ def find_snp(aligned_read):
 def read_bam(bamfile, reference=None):
     max_rlen = 0
     all_mismatches = {
-                        'A':{},
-                        'C':{},
-                        'G':{},
-                        'T':{},
-                        'N':{},
-                        '*':{}, # deletion
+                        'A': {},
+                        'C': {},
+                        'G': {},
+                        'T': {},
+                        'N': {},
+                        '*': {},  # deletion
                         }
 
     print >> sys.stderr, 'Reading BAM file...'
@@ -79,23 +79,23 @@ def read_bam(bamfile, reference=None):
                 all_mismatches[base][pos] += 1
 
         if n % 1000 == 0:
-            print >> sys.stderr , '...', n
+            print >> sys.stderr, '...', n
 
     return all_mismatches, max_rlen
 
 
 def plot_chart(all_mismatches, max_rlen):
-    A_count = [all_mismatches['A'].get(i, 0) for i in range(1, max_rlen+1)]
-    C_count = [all_mismatches['C'].get(i, 0) for i in range(1, max_rlen+1)]
-    G_count = [all_mismatches['G'].get(i, 0) for i in range(1, max_rlen+1)]
-    T_count = [all_mismatches['T'].get(i, 0) for i in range(1, max_rlen+1)]
+    A_count = [all_mismatches['A'].get(i, 0) for i in range(1, max_rlen + 1)]
+    C_count = [all_mismatches['C'].get(i, 0) for i in range(1, max_rlen + 1)]
+    G_count = [all_mismatches['G'].get(i, 0) for i in range(1, max_rlen + 1)]
+    T_count = [all_mismatches['T'].get(i, 0) for i in range(1, max_rlen + 1)]
     # N_count = [all_mismatches['N'].get(i, 0) for i in range(max_rlen)]
     # D_count = [all_mismatches['*'].get(i, 0) for i in range(max_rlen)]
 
-    plot.plot(range(1, max_rlen+1), A_count, label='A')
-    plot.plot(range(1, max_rlen+1), C_count, label='C')
-    plot.plot(range(1, max_rlen+1), G_count, label='G')
-    plot.plot(range(1, max_rlen+1), T_count, label='T')
+    plot.plot(range(1, max_rlen + 1), A_count, label='A')
+    plot.plot(range(1, max_rlen + 1), C_count, label='C')
+    plot.plot(range(1, max_rlen + 1), G_count, label='G')
+    plot.plot(range(1, max_rlen + 1), T_count, label='T')
     # plot.plot(range(max_rlen), N_count, label='N')
     # plot.plot(range(max_rlen), D_count, label='deletion')
 
@@ -107,10 +107,14 @@ def plot_chart(all_mismatches, max_rlen):
 
 
 def write_output(all_mismatches, max_rlen):
-    A_count = [str(all_mismatches['A'].get(i, 0)) for i in range(1, max_rlen+1)]
-    C_count = [str(all_mismatches['C'].get(i, 0)) for i in range(1, max_rlen+1)]
-    G_count = [str(all_mismatches['G'].get(i, 0)) for i in range(1, max_rlen+1)]
-    T_count = [str(all_mismatches['T'].get(i, 0)) for i in range(1, max_rlen+1)]
+    A_count = [str(all_mismatches['A'].get(i, 0))
+                for i in range(1, max_rlen + 1)]
+    C_count = [str(all_mismatches['C'].get(i, 0))
+                for i in range(1, max_rlen + 1)]
+    G_count = [str(all_mismatches['G'].get(i, 0))
+                for i in range(1, max_rlen + 1)]
+    T_count = [str(all_mismatches['T'].get(i, 0))
+                for i in range(1, max_rlen + 1)]
 
     print '# Rows are A,C,G,T.'
     print ','.join(A_count)
@@ -136,7 +140,8 @@ def main():
 
 def test_find_snp():
     '''Test one insertion.'''
-    seq = "ACAAAAAGGAGACCTCTTTCTTCAGGAAAAAAAAAAAGCCTTCATTTCCCCTTCATCTCTTTGTGCTGCCATAAC"
+    seq = "ACAAAAAGGAGACCTCTTTCTTCAGGAAAAAAAAAAAG" + \
+            "CCTTCATTTCCCCTTCATCTCTTTGTGCTGCCATAAC"
     tags = [('MD', '3G22^A48A0')]
 
     read = Read(seq, tags)
@@ -169,5 +174,5 @@ def test_find_snp():
     # assert mm == {62:'*', 63:'G'}, "Failed %s != {62:'*', 63:'G'}" % mm
 
 
-if __name__=='__main__':
+if __name__ == '__main__':
     main()

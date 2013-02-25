@@ -7,6 +7,7 @@ reads from odd and even positions respectively.
 
 import sys
 
+
 def split(fastq_file, output_file1, output_file2):
     output_file1 = open(output_file1, 'w')
     output_file2 = open(output_file2, 'w')
@@ -33,5 +34,5 @@ def split(fastq_file, output_file1, output_file2):
         read_name = fastq_file.readline().strip()
 
 
-if __name__=='__main__':
+if __name__ == '__main__':
     split(sys.argv[1], sys.argv[2], sys.argv[3])

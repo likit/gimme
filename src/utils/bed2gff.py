@@ -1,12 +1,11 @@
-'''
-    The script converts BED format to GFF format.
-    Output is written to standrad output.
+'''The script converts BED format to GFF format.
+Output is written to standrad output.
 
-    Author: Likit Preeyanon
-    Email : preeyano@msu.edu
 '''
 
-import sys, csv
+import sys
+import csv
+
 
 def parseBED(filename):
     reader = csv.reader(open(filename), dialect='excel-tab')
@@ -23,6 +22,7 @@ def parseBED(filename):
                 strand,
                 exon_sizes,
                 exon_starts)
+
 
 def printGFF(transcript, source="custom"):
     chrom = transcript[0]
@@ -43,8 +43,10 @@ def printGFF(transcript, source="custom"):
     exon_id = 0
     for exon in exons:
         exon_id += 1
-        attributes = 'gene_id \"%s\"; transcript_id \"%s\"; exon_number \"%d\"; gene_name \"%s\"; transcript_name \"%s\"' % \
-                                            (gene_id, transcript_id, exon_id, gene_id, transcript_id)
+        attributes = 'gene_id \"%s\"; transcript_id \"%s\"; ' + \
+                'exon_number \"%d\"; gene_name \"%s\"; ' + \
+                'transcript_name \"%s\"' % \
+                (gene_id, transcript_id, exon_id, gene_id, transcript_id)
         print "%s\t%s\t%s\t%d\t%d\t%s\t%s\t%s\t%s" % (chrom,
                                                         source,
                                                         "exon",
@@ -56,7 +58,7 @@ def printGFF(transcript, source="custom"):
                                                         attributes)
 
 
-if __name__=='__main__':
+if __name__ == '__main__':
     filename = sys.argv[1]
     if len(sys.argv) == 2:
         source = "custom"

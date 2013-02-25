@@ -12,6 +12,7 @@ from pygr import seqdb, sequtil
 
 Exon = namedtuple('Exon', 'chrom, start, end')
 
+
 def get_sequence_transcript(genome, exons, strand='positive'):
     seq = ''
     for exon in exons:
@@ -23,6 +24,7 @@ def get_sequence_transcript(genome, exons, strand='positive'):
         return s.reverse_complement(seq)
     else:
         raise ValueError
+
 
 def get_sequence_exon(genome, exons, strand='positive'):
     seqs = []
@@ -38,6 +40,7 @@ def get_sequence_exon(genome, exons, strand='positive'):
     else:
         raise ValueError
 
+
 def write_seq(filename, genome, output, strand):
     reader = csv.reader(open(filename), dialect='excel-tab')
 
@@ -45,9 +48,11 @@ def write_seq(filename, genome, output, strand):
         chrom = line[0]
         chrom_start = int(line[1])
         gene_id = line[3]
-        exon_starts = [int(start) + chrom_start for start in line[-1].split(',')]
+        exon_starts = [int(start) + \
+                chrom_start for start in line[-1].split(',')]
         exon_sizes = [int(size) for size in line[-2].split(',')]
-        exon_ends = [exon_starts[i] + exon_sizes[i] for i in range(len(exon_starts))]
+        exon_ends = [exon_starts[i] + \
+                exon_sizes[i] for i in range(len(exon_starts))]
         exons = [Exon(chrom, exon_starts[i], exon_ends[i]) for i in \
                 range(len(exon_starts))]
 
@@ -64,9 +69,10 @@ def write_seq(filename, genome, output, strand):
             print >> sys.stderr, 'Unsupported output format.'
             raise SystemExit
 
-        if n % 1000 == 0: print >> sys.stderr, '...', n
+        if n % 1000 == 0:
+            print >> sys.stderr, '...', n
 
-if __name__=='__main__':
+if __name__ == '__main__':
     if (len(sys.argv) == 1 or sys.argv[1] == '-h'):
         print >> sys.stderr, \
             'Usage: python get_transcript_seq.py <bed file> ' + \
@@ -83,7 +89,7 @@ if __name__=='__main__':
     genome_file = sys.argv[2]
     strand = 'positive'
     output = 'transcript'
-    if len(sys.argv) > 3: # options specified
+    if len(sys.argv) > 3:  # options specified
         for opt in sys.argv[3:]:
             if opt == '-e':
                 output = 'exon'

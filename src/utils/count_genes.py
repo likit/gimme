@@ -2,7 +2,8 @@
 A gene name must be in "chromosome:gene.isoform" format.
 '''
 
-import sys, csv
+import sys
+import csv
 
 genes = set([])
 isoforms = set([])

@@ -2,7 +2,6 @@
 a given genome.
 
 Splice junctions are obtained from compare_junctions.py with -a option.
-
 Then run this command to filter out introns with ambiguous strand.
 
 cat junctions.txt | sort -k 1 | uniq -c | awk '$1==1' > junctions.nr.txt
@@ -15,6 +14,7 @@ import sys
 from pygr import seqdb
 
 SEQLEN = 21  # number of nucleotides on each side of the splice junction.
+
 
 def parse_input(infile):
     with open(infile) as fp:
@@ -29,7 +29,8 @@ def parse_input(infile):
             start = int(start)
             end = int(end)
 
-            if strand == '.': continue
+            if strand == '.':
+                continue
 
             yield chrom, start, end, strand
 
@@ -65,6 +66,7 @@ def get_splice_site(genome, intron):
 
         return str(donor_seq), str(acceptor_seq)
 
+
 def get_junction_seq(genome, intron):
     chrom, start, end, strand = intron
     ref = genome[chrom]
@@ -86,7 +88,8 @@ def get_junction_seq(genome, intron):
     else:
         donor_seq = donor_seq.reverse_complement(str(donor_seq))
         acceptor_seq = acceptor_seq.reverse_complement(str(acceptor_seq))
-        return str(acceptor_seq) + str(donor_seq) 
+        return str(acceptor_seq) + str(donor_seq)
+
 
 def main():
     infile = sys.argv[1]
@@ -103,7 +106,8 @@ def main():
         junction_seq = get_junction_seq(refseq, intron)
         print '>%s\n%s' % (intron_str, junction_seq)
 
-        if n % 1000 == 0: print >> sys.stderr, '...', n
+        if n % 1000 == 0:
+            print >> sys.stderr, '...', n
 
     # op1.close()
     # op2.close()

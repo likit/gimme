@@ -10,6 +10,7 @@ Reads without a proper pair are ignored.
 import sys
 import pysam
 
+
 def split(infile):
     prefix = infile.rstrip(".bam")
     bamfile = pysam.Samfile(infile, 'rb')
@@ -30,10 +31,11 @@ def split(infile):
     paired_file.close()
     unpaired_file.close()
 
+
 def main():
     infile = sys.argv[1]
     split(infile)
 
 
-if __name__=='__main__':
+if __name__ == '__main__':
     main()

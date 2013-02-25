@@ -11,6 +11,7 @@ from collections import namedtuple
 
 Read = namedtuple('Read', ['name', 'seq'])
 
+
 def split(input_file):
 
     if input_file.endswith('gz') or input_file.endswith('gzip'):
@@ -20,11 +21,11 @@ def split(input_file):
 
     output_filename = os.path.basename(input_file)
 
-    op1 = open(output_filename+'_1', 'w')
-    op2 = open(output_filename+'_2', 'w')
-    single = open(output_filename+'_unpaired', 'w')
+    op1 = open(output_filename + '_1', 'w')
+    op2 = open(output_filename + '_2', 'w')
+    single = open(output_filename + '_unpaired', 'w')
 
-    F = None # a forward read
+    F = None  # a forward read
     while True:
         try:
             if not F:
@@ -60,6 +61,6 @@ def split(input_file):
     op2.close()
     single.close()
 
-if __name__=='__main__':
+if __name__ == '__main__':
     input_file = sys.argv[1]
     split(input_file)

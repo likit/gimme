@@ -7,6 +7,7 @@ it to standard output in BED format.
 import sys
 import csv
 
+
 def parseBED(bed_file, kept):
     reader = csv.reader(open(bed_file), dialect='excel-tab')
     writer = csv.writer(sys.stdout, dialect='excel-tab')
@@ -19,6 +20,7 @@ def parseBED(bed_file, kept):
 
         if n % 10000 == 0:
             print >> sys.stderr, '...', n
+
 
 def parse_reps(reps_file):
     kept = set()
@@ -36,11 +38,12 @@ def parse_reps(reps_file):
 
     return kept
 
+
 def main(args):
     bed_file = args[1]
     reps_file = args[2]
     parseBED(bed_file, parse_reps(reps_file))
 
 
-if __name__=='__main__':
+if __name__ == '__main__':
     main(sys.argv)

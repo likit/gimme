@@ -7,6 +7,7 @@ import sys
 import csv
 import matplotlib.pyplot as plot
 
+
 def get_len_dist(filename):
     print >> sys.stderr, "Reading from %s" % filename
     lengths = []
@@ -16,6 +17,7 @@ def get_len_dist(filename):
 
     return lengths
 
+
 def main(filename):
     lengths = get_len_dist(filename)
     plot.hist(lengths, 200)
@@ -24,5 +26,5 @@ def main(filename):
     plot.show()
 
 
-if __name__=="__main__":
+if __name__ == '__main__':
     main(sys.argv[1])

@@ -12,8 +12,10 @@ Email: preeyano@msu.edu
 import pysam
 import sys
 
+
 def write_fasta(read):
     print '>%s\n%s' % (read.qname, read.seq)
+
 
 def writeReads(infile):
     samfile = pysam.Samfile(infile, 'rb')
@@ -33,7 +35,7 @@ def writeReads(infile):
             write_fasta(read)
 
 
-if __name__=='__main__':
+if __name__ == '__main__':
 
     try:
         writeReads(sys.argv[1])

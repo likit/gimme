@@ -6,6 +6,7 @@ read method returns each alignment stored in an PSL object.
 
 import sys
 
+
 class PSL(object):
     def __init__(self, **kwargs):
         self.attrib = kwargs
@@ -59,8 +60,8 @@ def read(fobj, comment=None):
         attrib['blockSizes'] = [int(i) for i in rows[18].split(',')[:-1]]
         attrib['qStarts'] = [int(i) for i in rows[19].split(',')[:-1]]
         attrib['tStarts'] = [int(i) for i in rows[20].split(',')[:-1]]
-        
-        pobj = PSL(**attrib) # pobj = PSL object
+
+        pobj = PSL(**attrib)  # pobj = PSL object
         if attrib['blockCount'] == 0:
             print >> sys.stderr, '>%d' % n, line
             n += 1

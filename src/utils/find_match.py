@@ -28,7 +28,7 @@ def find_match(filename, trans_len):
             cols = line.strip().split('\t')
             gene, trans = cols[1].split('.')
             align_len = int(cols[3])
-            if ((align_len/float(trans_len[trans]) * 100.0)
+            if ((align_len / float(trans_len[trans]) * 100.0)
                             > PERCENT_COVERAGE):
                     genes.add(gene)
                     transcripts.add(trans)
@@ -45,7 +45,7 @@ def get_transcript_length(filename):
 
     return trans_len
 
-if __name__=='__main__':
+if __name__ == '__main__':
     try:
         trans_len = get_transcript_length(sys.argv[1])
         genes, transcripts = find_match(sys.argv[2], trans_len)

@@ -6,9 +6,11 @@ of minimum isoforms, the script return the original transcripts.
 
 '''
 
-import sys, csv
+import sys
+import csv
 
 import networkx as nx
+
 
 class ExonObj(object):
     def __init__(self, chrom, start, end):
@@ -18,6 +20,7 @@ class ExonObj(object):
 
     def __str__(self):
         return '%s:%d-%d' % (self.chrom, self.start, self.end)
+
 
 def parseBed(filename):
     '''Reads BED file and returns exons of a transcript.'''
@@ -43,6 +46,7 @@ def parseBed(filename):
 
             yield geneId, exons, row
 
+
 def create_bipartite_graph(G):
     '''Return a bipartite graph with top nodes = G.nodes and
     bottom nodes = {1,2,3...} which 1=G.nodes[1], etc.
@@ -57,16 +61,16 @@ def create_bipartite_graph(G):
     g.remove_nodes_from(['Start', 'End'])
 
     bottom_nodes = {}
-    node_index = [] # note, nodes are not id'd in topological order
+    node_index = []  # note, nodes are not id'd in topological order
 
     node_id = 0
     for node in g.nodes():
-        B.add_edge('S', node, capacity=1.0) # add edge to [S]ource node
+        B.add_edge('S', node, capacity=1.0)  # add edge to [S]ource node
 
         bottom_nodes[node] = node_id
         node_index.append(node)
 
-        B.add_edge(node_id, 'T', capacity=1.0) # add edge to [T]arget node
+        B.add_edge(node_id, 'T', capacity=1.0)  # add edge to [T]arget node
 
         node_id += 1
     # print bottom_nodes;
@@ -80,6 +84,7 @@ def create_bipartite_graph(G):
     #     print edge
     return B, node_index
 
+
 def run_max_flow(G):
     '''Return edges in max flow analysis.
 
@@ -88,6 +93,7 @@ def run_max_flow(G):
     '''
     edges = nx.max_flow_min_cost(G, 'S', 'T')
     return edges
+
 
 def rebuild_edges(edges, node_index):
     '''Rebuild edges from bipartite graph to orginal directed graph.
@@ -98,10 +104,10 @@ def rebuild_edges(edges, node_index):
     K = nx.DiGraph()
     for node in edges:
         if node == 'S':
-            continue # ignore S node
+            continue  # ignore S node
         for e in edges[node]:
             if e == 'T':
-                continue # ignore T node
+                continue  # ignore T node
 
             # print node, e
 
@@ -110,16 +116,19 @@ def rebuild_edges(edges, node_index):
 
     return K.edges()
 
+
 def remove_maxflow_edges(mf_edges, B):
     '''Remove edges from max flow path of bipartite graph B.'''
 
     for node in mf_edges:
-        if node == 'S': continue # ignore S node
+        if node == 'S':
+            continue  # ignore S node
         for e in mf_edges[node]:
             if e == 'T':
-                continue # ignore T node
+                continue  # ignore T node
             if mf_edges[node][e] == 1.0:
-                B[node][e]['capacity'] = 0.0 # disable the edge
+                B[node][e]['capacity'] = 0.0  # disable the edge
+
 
 def add_path(edges, paths, G):
     '''Build paths from a given edges.
@@ -159,21 +168,22 @@ def add_path(edges, paths, G):
         path_str = '->'.join(path)
         paths.add(path_str)
 
+
 def get_min_paths(G, verbose=True):
     '''Returns minimal paths including all edges.
     G is a directed graph.
 
     '''
     total_edges = len(G.edges())
-    paths = set() # store unique paths
+    paths = set()  # store unique paths
     B, node_index = create_bipartite_graph(G)
 
     mf_edges = run_max_flow(B)
     edges = set(rebuild_edges(mf_edges, node_index))
 
     mf_round = 1
-    while edges: # a max flow path is found
-        if (total_edges > 50) and verbose: # display progress
+    while edges:  # a max flow path is found
+        if (total_edges > 50) and verbose:  # display progress
             if verbose:
                 print >> sys.stderr, \
                     '\t... #%d found %d junctions' % (mf_round, len(edges))
@@ -202,6 +212,7 @@ def get_min_paths(G, verbose=True):
 
     return paths
 
+
 def printBed(path, db, geneId, transId):
     path = sorted(path, key=lambda x: db[x].start)
     firstExon = db[path[0]]
@@ -213,13 +224,13 @@ def printBed(path, db, geneId, transId):
     blockStarts = [str(db[e].start - chromStart) for e in path]
     blockSizes = [str(db[e].end - db[e].start) for e in path]
     blockCount = len(blockStarts)
-    
+
     name = '%s.%d' % (geneId, transId)
     strand = '+'
     score = 1000
     thickStart = chromStart
     thickEnd = chromEnd
-    itemRgb='0,0,0'
+    itemRgb = '0,0,0'
 
     writer = csv.writer(sys.stdout, dialect='excel-tab')
 
@@ -235,6 +246,7 @@ def printBed(path, db, geneId, transId):
                     blockCount,
                     ','.join(blockSizes),
                     ','.join(blockStarts)))
+
 
 def make_graph(bedfile, exon_db):
     def get_path(exons, exon_db):
@@ -270,10 +282,12 @@ def make_graph(bedfile, exon_db):
 
     yield gene_id, G, total, transcripts
 
+
 def print_original(transcripts):
     '''Prints original transcripts in BED format.'''
     for trns in transcripts:
         print '\t'.join(trns)
+
 
 def main(argv, verbose=True):
     bedfile = argv[1]
@@ -301,13 +315,15 @@ def main(argv, verbose=True):
                                             (total, len(paths))
             else:
                 print_original(transcripts)
-                if verbose: report_total(transcripts)
+                if verbose:
+                    report_total(transcripts)
         else:
             print_original(transcripts)
-            if verbose: report_total(transcripts)
+            if verbose:
+                report_total(transcripts)
 
 
-if __name__=='__main__':
+if __name__ == '__main__':
     main(sys.argv)
     # G = nx.DiGraph()
     # G.add_path(['Start', 'A', 'B', 'C', 'E', 'F', 'G', 'I', 'J', 'End'])

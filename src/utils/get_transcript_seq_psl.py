@@ -12,6 +12,7 @@ from pygr import seqdb, sequtil
 
 Exon = namedtuple('Exon', 'chrom, start, end')
 
+
 def get_sequence(genome, exons):
     seq = ''
     try:
@@ -23,6 +24,7 @@ def get_sequence(genome, exons):
         raise e
 
     return seq
+
 
 def parse_seq(filename, genome):
     reader = csv.reader(open(filename), dialect='excel-tab')
@@ -56,7 +58,8 @@ def main():
         seq = get_sequence(genome, exons)
         sequtil.write_fasta(sys.stdout, seq, id=gene_id)
 
-        if n % 1000 == 0: print >> sys.stderr, '...', n
+        if n % 1000 == 0:
+            print >> sys.stderr, '...', n
 
-if __name__=='__main__':
+if __name__ == '__main__':
     main()

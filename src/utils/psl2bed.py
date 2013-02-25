@@ -1,10 +1,9 @@
-'''
-    The script converts alignments in PSL format to BED format.
-'''
+'''The script converts alignments in PSL format to BED format. '''
 
 import sys
 import csv
 import pslparser
+
 
 def parsePSL(filename):
     for pslObj in pslparser.read(open(filename)):
@@ -34,5 +33,5 @@ def parsePSL(filename):
                         blockSizes,
                         blockStarts))
 
-if __name__=='__main__':
+if __name__ == '__main__':
     parsePSL(sys.argv[1])
