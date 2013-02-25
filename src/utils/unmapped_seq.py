@@ -1,6 +1,7 @@
 import sys
 from Bio import SeqIO
 
+
 def parse_mapped(pslfile):
     mapped = set()
     for line in open(pslfile):
@@ -8,13 +9,14 @@ def parse_mapped(pslfile):
         mapped.add(name)
     return mapped
 
+
 def select_seq(mapped_seqs, fasta_file):
     for record in SeqIO.parse(fasta_file, 'fasta'):
         if record.id not in mapped_seqs:
             print >> sys.stderr, record.id
             yield record
 
-if __name__=='__main__':
+if __name__ == '__main__':
     try:
         pslfile = sys.argv[1]
         fastafile = sys.argv[2]
