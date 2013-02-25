@@ -32,15 +32,15 @@ from utils import pslparser, get_min_isoforms
 from bx.intervals.intersection import Interval, IntervalTree
 
 
-gap_size = 50 # a minimum intron size (bp)
-max_intron = 300000 # a maximum intron size (bp)
-min_utr = 100 # a minimum UTR size (bp)
-min_transcript_len = 300 # a minimum length for multiple exon transcript(bp)
-min_single_exon_len = 500 # a minimum length for a single exon(bp)
+gap_size = 50  # a minimum intron size (bp)
+max_intron = 300000  # a maximum intron size (bp)
+min_utr = 100  # a minimum UTR size (bp)
+min_transcript_len = 300  # a minimum length for multiple exon transcript(bp)
+min_single_exon_len = 500  # a minimum length for a single exon(bp)
 max_isoforms = 20   # minimal isoforms will be searched
                     #if the number of isoforms exceed this number
 VERSION = '0.97'
-SHA = 'd604188' # git commit SHA
+SHA = 'd604188'  # git commit SHA
 
 
 class ExonObj:
@@ -121,7 +121,8 @@ def remove_large_intron(exons, max_intron=1e6):
     Exons is a list of exons sorted by start position.
 
     '''
-    if max_intron < 0: return [exons]  # disable
+    if max_intron < 0:
+        return [exons]  # disable
 
     all_exon_groups = []
     subgroup = []
@@ -129,7 +130,7 @@ def remove_large_intron(exons, max_intron=1e6):
         curr_exon = exons[i]
         try:
             next_exon = exons[i + 1]
-        except IndexError: # end of list
+        except IndexError:  # end of list
             subgroup.append(curr_exon)
             all_exon_groups.append(subgroup[:])
             break
@@ -141,7 +142,7 @@ def remove_large_intron(exons, max_intron=1e6):
                 subgroup.append(curr_exon)
                 all_exon_groups.append(subgroup[:])
 
-                subgroup = [] # start new subgroup
+                subgroup = []  # start new subgroup
             else:
                 subgroup.append(curr_exon)
 
@@ -153,7 +154,6 @@ def add_intron(exons, align_db, clusters, cluster_no):
 
     Intron object is created for each intron with all connected exons
     as an attribute.
-    
     '''
 
     introns = []
@@ -194,7 +194,7 @@ def add_intron(exons, align_db, clusters, cluster_no):
                 next_exon.introns.add(intron_.graph['name'])
 
     if introns:
-        cluster_no += 1 # create new cluster index
+        cluster_no += 1  # create new cluster index
         if not existing_clusters:
             cluster = nx.DiGraph()
             if len(introns) > 1:
@@ -249,7 +249,7 @@ def collapse_exon(g, align_db):
             pass
         else:
             if curr_exon.end == next_exon.end:
-                if next_exon.terminal == 1: # left terminal
+                if next_exon.terminal == 1:  # left terminal
                     g.add_edges_from([(str(curr_exon), n)\
                             for n in g.successors(str(next_exon))])
                     g.remove_node(str(next_exon))
@@ -391,7 +391,7 @@ def add_exon(align_db, exons):
         except KeyError:
             align_db.exon_db[str(exon)] = exon
         else:
-            if ((exon.terminal and exon_.terminal) and 
+            if ((exon.terminal and exon_.terminal) and
                         exon.terminal != exon_.terminal):
                 exon.terminal = None
 
@@ -518,7 +518,7 @@ def build_gene_model(align_db,
                                                 for e in transcript])
 
         if transcript_length <= min_transcript_len:
-            return False # fail
+            return False  # fail
         else:
             if len(transcript) == 2:
                 trns = ','.join(transcript)
@@ -624,7 +624,7 @@ def merge_exon(align_db):
         curr_exon = exons[chrom][i]
         while i < len(exons[chrom]):
             try:
-                next_exon = exons[chrom][i+1]
+                next_exon = exons[chrom][i + 1]
             except IndexError:
                 new_exons[chrom].append(curr_exon)
                 break
@@ -711,7 +711,7 @@ def main(input_files):
     for chrom in merged_single_exons:
         align_db.single_exons_intervals[chrom] = IntervalTree()
         for exon in merged_single_exons[chrom]:
-            interval = Interval(exon.start, exon.end, value={'exon':exon})
+            interval = Interval(exon.start, exon.end, value={'exon': exon})
             align_db.single_exons_intervals[chrom].insert_interval(interval)
 
     '''====Connect introns from the same gene to each other===='''
@@ -760,7 +760,7 @@ def main(input_files):
         print >> stderr, ''
 
 
-if __name__=='__main__':
+if __name__ == '__main__':
     parser = argparse.ArgumentParser(prog='gimme.py')
     parser.add_argument('--min_utr', type=int, metavar='int',
             default=min_utr,
@@ -800,13 +800,13 @@ if __name__=='__main__':
 
         '''
         gap_size = 0
-        max_intron = -1 
+        max_intron = -1
         min_utr = 0
         min_transcript_len = 1
         min_single_exon_len = 1
         args.max = True
     else:
-        if args.min_utr <=0:
+        if args.min_utr <= 0:
             raise ValueError('Invalid UTRs size (<=0)')
         elif args.min_utr != min_utr:
             min_utr = args.min_utr
@@ -828,7 +828,8 @@ if __name__=='__main__':
             raise ValueError('Invalid number of isoforms (<=0)')
         elif args.max_isoforms != max_isoforms:
             max_isoforms = args.max_isoforms
-            print >> sys.stderr, 'User defined max_isoforms = %d' % max_isoforms
+            print >> sys.stderr, \
+                    'User defined max_isoforms = %d' % max_isoforms
 
         if args.min_transcript_len <= 0:
             raise ValueError('Invalid transcript size (<=0)')
