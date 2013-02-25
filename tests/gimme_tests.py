@@ -13,6 +13,7 @@ if source_path not in sys.path:
 
 import gimme
 
+
 class TestCollapseExons(TestCase):
     def setUp(self):
         self.align_db = gimme.AlignmentDB()
@@ -27,8 +28,8 @@ class TestCollapseExons(TestCase):
             start += 300
             n += 1
 
-        self.align_db.exon_db[exons[0]].terminal = 1 # mark a left terminal
-        self.align_db.exon_db[exons[-1]].terminal = 2 # mark a right terminal
+        self.align_db.exon_db[exons[0]].terminal = 1  # mark a left terminal
+        self.align_db.exon_db[exons[-1]].terminal = 2  # mark a right terminal
 
         self.exon_graph = nx.DiGraph()
         self.exon_graph.add_path(exons)
@@ -122,7 +123,6 @@ class TestCollapseExons(TestCase):
 
         gimme.collapse_exon(self.exon_graph, self.align_db)
 
-
         self.assertEqual(len(self.exon_graph.nodes()), 7)
         self.assertEqual(len(self.exon_graph.edges()), 6)
 
@@ -158,7 +158,6 @@ class TestCollapseExons(TestCase):
         self.assertEqual(len(self.exon_graph.edges()), 6)
 
         gimme.collapse_exon(self.exon_graph, self.align_db)
-
 
         self.assertEqual(len(self.exon_graph.nodes()), 7)
         self.assertEqual(len(self.exon_graph.edges()), 6)
@@ -284,7 +283,7 @@ class TestCollapseExons(TestCase):
         self.assertEqual(len(self.exon_graph.edges()), 7)
 
         gimme.collapse_exon(self.exon_graph, self.align_db)
-        
+
         self.assertEqual(len(self.exon_graph.nodes()), 6)
         self.assertEqual(len(self.exon_graph.edges()), 6)
 
@@ -649,6 +648,7 @@ class TestCollapseExons(TestCase):
         self.assertEqual(len(self.exon_graph.nodes()), 8)
         self.assertEqual(len(self.exon_graph.edges()), 7)
 
+
 class TestAddIntrons(TestCase):
     def setUp(self):
         self.align_db = gimme.AlignmentDB()
@@ -662,8 +662,8 @@ class TestAddIntrons(TestCase):
             start += 300
             n += 1
 
-        self.exons[0].terminal = 1 # mark a left terminal
-        self.exons[-1].terminal = 2 # mark a right terminal
+        self.exons[0].terminal = 1  # mark a left terminal
+        self.exons[-1].terminal = 2  # mark a right terminal
 
     def test_simple(self):
         gimme.add_intron(self.exons, self.align_db, {}, 0)
@@ -674,12 +674,11 @@ class TestAddIntrons(TestCase):
 class TestMergeExons(TestCase):
     def setUp(self):
         self.align_db = gimme.AlignmentDB()
-        self.align_db.single_exons_db= {'chr1':[]}
+        self.align_db.single_exons_db = {'chr1': []}
         self.e1 = gimme.ExonObj('chr1', 1000, 2000)
         self.e2 = gimme.ExonObj('chr1', 3000, 4000)
         self.e3 = gimme.ExonObj('chr1', 5000, 6000)
         self.e4 = gimme.ExonObj('chr1', 7000, 8000)
-
 
         self.align_db.single_exons_db['chr1'].append(self.e1)
         self.align_db.single_exons_db['chr1'].append(self.e2)
@@ -692,7 +691,7 @@ class TestMergeExons(TestCase):
         print >> sys.stderr, ''
 
     def test_no_merge_single_exons(self):
-        self.align_db.single_exons_db = {'chr1':[]}
+        self.align_db.single_exons_db = {'chr1': []}
         self.align_db.single_exons_db['chr1'].append(self.e1)
         self.merged_exons = gimme.merge_exon(self.align_db)
 
@@ -842,5 +841,5 @@ class TestSplitExonGroups(TestCase):
                                         )
         self.assertEqual(len(split), 3)
 
-if __name__=='__main__':
+if __name__ == '__main__':
     unittest.main()
