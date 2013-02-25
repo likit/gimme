@@ -5,11 +5,13 @@ from utils.find_SE import get_exon_node, find_SE
 '''test data contain genes with 0, 1, 2 and 3 exon skipping.'''
 test_file = "../test_data/SE.test.bed"
 
+
 class TestLoadData(unittest.TestCase):
     def test_load_data(self):
         for exons, transcript_id in get_exon_node(test_file):
             pass
         self.assertTrue(len(exons) > 1)
+
 
 class TestExonGraph(unittest.TestCase):
     def test_build_exon_graph(self):
@@ -18,6 +20,7 @@ class TestExonGraph(unittest.TestCase):
             self.graph.add_path([str(e) for e in exons])
             self.assertEqual(len(exons), len(self.graph.nodes()))
 
+
 class TestFindSE(unittest.TestCase):
     def test_find_SE(self):
         self.no_paths = []
@@ -25,7 +28,7 @@ class TestFindSE(unittest.TestCase):
         self.current_id = None
         for exons, transcript_id in get_exon_node(test_file):
             self.new_id = transcript_id.split('.')[0]
-            if not self.current_id: # first gene
+            if not self.current_id:  # first gene
                 self.graph.add_path([str(e) for e in exons])
                 self.current_id = self.new_id
             else:

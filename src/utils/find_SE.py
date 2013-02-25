@@ -9,6 +9,7 @@ import csv
 
 import networkx as nx
 
+
 class Exon(object):
     def __init__(self, chrom, start, end, transcript_id, strand):
         self.chrom = chrom
@@ -20,6 +21,7 @@ class Exon(object):
 
     def __str__(self):
         return "%s:%d-%d" % (self.chrom, self.start, self.end)
+
 
 def parse_BED(filename):
     reader = csv.reader(open(filename), dialect='excel-tab')
@@ -39,6 +41,7 @@ def parse_BED(filename):
                 exon_sizes,
                 exon_starts)
 
+
 def get_exon_node(infile):
     for features in parse_BED(infile):
         (chrom, chrom_start, transcript_id,
@@ -50,6 +53,7 @@ def get_exon_node(infile):
             exons.append(Exon(chrom, start, end, transcript_id, strand))
         yield exons, transcript_id
 
+
 def find_SE(graph):
     for edge in graph.edges():
         uniq_paths = []
@@ -58,12 +62,14 @@ def find_SE(graph):
                                             target=edge[1]))
         if len(paths) > 1:
             for p in paths:
-                if len(p) > 2: uniq_paths.append(p)
+                if len(p) > 2:
+                    uniq_paths.append(p)
         if uniq_paths:
             # for p in uniq_paths:
             #     print p
             # print len(uniq_paths)
             yield uniq_paths
+
 
 def write_GFF(events, exonsDB, no_events):
     all_exons = set()
@@ -111,8 +117,9 @@ def write_GFF(events, exonsDB, no_events):
                         last_exon.strand, geneID, mrnaid, 2,
                         geneID, mrnaid)
 
+
 def main():
-    no_events = {} # number of events in a gene
+    no_events = {}  # number of events in a gene
     exonsDB = {}
     infile = sys.argv[1]
     graph = nx.DiGraph()
@@ -120,8 +127,9 @@ def main():
     for exons, transcript_id in get_exon_node(infile):
         new_id = transcript_id.split('.')[0]
         # print >> sys.stderr, current_id, new_id
-        if not current_id: # first gene
-            for e in exons: exonsDB[str(e)] = e
+        if not current_id:  # first gene
+            for e in exons:
+                exonsDB[str(e)] = e
             graph.add_path([str(e) for e in exons])
             current_id = new_id
             no_events[current_id] = 0
@@ -136,12 +144,13 @@ def main():
                 current_id = new_id
                 no_events[current_id] = 0
 
-            for e in exons: exonsDB[str(e)] = e
+            for e in exons:
+                exonsDB[str(e)] = e
             graph.add_path([str(e) for e in exons])
 
     for events in find_SE(graph):
         no_events[current_id] += 1
         write_GFF(events, exonsDB, no_events)
 
-if __name__=='__main__':
+if __name__ == '__main__':
     main()
