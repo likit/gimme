@@ -8,7 +8,8 @@ import sys
 import csv
 
 import networkx as nx
-from bx.intervals import Interval, IntervalTree
+from bx.intervals import IntervalTree
+
 
 class Exon(object):
     def __init__(self, chrom, start, end, transcript_id, strand):
@@ -62,24 +63,26 @@ def add_intervals(graph, exonsDb):
 
     return iv_tree
 
+
 def find_IR(graph, interval_tree, exonsDB):
-    intrn_ret = []
     for edge in graph.edges():
         up, dn = edge
         up = exonsDB[up]  # upstream exon
         dn = exonsDB[dn]  # downstream exon
+        intrn_ret = [[up, dn]]
 
-        for overlaps in interval_tree.find(up.start, dn.end):
-            if (overlaps.start == up.start and overlaps.end == dn.end):
-                intrn_ret.append(overlaps)
+        for overlap in interval_tree.find(up.start, dn.end):
+            if (overlap.start == up.start and overlap.end == dn.end):
+                intrn_ret.append([overlap])
+        if len(intrn_ret) > 1:
+            yield intrn_ret
 
 
-
-def write_GFF(events, exonsDB, no_events):
+def write_GFF(events, no_events):
     all_exons = set()
     for event in events:
         for exon in event:
-            all_exons.add(exonsDB[exon])
+            all_exons.add(exon)
     all_exons = sorted(list(all_exons), key=lambda x: x.end)
 
     first_exon = all_exons[0]
@@ -87,39 +90,25 @@ def write_GFF(events, exonsDB, no_events):
     mrnaid = 1
     event_no = str(no_events[first_exon.geneID])
     geneID = first_exon.geneID + '.ev' + event_no
-    print "%s\tSE\tgene\t%d\t%d\t.\t%s\t.\tID=%s;Name=%s" % (
+    print "%s\tRI\tgene\t%d\t%d\t.\t%s\t.\tID=%s;Name=%s" % (
             first_exon.chrom, first_exon.start, last_exon.end,
             first_exon.strand, geneID, first_exon.geneID)
     for event in events:
-        event_exons = sorted([exonsDB[exon] for exon in event],
+        event_exons = sorted([exon for exon in event],
                                                 key=lambda x: x.end)
         first_exon = event_exons[0]
         last_exon = event_exons[-1]
-        print "%s\tSE\tmRNA\t%d\t%d\t.\t%s\t.\tID=%s.%d;Parent=%s" % (
+        print "%s\tRI\tmRNA\t%d\t%d\t.\t%s\t.\tID=%s.%d;Parent=%s" % (
                         first_exon.chrom, first_exon.start, last_exon.end,
                         first_exon.strand, geneID, mrnaid, geneID)
         exonid = 1
         for exon in event_exons:
-            print "%s\tSE\texon\t%d\t%d\t.\t%s\t.\tID=%s.%d.%d;Parent=%s.%d" \
+            print "%s\tRI\texon\t%d\t%d\t.\t%s\t.\tID=%s.%d.%d;Parent=%s.%d" \
                             % (exon.chrom, exon.start, exon.end,
                                 exon.strand, geneID, mrnaid, exonid,
                                 geneID, mrnaid)
             exonid += 1
         mrnaid += 1
-
-    first_exon = all_exons[0]
-    last_exon = all_exons[-1]
-    print "%s\tSE\tmRNA\t%d\t%d\t.\t%s\t.\tID=%s.%d;Parent=%s" % (
-                    first_exon.chrom, first_exon.start, last_exon.end,
-                    first_exon.strand, geneID, mrnaid, geneID)
-    print "%s\tSE\texon\t%d\t%d\t.\t%s\t.\tID=%s.%d.%d;Parent=%s.%d" % \
-                    (exon.chrom, first_exon.start, first_exon.end,
-                        first_exon.strand, geneID, mrnaid, 1,
-                        geneID, mrnaid)
-    print "%s\tSE\texon\t%d\t%d\t.\t%s\t.\tID=%s.%d.%d;Parent=%s.%d" % \
-                    (exon.chrom, last_exon.start, last_exon.end,
-                        last_exon.strand, geneID, mrnaid, 2,
-                        geneID, mrnaid)
 
 
 def main():
@@ -140,9 +129,9 @@ def main():
         else:
             if new_id != current_id:
                 interval_tree = add_intervals(graph, exonsDB)
-                for events in find_IR(graph, interval_tree):
+                for events in find_IR(graph, interval_tree, exonsDB):
                     no_events[current_id] += 1
-                    write_GFF(events, exonsDB, no_events)
+                    write_GFF(events, no_events)
 
                 graph = nx.DiGraph()
                 exonsDB = {}
@@ -154,9 +143,10 @@ def main():
             graph.add_path([str(e) for e in exons])
 
     interval_tree = add_intervals(graph, exonsDB)
-    for events in find_IR(graph):
+    for events in find_IR(graph, interval_tree, exonsDB):
         no_events[current_id] += 1
-        write_GFF(events, exonsDB, no_events)
+        write_GFF(events, no_events)
+
 
 if __name__ == '__main__':
     main()
