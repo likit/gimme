@@ -64,7 +64,7 @@ def add_intervals(graph, exonsDb):
     return iv_tree
 
 
-def find_IR(graph, interval_tree, exonsDB):
+def find_RI(graph, interval_tree, exonsDB):
     for edge in graph.edges():
         up, dn = edge
         up = exonsDB[up]  # upstream exon
@@ -129,7 +129,7 @@ def main():
         else:
             if new_id != current_id:
                 interval_tree = add_intervals(graph, exonsDB)
-                for events in find_IR(graph, interval_tree, exonsDB):
+                for events in find_RI(graph, interval_tree, exonsDB):
                     no_events[current_id] += 1
                     write_GFF(events, no_events)
 
@@ -143,7 +143,7 @@ def main():
             graph.add_path([str(e) for e in exons])
 
     interval_tree = add_intervals(graph, exonsDB)
-    for events in find_IR(graph, interval_tree, exonsDB):
+    for events in find_RI(graph, interval_tree, exonsDB):
         no_events[current_id] += 1
         write_GFF(events, no_events)
 
