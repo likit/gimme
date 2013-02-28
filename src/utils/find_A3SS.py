@@ -12,6 +12,7 @@ from bx.intervals.intersection import IntervalTree
 
 MAX_ISOFORM = 10
 
+
 class Exon(object):
     def __init__(self, chrom, start, end, transcript_id, strand):
         self.chrom = chrom
@@ -24,6 +25,7 @@ class Exon(object):
     def __str__(self):
         return "%s:%d-%d" % (self.chrom, self.start, self.end)
 
+
 class Intron(object):
     def __init__(self, chrom, start, end, geneID, strand):
         self.chrom = chrom
@@ -35,6 +37,7 @@ class Intron(object):
 
     def __str__(self):
         return "%s:%d-%d" % (self.chrom, self.start, self.end)
+
 
 def parse_BED(filename):
     reader = csv.reader(open(filename), dialect='excel-tab')
@@ -54,6 +57,7 @@ def parse_BED(filename):
                 exon_sizes,
                 exon_starts)
 
+
 def get_introns(exons, intronsDB):
     introns = []
     for i in range(len(exons) - 1):
@@ -70,6 +74,7 @@ def get_introns(exons, intronsDB):
         introns.append(intron)
     return introns
 
+
 def get_exon_node(infile):
     for features in parse_BED(infile):
         (chrom, chrom_start, transcript_id,
@@ -80,6 +85,7 @@ def get_exon_node(infile):
             end = start + exon_sizes[i] - 1
             exons.append(Exon(chrom, start, end, transcript_id, strand))
         yield exons, transcript_id
+
 
 def find_A3SS(graph, interval, exonsDB):
     exons = graph.nodes()
@@ -96,9 +102,6 @@ def find_A3SS(graph, interval, exonsDB):
                 curr_exon.end == next_exon.end):
             up_exons.intersection_update(graph.predecessors(str(next_exon)))
             down_exons.add(next_exon)
-            # print >> sys.stderr, "%s, %s" % (str(curr_exon), str(next_exon))
-            # print >> sys.stderr, 'up_exons=%d, down_exons=%d' % (len(up_exons), len(down_exons))
-            # print >> sys.stderr, "-"*40
         else:
             if (len(up_exons) > 0 and len(down_exons) > 1):
                 for up in down_exons:
@@ -116,6 +119,7 @@ def find_A3SS(graph, interval, exonsDB):
         i += 1
     return altss_events
 
+
 def write_GFF(events, exonsDB, no_events, redundant):
     all_exons = set()
     for event in events:
@@ -130,7 +134,7 @@ def write_GFF(events, exonsDB, no_events, redundant):
     event_no = str(no_events[first_exon.geneID])
     geneID = first_exon.geneID + '.ev' + event_no
     output_list = []
-    output = "%s\tA5SS\tgene\t%d\t%d\t.\t%s\t.\tID=%s;Name=%s" % (
+    output = "%s\tA3SS\tgene\t%d\t%d\t.\t%s\t.\tID=%s;Name=%s" % (
             first_exon.chrom, first_exon.start, last_exon.end,
             first_exon.strand, geneID, first_exon.geneID)
     output_list.append(output)
@@ -140,7 +144,7 @@ def write_GFF(events, exonsDB, no_events, redundant):
         event_exons = sorted(event, key=lambda x: x.end)
         first_exon = event_exons[0]
         last_exon = event_exons[-1]
-        output = "%s\tA5SS\tmRNA\t%d\t%d\t.\t%s\t.\tID=%s.%d;Parent=%s" % (
+        output = "%s\tA3SS\tmRNA\t%d\t%d\t.\t%s\t.\tID=%s.%d;Parent=%s" % (
                         first_exon.chrom, first_exon.start, last_exon.end,
                         first_exon.strand, geneID, mrnaid, geneID)
         output_list.append(output)
@@ -150,7 +154,8 @@ def write_GFF(events, exonsDB, no_events, redundant):
         last_exon = event_exons[-1]
         altss = "%s-%s" % (str(first_exon), str(last_exon))
         for exon in event_exons:
-            output = "%s\tA5SS\texon\t%d\t%d\t.\t%s\t.\tID=%s.%d.%d;Parent=%s.%d" \
+            output = "%s\tA3SS\texon\t%d\t%d\t.\t%s\t." + \
+                            "\tID=%s.%d.%d;Parent=%s.%d" \
                             % (exon.chrom, exon.start, exon.end,
                                 exon.strand, geneID, mrnaid, exonid,
                                 geneID, mrnaid)
@@ -164,7 +169,9 @@ def write_GFF(events, exonsDB, no_events, redundant):
 
     if unique_event:
         if mrnaid <= MAX_ISOFORM:
-            for output in output_list: print output
+            for output in output_list:
+                print output
+
 
 def main():
     redundant = set()
@@ -177,8 +184,9 @@ def main():
     intron_interval = IntervalTree()
     for exons, transcript_id in get_exon_node(infile):
         new_id = transcript_id.split('.')[0]
-        if not current_id: # first gene
-            for e in exons: exonsDB[str(e)] = e
+        if not current_id:  # first gene
+            for e in exons:
+                exonsDB[str(e)] = e
             graph.add_path([str(e) for e in exons])
             introns = get_introns(exons, intronsDB)
 
@@ -203,7 +211,8 @@ def main():
                 no_events[current_id] = 0
                 intron_interval = IntervalTree()
 
-            for e in exons: exonsDB[str(e)] = e
+            for e in exons:
+                exonsDB[str(e)] = e
             graph.add_path([str(e) for e in exons])
             introns = get_introns(exons, intronsDB)
 
@@ -217,5 +226,5 @@ def main():
             no_events[current_id] += 1
             write_GFF(events, exonsDB, no_events, redundant)
 
-if __name__=='__main__':
+if __name__ == '__main__':
     main()
