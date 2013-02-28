@@ -57,4 +57,4 @@ class TestFindSE(unittest.TestCase):
                                             self.interval_tree,
                                             self.exonsDB))))
 
-        self.assertEqual(self.no_paths, [1])
+        self.assertEqual(self.no_paths, [1, 2, 3, 4])
