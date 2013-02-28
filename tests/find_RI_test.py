@@ -3,7 +3,7 @@ import networkx as nx
 
 from utils.find_RI import get_exon_node, find_RI, add_intervals
 
-'''test data contain genes with 0, 1, 2 and 3 exon skipping.'''
+'''test data contain genes with 0, 1, 2, 3 and 4 retained introns.'''
 test_file = "../test_data/RI.test.bed"
 
 
@@ -22,7 +22,7 @@ class TestExonGraph(unittest.TestCase):
             self.assertEqual(len(exons), len(self.graph.nodes()))
 
 
-class TestFindSE(unittest.TestCase):
+class TestFindRI(unittest.TestCase):
     def test_find_RI(self):
         self.exonsDB = {}
         self.graph = nx.DiGraph()
@@ -57,4 +57,4 @@ class TestFindSE(unittest.TestCase):
                                             self.interval_tree,
                                             self.exonsDB))))
 
-        self.assertEqual(self.no_paths, [1, 2, 3, 4])
+        self.assertEqual(self.no_paths, [1, 2, 3, 4, 0])
