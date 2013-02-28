@@ -1,4 +1,4 @@
-'''The script identifies alternative 3' splice site from a BED file.
+'''The script identifies alternative 5' splice site from a BED file.
 Output is written in GFF format suitable for differential
 exon usage analysis using MISO.
 
@@ -9,6 +9,7 @@ import csv
 
 import networkx as nx
 from bx.intervals.intersection import IntervalTree
+
 
 class Exon(object):
     def __init__(self, chrom, start, end, transcript_id, strand):
@@ -22,6 +23,7 @@ class Exon(object):
     def __str__(self):
         return "%s:%d-%d" % (self.chrom, self.start, self.end)
 
+
 class Intron(object):
     def __init__(self, chrom, start, end, geneID, strand):
         self.chrom = chrom
@@ -33,6 +35,7 @@ class Intron(object):
 
     def __str__(self):
         return "%s:%d-%d" % (self.chrom, self.start, self.end)
+
 
 def parse_BED(filename):
     reader = csv.reader(open(filename), dialect='excel-tab')
@@ -52,6 +55,7 @@ def parse_BED(filename):
                 exon_sizes,
                 exon_starts)
 
+
 def get_introns(exons, intronsDB):
     introns = []
     for i in range(len(exons) - 1):
@@ -68,6 +72,7 @@ def get_introns(exons, intronsDB):
         introns.append(intron)
     return introns
 
+
 def get_exon_node(infile):
     for features in parse_BED(infile):
         (chrom, chrom_start, transcript_id,
@@ -78,6 +83,7 @@ def get_exon_node(infile):
             end = start + exon_sizes[i] - 1
             exons.append(Exon(chrom, start, end, transcript_id, strand))
         yield exons, transcript_id
+
 
 def find_A5SS(graph, interval, exonsDB):
     exons = graph.nodes()
@@ -94,9 +100,6 @@ def find_A5SS(graph, interval, exonsDB):
                 curr_exon.end != next_exon.end):
             down_exons.intersection_update(graph.successors(str(next_exon)))
             up_exons.add(next_exon)
-            # print >> sys.stderr, "%s, %s" % (str(curr_exon), str(next_exon))
-            # print >> sys.stderr, 'up_exons=%d, down_exons=%d' % (len(up_exons), len(down_exons))
-            # print >> sys.stderr, "-"*40
         else:
             if (len(down_exons) > 0 and len(up_exons) > 1):
                 for up in up_exons:
@@ -113,6 +116,7 @@ def find_A5SS(graph, interval, exonsDB):
             altss_exons = []
         i += 1
     return altss_events
+
 
 def write_GFF(events, exonsDB, no_events, redundant):
     all_exons = set()
@@ -148,7 +152,8 @@ def write_GFF(events, exonsDB, no_events, redundant):
         last_exon = event_exons[-1]
         altss = "%s-%s" % (str(first_exon), str(last_exon))
         for exon in event_exons:
-            output = "%s\tA5SS\texon\t%d\t%d\t.\t%s\t.\tID=%s.%d.%d;Parent=%s.%d" \
+            output = "%s\tA5SS\texon\t%d\t%d\t.\t%s" + \
+                            "\t.\tID=%s.%d.%d;Parent=%s.%d" \
                             % (exon.chrom, exon.start, exon.end,
                                 exon.strand, geneID, mrnaid, exonid,
                                 geneID, mrnaid)
@@ -161,7 +166,9 @@ def write_GFF(events, exonsDB, no_events, redundant):
             mrnaid += 1
 
     if unique_event:
-        for output in output_list: print output
+        for output in output_list:
+            print output
+
 
 def main():
     redundant = set()
@@ -174,8 +181,9 @@ def main():
     intron_interval = IntervalTree()
     for exons, transcript_id in get_exon_node(infile):
         new_id = transcript_id.split('.')[0]
-        if not current_id: # first gene
-            for e in exons: exonsDB[str(e)] = e
+        if not current_id:  # first gene
+            for e in exons:
+                exonsDB[str(e)] = e
             graph.add_path([str(e) for e in exons])
             introns = get_introns(exons, intronsDB)
 
@@ -200,7 +208,8 @@ def main():
                 no_events[current_id] = 0
                 intron_interval = IntervalTree()
 
-            for e in exons: exonsDB[str(e)] = e
+            for e in exons:
+                exonsDB[str(e)] = e
             graph.add_path([str(e) for e in exons])
             introns = get_introns(exons, intronsDB)
 
@@ -214,5 +223,5 @@ def main():
             no_events[current_id] += 1
             write_GFF(events, exonsDB, no_events, redundant)
 
-if __name__=='__main__':
+if __name__ == '__main__':
     main()
