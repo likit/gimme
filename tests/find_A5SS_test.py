@@ -1,8 +1,7 @@
 import unittest
 import networkx as nx
 
-from bx.intervals import IntervalTree
-from utils.find_A5SS import get_exon_node, find_A5SS, get_introns
+from utils.find_A5SS import get_exon_node, find_A5SS, Exon
 
 '''test data contain genes with 0, 1, 2, 3 and 4 alternative splice site.
 
@@ -26,51 +25,58 @@ class TestExonGraph(unittest.TestCase):
 
 
 class TestFindA5SS(unittest.TestCase):
-    def test_find_A5SS(self):
-        self.redundant = set()
-        self.no_paths = []
+    def setUp(self):
         self.exonsDB = {}
-        self.intronsDB = {}
+        self.ex1 = Exon('chrX', 1000, 2000, 'ex1.1', '+')
+        self.ex2 = Exon('chrX', 3000, 4000, 'ex1.1', '+')
+        self.ex3 = Exon('chrX', 5000, 6000, 'ex1.1', '+')
+        self.ex4 = Exon('chrX', 3000, 3500, 'ex1.1', '+')
+        self.ex5 = Exon('chrX', 1500, 2000, 'ex1.1', '+')
+        self.ex6 = Exon('chrX', 3000, 3800, 'ex1.1', '+')
+        self.exonsDB[str(self.ex1)] = self.ex1
+        self.exonsDB[str(self.ex2)] = self.ex2
+        self.exonsDB[str(self.ex3)] = self.ex3
+        self.exonsDB[str(self.ex4)] = self.ex4
+        self.exonsDB[str(self.ex5)] = self.ex5
+        self.exonsDB[str(self.ex6)] = self.ex6
+
+    def test_no_ASS(self):
         self.graph = nx.DiGraph()
-        self.current_id = None
-        self.intron_interval = IntervalTree()
-        for exons, transcript_id in get_exon_node(test_file):
-            self.new_id = transcript_id.split('.')[0]
-            if not self.current_id: # first gene
-                for e in exons: self.exonsDB[str(e)] = e
-                self.graph.add_path([str(e) for e in exons])
-                self.introns = get_introns(exons, self.intronsDB)
+        self.graph.add_path([str(self.ex1), str(self.ex2), str(self.ex3)])
+        self.graph.add_path([str(self.ex1), str(self.ex5), str(self.ex3)])
+        self.events = find_A5SS(self.graph, self.exonsDB)
 
-                self.assertEqual(len(exons), len(self.introns) + 1)
+        self.assertEqual(len(self.events), 0)
 
-                for intron in self.introns:
-                    self.intron_interval.insert_interval(intron)
+    def test_one_ASS(self):
+        self.graph = nx.DiGraph()
+        self.graph.add_path([str(self.ex1), str(self.ex2), str(self.ex3)])
+        self.graph.add_path([str(self.ex1), str(self.ex4), str(self.ex3)])
+        self.events = find_A5SS(self.graph, self.exonsDB)
 
-                self.current_id = self.new_id
-            else:
-                if self.new_id != self.current_id:
-                    if len(self.graph.nodes()) > 1:
-                        self.no_paths.append(len(list(find_A5SS(self.graph,
-                                                        self.intron_interval,
-                                                        self.exonsDB))))
+    def test_two_ASS(self):
+        self.graph = nx.DiGraph()
+        self.graph.add_path([str(self.ex1), str(self.ex2), str(self.ex3)])
+        self.graph.add_path([str(self.ex1), str(self.ex4), str(self.ex3)])
+        self.graph.add_path([str(self.ex1), str(self.ex6), str(self.ex3)])
+        self.events = find_A5SS(self.graph, self.exonsDB)
 
-                    self.graph = nx.DiGraph()
-                    self.exonsDB = {}
-                    self.intronsDB = {}
-                    self.current_id = self.new_id
-                    self.intron_interval = IntervalTree()
+        self.assertEqual(len(self.events), 1)
 
-                for e in exons: self.exonsDB[str(e)] = e
-                self.graph.add_path([str(e) for e in exons])
-                self.introns = get_introns(exons, self.intronsDB)
+    def test_two_events(self):
+        self.ex5 = Exon('chrX', 7000, 8000, 'ex1.1', '+')
+        self.ex6 = Exon('chrX', 9000, 10000, 'ex1.1', '+')
+        self.ex7 = Exon('chrX', 11000, 12000, 'ex1.1', '+')
+        self.ex8 = Exon('chrX', 9000, 9500, 'ex1.1', '+')
+        self.exonsDB[str(self.ex5)] = self.ex5
+        self.exonsDB[str(self.ex6)] = self.ex6
+        self.exonsDB[str(self.ex7)] = self.ex7
+        self.exonsDB[str(self.ex8)] = self.ex8
+        self.graph = nx.DiGraph()
+        self.graph.add_path([str(self.ex1), str(self.ex2), str(self.ex3)])
+        self.graph.add_path([str(self.ex1), str(self.ex4), str(self.ex3)])
+        self.graph.add_path([str(self.ex5), str(self.ex6), str(self.ex7)])
+        self.graph.add_path([str(self.ex5), str(self.ex8), str(self.ex7)])
+        self.events = find_A5SS(self.graph, self.exonsDB)
 
-                self.assertEqual(len(exons), len(self.introns) + 1)
-
-                for intron in self.introns:
-                    self.intron_interval.insert_interval(intron)
-
-        if len(self.graph.nodes()) > 1:
-            self.no_paths.append(len(list(find_A5SS(self.graph,
-                                                self.intron_interval,
-                                                self.exonsDB))))
-        self.assertEqual(self.no_paths, [1, 2, 3, 4, 0])
+        self.assertEqual(len(self.events), 2)
