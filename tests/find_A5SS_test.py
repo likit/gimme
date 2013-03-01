@@ -54,6 +54,9 @@ class TestFindA5SS(unittest.TestCase):
         self.graph.add_path([str(self.ex1), str(self.ex4), str(self.ex3)])
         self.events = find_A5SS(self.graph, self.exonsDB)
 
+        self.assertEqual(len(self.events), 1)
+        self.assertEqual(len(self.events[0]), 2)  # two isoforms
+
     def test_two_ASS(self):
         self.graph = nx.DiGraph()
         self.graph.add_path([str(self.ex1), str(self.ex2), str(self.ex3)])
@@ -62,21 +65,22 @@ class TestFindA5SS(unittest.TestCase):
         self.events = find_A5SS(self.graph, self.exonsDB)
 
         self.assertEqual(len(self.events), 1)
+        self.assertEqual(len(self.events[0]), 3)  # three isoforms
 
     def test_two_events(self):
         self.ex5 = Exon('chrX', 7000, 8000, 'ex1.1', '+')
         self.ex6 = Exon('chrX', 9000, 10000, 'ex1.1', '+')
-        self.ex7 = Exon('chrX', 11000, 12000, 'ex1.1', '+')
-        self.ex8 = Exon('chrX', 9000, 9500, 'ex1.1', '+')
+        self.ex7 = Exon('chrX', 7000, 8500, 'ex1.1', '+')
         self.exonsDB[str(self.ex5)] = self.ex5
         self.exonsDB[str(self.ex6)] = self.ex6
         self.exonsDB[str(self.ex7)] = self.ex7
-        self.exonsDB[str(self.ex8)] = self.ex8
         self.graph = nx.DiGraph()
         self.graph.add_path([str(self.ex1), str(self.ex2), str(self.ex3)])
         self.graph.add_path([str(self.ex1), str(self.ex4), str(self.ex3)])
-        self.graph.add_path([str(self.ex5), str(self.ex6), str(self.ex7)])
-        self.graph.add_path([str(self.ex5), str(self.ex8), str(self.ex7)])
+        self.graph.add_path([str(self.ex3), str(self.ex5), str(self.ex6)])
+        self.graph.add_path([str(self.ex3), str(self.ex7), str(self.ex6)])
         self.events = find_A5SS(self.graph, self.exonsDB)
 
-        self.assertEqual(len(self.events), 2)
+        self.assertEqual(len(self.events), 2)  # two SS
+        self.assertEqual(len(self.events[0]), 2)  # two isoforms
+        self.assertEqual(len(self.events[1]), 2)  # two isoforms
