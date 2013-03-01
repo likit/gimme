@@ -8,9 +8,6 @@ import sys
 import csv
 
 import networkx as nx
-from bx.intervals.intersection import IntervalTree
-
-MAX_ISOFORM = 10
 
 
 class Exon(object):
@@ -21,19 +18,6 @@ class Exon(object):
         self.transcript_id = transcript_id
         self.geneID = transcript_id.split('.')[0]
         self.strand = strand
-
-    def __str__(self):
-        return "%s:%d-%d" % (self.chrom, self.start, self.end)
-
-
-class Intron(object):
-    def __init__(self, chrom, start, end, geneID, strand):
-        self.chrom = chrom
-        self.start = start
-        self.end = end
-        self.geneID = geneID
-        self.strand = strand
-        self.flanking_exons = set()
 
     def __str__(self):
         return "%s:%d-%d" % (self.chrom, self.start, self.end)
@@ -58,23 +42,6 @@ def parse_BED(filename):
                 exon_starts)
 
 
-def get_introns(exons, intronsDB):
-    introns = []
-    for i in range(len(exons) - 1):
-        ex1, ex2 = exons[i], exons[i + 1]
-        intron_start = ex1.end + 1
-        intron_end = ex2.start - 1
-        intron = Intron(ex1.chrom, intron_start, intron_end,
-                        ex1.geneID, ex1.strand)
-
-        if str(intron) not in intronsDB:
-            intronsDB[str(intron)] = intron
-
-        intron.flanking_exons.add((ex1, ex2))
-        introns.append(intron)
-    return introns
-
-
 def get_exon_node(infile):
     for features in parse_BED(infile):
         (chrom, chrom_start, transcript_id,
@@ -87,7 +54,7 @@ def get_exon_node(infile):
         yield exons, transcript_id
 
 
-def find_A3SS(graph, interval, exonsDB):
+def find_A3SS(graph, exonsDB):
     exons = graph.nodes()
     exons = sorted([exonsDB[exon] for exon in exons], key=lambda x: x.start)
     altss_events = []
@@ -155,8 +122,8 @@ def write_GFF(events, exonsDB, no_events, redundant):
         altss = "%s-%s" % (str(first_exon), str(last_exon))
         for exon in event_exons:
             output = "%s\tA3SS\texon\t%d\t%d\t.\t%s\t." + \
-                            "\tID=%s.%d.%d;Parent=%s.%d" \
-                            % (exon.chrom, exon.start, exon.end,
+                            "\tID=%s.%d.%d;Parent=%s.%d"
+            output = output % (exon.chrom, exon.start, exon.end,
                                 exon.strand, geneID, mrnaid, exonid,
                                 geneID, mrnaid)
             exonid += 1
@@ -168,61 +135,44 @@ def write_GFF(events, exonsDB, no_events, redundant):
             mrnaid += 1
 
     if unique_event:
-        if mrnaid <= MAX_ISOFORM:
-            for output in output_list:
-                print output
+        for output in output_list:
+            print output
 
 
 def main():
     redundant = set()
     no_events = {}
     exonsDB = {}
-    intronsDB = {}
     infile = sys.argv[1]
     graph = nx.DiGraph()
     current_id = None
-    intron_interval = IntervalTree()
     for exons, transcript_id in get_exon_node(infile):
         new_id = transcript_id.split('.')[0]
         if not current_id:  # first gene
             for e in exons:
                 exonsDB[str(e)] = e
             graph.add_path([str(e) for e in exons])
-            introns = get_introns(exons, intronsDB)
-
-            assert len(exons) == len(introns) + 1
-
-            for intron in introns:
-                intron_interval.insert_interval(intron)
 
             current_id = new_id
             no_events[current_id] = 0
         else:
             if new_id != current_id:
                 if len(graph.nodes()) > 1:
-                    for events in find_A3SS(graph, intron_interval, exonsDB):
+                    for events in find_A3SS(graph, exonsDB):
                         no_events[current_id] += 1
                         write_GFF(events, exonsDB, no_events, redundant)
 
                 graph = nx.DiGraph()
                 exonsDB = {}
-                intronsDB = {}
                 current_id = new_id
                 no_events[current_id] = 0
-                intron_interval = IntervalTree()
 
             for e in exons:
                 exonsDB[str(e)] = e
             graph.add_path([str(e) for e in exons])
-            introns = get_introns(exons, intronsDB)
-
-            assert len(exons) == len(introns) + 1
-
-            for intron in introns:
-                intron_interval.insert_interval(intron)
 
     if len(graph.nodes()) > 1:
-        for events in find_A3SS(graph, intron_interval, exonsDB):
+        for events in find_A3SS(graph, exonsDB):
             no_events[current_id] += 1
             write_GFF(events, exonsDB, no_events, redundant)
 
