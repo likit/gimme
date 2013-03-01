@@ -23,6 +23,26 @@ class TestExonGraph(unittest.TestCase):
             self.assertEqual(len(exons), len(self.graph.nodes()))
 
 
+class TestAddIntervals(unittest.TestCase):
+    def setUp(self):
+        self.exonsDB = {}
+        self.ex1 = Exon('chrX', 1000, 2000, 'ex1.1', '+')
+        self.ex2 = Exon('chrX', 3000, 4000, 'ex1.1', '+')
+        self.ex3 = Exon('chrX', 5000, 6000, 'ex1.1', '+')
+        self.ex4 = Exon('chrX', 7000, 8000, 'ex1.1', '+')
+        self.exonsDB[str(self.ex1)] = self.ex1
+        self.exonsDB[str(self.ex2)] = self.ex2
+        self.exonsDB[str(self.ex3)] = self.ex3
+        self.exonsDB[str(self.ex4)] = self.ex4
+        self.graph = nx.DiGraph()
+        self.graph.add_path([str(self.ex1), str(self.ex2),
+                                str(self.ex3), str(self.ex4)])
+
+        self.tree = add_intervals(self.graph, self.exonsDB)
+
+        self.assertEqual(len(self.tree.find(1500, 5500)), 3)
+
+
 class TestFindRI(unittest.TestCase):
     def setUp(self):
         self.exonsDB = {}
