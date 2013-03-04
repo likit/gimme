@@ -93,7 +93,8 @@ def find_MXE(graph, exonsDB):
     for event in events:
         visited_path = set()
         start_exon, end_exon = event
-        paths = list(nx.all_simple_paths(graph, str(start_exon), str(end_exon)))
+        paths = list(nx.all_simple_paths(graph,
+                            str(start_exon), str(end_exon)))
         for path in paths:
             mxe_paths = [path]
             if '-'.join(path) not in visited_path:
@@ -101,13 +102,13 @@ def find_MXE(graph, exonsDB):
                     if (p[0] == path[0] and p[-1] == path[-1]):
                         if ((p[1:-1] != path[1:-1]) and
                                 p[1:-1] and path[1:-1]):
-                            mxe = True  # mutually exclusive
+                            exon_neighbors = set()
                             for j in path[1:-1]:
-                                for k in p[1:-1]:
-                                    if ((j, k) in graph.edges() or
-                                            (k, j) in graph.edges()):
-                                        mxe = False
-                            if mxe:
+                                exon_neighbors.update(
+                                                set(graph.predecessors(j)))
+                                exon_neighbors.update(
+                                                set(graph.successors(j)))
+                            if not set(p[1:-1]).intersection(exon_neighbors):
                                 visited_path.add('-'.join(p))
                                 mxe_paths.append(p)
 
@@ -183,7 +184,9 @@ def main():
     infile = sys.argv[1]
     graph = nx.DiGraph()
     current_id = None
+    n = 0
     for exons, transcript_id in get_exon_node(infile):
+        n += 1
         new_id = transcript_id.split('.')[0]
         # print >> sys.stderr, current_id, new_id
         if not current_id:  # first gene
@@ -208,6 +211,8 @@ def main():
             for e in exons:
                 exonsDB[str(e)] = e
             graph.add_path([str(e) for e in exons])
+        if n % 1000 == 0:
+            print >> sys.stderr, '...', n
 
     for events in find_MXE(graph, exonsDB):
         events = remove_overlaps(events, exonsDB)
