@@ -49,21 +49,6 @@ def get_exon_node(infile):
         yield exons, transcript_id
 
 
-def add_path(exons, graph):
-    if len(exons) == 1:
-        return
-    path = [str(ex) for ex in exons]
-
-    if exons[0].strand == '+':
-        path = path + ['end']
-    elif exons[0].strand == '-':
-        path = ['end'] + path
-    else:
-        return
-
-    graph.add_path(path)
-
-
 def find_AFE(graph, exonsDB, transcripts):
     degrees = set()
     for tranx in transcripts:
