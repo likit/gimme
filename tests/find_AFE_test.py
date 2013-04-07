@@ -2,7 +2,7 @@ import sys
 import unittest
 
 import networkx as nx
-from utils.find_AFE import get_exon_node, add_path, Exon, find_AFE
+from utils.find_AFE import get_exon_node, Exon, find_AFE
 
 
 # class TestLoadData(unittest.TestCase):
@@ -20,45 +20,10 @@ from utils.find_AFE import get_exon_node, add_path, Exon, find_AFE
 #             self.assertEqual(len(exons), len(self.graph.nodes()))
 
 
-class TestAddPath(unittest.TestCase):
-    def setUp(self):
-        self.exonsDB = {}
-        self.graph = nx.Graph()
-        self.ex1 = Exon('chrX', 1000, 2000, 'ex1.1', '+')
-        self.ex2 = Exon('chrX', 3000, 4000, 'ex1.1', '+')
-        self.ex3 = Exon('chrX', 5000, 6000, 'ex1.1', '+')
-        self.ex4 = Exon('chrX', 7000, 8000, 'ex1.1', '+')
-
-    def test_positive_strand(self):
-        exons = [self.ex1, self.ex2, self.ex3, self.ex4]
-        add_path(exons, self.graph)
-        self.assertItemsEqual(self.graph.nodes(),
-                                            ['start',
-                                                'chrX:1000-2000',
-                                                'chrX:3000-4000',
-                                                'end',
-                                            ])
-
-    def test_negative_strand(self):
-        self.ex1.strand = '-'
-        self.ex2.strand = '-'
-        self.ex3.strand = '-'
-        self.ex4.strand = '-'
-
-        exons = [self.ex1, self.ex2, self.ex3, self.ex4]
-        add_path(exons, self.graph)
-        self.assertItemsEqual(self.graph.nodes(),
-                                            ['start',
-                                                'chrX:7000-8000',
-                                                'chrX:5000-6000',
-                                                'end',
-                                            ])
-
-
 class TestFindAFE(unittest.TestCase):
     def setUp(self):
         self.exonsDB = {}
-        self.graph = nx.Graph()
+        self.graph = nx.DiGraph()
         self.ex1 = Exon('chrX', 1000, 2000, 'ex1.1', '+')
         self.ex2 = Exon('chrX', 3000, 4000, 'ex1.1', '+')
         self.ex3 = Exon('chrX', 5000, 6000, 'ex1.1', '+')
@@ -71,59 +36,93 @@ class TestFindAFE(unittest.TestCase):
         self.exonsDB[str(self.ex5)] = self.ex5
 
     def test_positive_one_path_one_exon(self):
-        self.graph.add_path(['start', str(self.ex1),
-                                str(self.ex2), 'end'])
-        paths = list(find_AFE(self.graph))
-        num_paths = [len(path) for path in paths]
+        self.graph.add_path([str(self.ex1), str(self.ex2)])
+        self.transcripts = [[str(self.ex1), str(self.ex2)]]
+        paths = find_AFE(self.graph, self.exonsDB, self.transcripts)
 
-        self.assertEqual(len(paths), 1)
-        self.assertItemsEqual(num_paths, [2])
+        self.assertEqual(len(paths), 0)
 
     def test_positive_two_path_one_exon(self):
-        self.graph.add_path(['start', str(self.ex1),
-                                str(self.ex2), 'end'])
-        self.graph.add_path(['start', str(self.ex5),
-                                str(self.ex2), 'end'])
-        paths = list(find_AFE(self.graph))
+        path1 = [str(self.ex1), str(self.ex2)]
+        path2 = [str(self.ex5), str(self.ex2)]
+        self.graph.add_path(path1)
+        self.graph.add_path(path2)
+        self.transcripts = [path1, path2]
+        paths = find_AFE(self.graph, self.exonsDB, self.transcripts)
         num_paths = [len(path) for path in paths]
 
         self.assertEqual(len(paths), 2)
         self.assertItemsEqual(num_paths, [2, 2])
 
     def test_positive_two_path_two_exon(self):
-        self.graph.add_path(['start', str(self.ex1),
-                                str(self.ex3), 'end'])
-        self.graph.add_path(['start', str(self.ex5),
-                                str(self.ex2), str(self.ex3), 'end'])
-        paths = list(find_AFE(self.graph))
+        self.ex6 = Exon('chrX', 7000, 8000, 'ex1.1', '+')
+        self.exonsDB[str(self.ex6)] = self.ex6
+        path1 = [str(self.ex1), str(self.ex3), str(self.ex6)]
+        path2 = [str(self.ex5), str(self.ex2),
+                    str(self.ex3), str(self.ex6)]
+        self.graph.add_path(path1)
+        self.graph.add_path(path2)
+        self.transcripts = [path1, path2]
+
+        paths = find_AFE(self.graph, self.exonsDB, self.transcripts)
         num_paths = [len(path) for path in paths]
 
         self.assertEqual(len(paths), 2)
         self.assertItemsEqual(num_paths, [2, 3])
 
-    def test_positive_three_path_one_exon(self):
-        self.graph.add_path(['start', str(self.ex1),
-                                str(self.ex2), 'end'])
-        self.graph.add_path(['start', str(self.ex5),
-                                str(self.ex2), 'end'])
-        self.graph.add_path(['start', str(self.ex4),
-                                str(self.ex2), 'end'])
+    def test_positive_two_path_multiple_exon(self):
+        self.ex6 = Exon('chrX', 7000, 8000, 'ex1.1', '+')
+        self.ex7 = Exon('chrX', 9000, 10000, 'ex1.1', '+')
+        self.exonsDB[str(self.ex6)] = self.ex6
+        self.exonsDB[str(self.ex7)] = self.ex7
 
-        paths = list(find_AFE(self.graph))
-        # num_paths = [len(path) for path in paths]
+        path1 = [str(self.ex1), str(self.ex3),
+                    str(self.ex6), str(self.ex7)]
+        path2 = [str(self.ex5), str(self.ex7)]
+        self.graph.add_path(path1)
+        self.graph.add_path(path2)
+        self.transcripts = [path1, path2]
+
+        paths = find_AFE(self.graph, self.exonsDB, self.transcripts)
+        num_paths = [len(path) for path in paths]
+
+        self.assertEqual(len(paths), 2)
+        self.assertItemsEqual(num_paths, [4, 2])
+
+    def test_positive_three_path_one_exon(self):
+        path1 = [str(self.ex1), str(self.ex2)]
+        path2 = [str(self.ex5), str(self.ex2)]
+        path3 = [str(self.ex4), str(self.ex2)]
+        self.transcripts = [path1, path2, path3]
+        self.graph.add_path(path1)
+        self.graph.add_path(path2)
+        self.graph.add_path(path3)
+
+        paths = find_AFE(self.graph, self.exonsDB, self.transcripts)
+        num_paths = [len(path) for path in paths]
 
         self.assertEqual(len(paths), 3)
+        self.assertItemsEqual(num_paths, [2, 2, 2])
 
     def test_positive_three_path_two_exon(self):
-        self.ex4 = Exon('chrX', 7000, 8000, 'ex1.1', '+')
-        self.graph.add_path(['start', str(self.ex1),
-                                str(self.ex2), str(self.ex4), 'end'])
-        self.graph.add_path(['start', str(self.ex5),
-                                str(self.ex2), str(self.ex4), 'end'])
-        self.graph.add_path(['start', str(self.ex2),
-                                str(self.ex4), 'end'])
+        self.ex4 = Exon('chrX', 700, 800, 'ex1.1', '+')
+        self.ex6 = Exon('chrX', 500, 600, 'ex1.1', '+')
+        self.ex8 = Exon('chrX', 3500, 4500, 'ex1.1', '+')
+        self.exonsDB[str(self.ex4)] = self.ex4
+        self.exonsDB[str(self.ex6)] = self.ex6
+        self.exonsDB[str(self.ex8)] = self.ex8
 
-        paths = list(find_AFE(self.graph))
-        # num_paths = [len(path) for path in paths]
+        path1 = [str(self.ex1), str(self.ex2), str(self.ex3)]
+        path2 = [str(self.ex5), str(self.ex8), str(self.ex3)]
+        path3 = [str(self.ex6), str(self.ex4), str(self.ex3)]
+        self.transcripts = [path1, path2, path3]
+
+        self.graph.add_path(path1)
+        self.graph.add_path(path2)
+        self.graph.add_path(path3)
+
+        paths = find_AFE(self.graph, self.exonsDB, self.transcripts)
+        num_paths = [len(path) for path in paths]
 
         self.assertEqual(len(paths), 3)
+        self.assertItemsEqual(num_paths, [3, 3, 3])
