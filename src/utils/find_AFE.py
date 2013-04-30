@@ -52,31 +52,36 @@ def get_exon_node(infile):
 def find_AFE(graph, exonsDB, transcripts):
     degrees = set()
     for path in list(nx.all_simple_paths(graph, 'start', 'end')):
+        # print >> sys.stderr, path
         for exon in path:
-            if graph.out_degree(exon) > 1:
+            if exon == 'start' or exon == 'end':
+                continue
+            if graph.in_degree(exon) > 1:
                 degrees.add(exon)
                 break
+
+    # print >> sys.stderr, degrees
 
     if not degrees:
         return []
 
     degrees = sorted(degrees, key=lambda x:exonsDB[x].start)
-    print >> sys.stderr, degrees
 
     common_exon = degrees[0]
 
     paths = []
     AFE = set()
     for tranx in transcripts:
-        end = tranx[-1]
-        start = common_exon
+        start = tranx[1]
+        end = common_exon
         try:
             for path in list(nx.all_simple_paths(graph, start, end)):
-                if path[-2] not in AFE:
-                    AFE.add(path[-2])
-                    paths.append(path[:-1])
+                if path[0] not in AFE:
+                    AFE.add(path[0])
+                    paths.append(path)
         except IndexError:
             pass
+    # print >> sys.stderr, 'AFE =', AFE
 
     if len(paths) > 1:
         return paths
@@ -130,6 +135,29 @@ def write_GFF(events, exonsDB, no_events):
     #                 (exon.chrom, last_exon.start, last_exon.end,
     #                     last_exon.strand, geneID, mrnaid, 2,
     #                     geneID, mrnaid)
+def add_exons(exonsDB, exons, graph, transcripts):
+        for e in exons:
+            exonsDB[str(e)] = e
+
+        strand = exons[0].strand
+
+        if strand == '+':
+            path = ['start']
+        else:
+            path = ['end']
+
+        for e in exons:
+            path.append(str(e))
+
+        if strand == '+':
+            path.append('end')
+        else:
+            path.append('start')
+            path.reverse()
+
+        graph.add_path(path)
+        transcripts.append(path)
+
 
 def main():
     no_events = {}  # number of events in a gene
@@ -138,28 +166,18 @@ def main():
     graph = nx.DiGraph()
     current_id = None
     transcripts = []
-    first_exons = set()
     for exons, transcript_id in get_exon_node(infile):
         if len(exons) == 1:
             continue
-
-        strand = exons[0].strand
         new_id = transcript_id.split('.')[0]
-        # print >> sys.stderr, current_id, new_id
         if not current_id:  # first gene
-            for e in exons:
-                exonsDB[str(e)] = e
-            graph.add_path([str(e) for e in exons])
+            add_exons(exonsDB, exons, graph, transcripts)
+
             current_id = new_id
             no_events[current_id] = 0
-            transcripts.append([str(e) for e in exons])
-            if strand == '+':
-                first_exons.add(str(exons[0]))
-            else:
-                first_exons.add(str(exons[-1]))
         else:
             if new_id != current_id:
-                if len(transcripts) > 1 and len(first_exons) > 1:
+                if len(transcripts) > 1:
                     events = find_AFE(graph, exonsDB, transcripts)
                     if events:
                         no_events[current_id] += 1
@@ -170,18 +188,10 @@ def main():
                 current_id = new_id
                 no_events[current_id] = 0
                 transcripts = []
-                first_exons = set()
 
-            for e in exons:
-                exonsDB[str(e)] = e
-            graph.add_path([str(e) for e in exons])
-            transcripts.append([str(e) for e in exons])
-            if strand == '+':
-                first_exons.add(str(exons[0]))
-            else:
-                first_exons.add(str(exons[-1]))
+            add_exons(exonsDB, exons, graph, transcripts)
 
-    if len(transcripts) > 1 and len(first_exons) > 1:
+    if len(transcripts) > 1:
         events = find_AFE(graph, exonsDB, transcripts)
         if events:
             no_events[current_id] += 1
