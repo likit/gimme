@@ -51,57 +51,37 @@ def get_exon_node(infile):
 
 def find_AFE(graph, exonsDB, transcripts):
     degrees = set()
-    for tranx in transcripts:
-        # print >> sys.stderr, tranx
-        start = tranx[0]
-        end = tranx[-1]
-        path = list(nx.all_simple_paths(graph, start, end))[0]
+    for path in list(nx.all_simple_paths(graph, 'start', 'end')):
         for exon in path:
-            if exonsDB[exon].strand == '-':
-                if graph.out_degree(exon) > 1:
-                    degrees.add(exon)
-                    break
-            else:
-                if graph.in_degree(exon) > 1:
-                    degrees.add(exon)
-                    break
+            if graph.out_degree(exon) > 1:
+                degrees.add(exon)
+                break
 
     if not degrees:
         return []
 
     degrees = sorted(degrees, key=lambda x:exonsDB[x].start)
+    print >> sys.stderr, degrees
 
-    strand = exonsDB[exon].strand
-
-    if strand == '-':
-        common_exon = degrees[-1]
-    else:
-        common_exon = degrees[0]
+    common_exon = degrees[0]
 
     paths = []
-    if strand == '-':
-        for tranx in transcripts:
-            start = tranx[-1]
-            end = common_exon
-            try:
-                path = list(nx.all_simple_paths(graph, end, start))[0]
-            except IndexError:
-                pass
-            else:
-                paths.append(path)
+    AFE = set()
+    for tranx in transcripts:
+        end = tranx[-1]
+        start = common_exon
+        try:
+            for path in list(nx.all_simple_paths(graph, start, end)):
+                if path[-2] not in AFE:
+                    AFE.add(path[-2])
+                    paths.append(path[:-1])
+        except IndexError:
+            pass
 
-    if strand == '+':
-        for tranx in transcripts:
-            start = tranx[0]
-            end = common_exon
-            try:
-                path = list(nx.all_simple_paths(graph, start, end))[0]
-            except IndexError:
-                pass
-            else:
-                paths.append(path)
-
-    return paths
+    if len(paths) > 1:
+        return paths
+    else:
+        return []
 
 
 def write_GFF(events, exonsDB, no_events):
