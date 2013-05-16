@@ -72,13 +72,11 @@ def find_AFE(graph, exonsDB, transcripts):
     paths = []
     AFE = set()
     for tranx in transcripts:
-        start = tranx[1]
-        end = common_exon
         try:
-            for path in list(nx.all_simple_paths(graph, start, end)):
-                if path[0] not in AFE:
-                    AFE.add(path[0])
-                    paths.append(path)
+            path = tranx[1:tranx.index(common_exon) + 1]
+            if repr(path) not in AFE:
+                AFE.add(repr(path))
+                paths.append(path)
         except IndexError:
             pass
     # print >> sys.stderr, 'AFE =', AFE
