@@ -60,7 +60,7 @@ def find_ALE(graph, exonsDB, transcripts):
                 degrees.add(exon)
                 break
 
-    print >> sys.stderr, degrees
+    # print >> sys.stderr, degrees
 
     if not degrees:
         return []
@@ -82,7 +82,7 @@ def find_ALE(graph, exonsDB, transcripts):
     # print >> sys.stderr, 'ALE =', ALE
 
     if len(paths) > 1:
-        print >> sys.stderr, 'PATHS=', paths
+        # print >> sys.stderr, 'PATHS=', paths
         return paths
     else:
         return []
