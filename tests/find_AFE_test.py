@@ -186,9 +186,14 @@ class TestFindAFENegative(unittest.TestCase):
         self.exonsDB[str(self.ex5)] = self.ex5
 
     def test_negative_no_AFE_with_ALE(self):
+        '''
+            []<-----[]<----[]<-----[]
+               []<---------[]<-----[]
+        '''
+
         path1 = (['end', str(self.ex4), str(self.ex1),
                     str(self.ex2), str(self.ex3), 'start'])
-        path2 = (['end', str(self.ex4),
+        path2 = (['end', str(self.ex5),
                     str(self.ex2), str(self.ex3), 'start'])
 
         path1.reverse()
