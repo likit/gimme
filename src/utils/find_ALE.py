@@ -72,10 +72,6 @@ def find_ALE(graph, exonsDB, transcripts):
     paths = []
     ALE = set()
     for tranx in transcripts:
-        # start = common_exon
-        # end = tranx[-2]
-        # print >> sys.stderr, tranx
-        # print >> sys.stderr, 'start = ', start, 'end= ', end
         try:
             path = tranx[tranx.index(common_exon):-1]
             if repr(path) not in ALE:
