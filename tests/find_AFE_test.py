@@ -34,7 +34,12 @@ class TestFindAFEPositive(unittest.TestCase):
         self.exonsDB[str(self.ex4)] = self.ex4
         self.exonsDB[str(self.ex5)] = self.ex5
 
-    def test_positive_one_path_one_exon(self):
+    def test_positive_on_AFE(self):
+        '''
+            []------[]
+            []------[]
+        '''
+
         self.graph.add_path(['start', str(self.ex1),
                                     str(self.ex2), 'end'])
         self.transcripts = [[str(self.ex1), str(self.ex2)]]
@@ -43,6 +48,11 @@ class TestFindAFEPositive(unittest.TestCase):
         self.assertEqual(len(paths), 0)
 
     def test_positive_two_path_one_exon(self):
+        '''
+            []------->[]
+            []---->[]
+        '''
+
         path1 = ['start', str(self.ex1), str(self.ex2), 'end']
         path2 = ['start', str(self.ex5), str(self.ex2), 'end']
         self.graph.add_path(path1)
@@ -93,6 +103,10 @@ class TestFindAFEPositive(unittest.TestCase):
         self.assertItemsEqual(num_exons, [2, 2])
 
     def test_positive_two_path_two_exon(self):
+        '''
+            []------------>[]---------->[]
+              [*]--->[*]-->[]---------->[]
+        '''
         self.ex6 = Exon('chrX', 7000, 8000, 'ex1.1', '+')
         self.exonsDB[str(self.ex6)] = self.ex6
         path1 = ['start', str(self.ex1),
@@ -110,6 +124,11 @@ class TestFindAFEPositive(unittest.TestCase):
         self.assertItemsEqual(num_paths, [2, 3])
 
     def test_positive_two_path_multiple_exon(self):
+        '''
+            []-------->[]------->[]------->[]
+                [*]----------------------->[]
+        '''
+
         self.ex6 = Exon('chrX', 7000, 8000, 'ex1.1', '+')
         self.ex7 = Exon('chrX', 9000, 10000, 'ex1.1', '+')
         self.exonsDB[str(self.ex6)] = self.ex6
@@ -129,6 +148,12 @@ class TestFindAFEPositive(unittest.TestCase):
         self.assertItemsEqual(num_paths, [4, 2])
 
     def test_positive_three_path_one_exon(self):
+        '''
+             [*]------->[]
+                [*]---->[]
+            [*]-------->[]
+        '''
+
         path1 = ['start', str(self.ex1), str(self.ex2), 'end']
         path2 = ['start', str(self.ex5), str(self.ex2), 'end']
         path3 = ['start', str(self.ex4), str(self.ex2), 'end']
@@ -144,6 +169,12 @@ class TestFindAFEPositive(unittest.TestCase):
         self.assertItemsEqual(num_paths, [2, 2, 2])
 
     def test_positive_three_path_two_exon(self):
+        '''
+            [*]---->[*]----->[]
+              [*]---->[*]--->[]
+             [*]--->[*]----->[]
+        '''
+
         self.ex4 = Exon('chrX', 700, 800, 'ex1.1', '+')
         self.ex6 = Exon('chrX', 500, 600, 'ex1.1', '+')
         self.ex8 = Exon('chrX', 3500, 4500, 'ex1.1', '+')
@@ -233,6 +264,9 @@ class TestFindAFENegative(unittest.TestCase):
         self.assertItemsEqual(num_exons, [2, 2])
 
     def test_negative_one_path_one_exon(self):
+        '''
+            []<------[]
+        '''
         path = ['end', str(self.ex1), str(self.ex2), 'start']
         path.reverse()
         self.graph.add_path(path)
@@ -242,6 +276,11 @@ class TestFindAFENegative(unittest.TestCase):
         self.assertEqual(len(paths), 0)
 
     def test_negative_two_path_one_exon(self):
+        '''
+            []<-------[]
+            []<-------------[]
+        '''
+
         path1 = ['end', str(self.ex1), str(self.ex2), 'start']
         path2 = ['end', str(self.ex1), str(self.ex3), 'start']
 
@@ -258,6 +297,10 @@ class TestFindAFENegative(unittest.TestCase):
         self.assertItemsEqual(num_paths, [2, 2])
 
     def test_negative_two_path_multiple_exon(self):
+        '''
+            []<---------[]<-------[]<--------[]
+            []<--------------------------------------[*]
+        '''
         self.ex6 = Exon('chrX', 7000, 8000, 'ex1.1', '-')
         self.ex7 = Exon('chrX', 9000, 10000, 'ex1.1', '-')
         self.exonsDB[str(self.ex6)] = self.ex6
@@ -280,6 +323,12 @@ class TestFindAFENegative(unittest.TestCase):
         self.assertItemsEqual(num_paths, [4, 2])
 
     def test_negative_three_path_one_exon(self):
+        '''
+            []<-----[*]
+            []<---------[*]
+            []<-------------[*]
+        '''
+
         path1 = ['end', str(self.ex1), str(self.ex2), 'start']
         path2 = ['end', str(self.ex1), str(self.ex3), 'start']
         path3 = ['end', str(self.ex1), str(self.ex5), 'start']
@@ -299,6 +348,12 @@ class TestFindAFENegative(unittest.TestCase):
         self.assertItemsEqual(num_paths, [2, 2, 2])
 
     def test_negative_three_path_two_exon(self):
+        '''
+            []<------[]<------[]
+            []<---[]<------[]
+            []<-------[]<-------[]
+        '''
+
         self.ex4 = Exon('chrX', 7500, 8500, 'ex1.1', '+')
         self.ex6 = Exon('chrX', 3500, 4500, 'ex1.1', '+')
         self.ex8 = Exon('chrX', 5500, 6500, 'ex1.1', '+')
