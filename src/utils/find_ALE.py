@@ -60,7 +60,7 @@ def find_ALE(graph, exonsDB, transcripts):
                 degrees.add(exon)
                 break
 
-    # print >> sys.stderr, degrees
+    print >> sys.stderr, degrees
 
     if not degrees:
         return []
@@ -72,21 +72,21 @@ def find_ALE(graph, exonsDB, transcripts):
     paths = []
     ALE = set()
     for tranx in transcripts:
-        start = common_exon
-        end = tranx[-2]
+        # start = common_exon
+        # end = tranx[-2]
         # print >> sys.stderr, tranx
         # print >> sys.stderr, 'start = ', start, 'end= ', end
         try:
-            for path in list(nx.all_simple_paths(graph, start, end)):
-                if path[-1] not in ALE:
-                    ALE.add(path[-1])
-                    paths.append(path)
+            path = tranx[tranx.index(common_exon):-1]
+            if repr(path) not in ALE:
+                ALE.add(repr(path))
+                paths.append(path)
         except IndexError:
             pass
     # print >> sys.stderr, 'ALE =', ALE
 
     if len(paths) > 1:
-        # print >> sys.stderr, 'PATHS=', paths
+        print >> sys.stderr, 'PATHS=', paths
         return paths
     else:
         return []
@@ -170,8 +170,8 @@ def main():
     current_id = None
     transcripts = []
     for exons, transcript_id in get_exon_node(infile):
-        if len(exons) == 1:
-            continue
+        if len(exons) == 1: continue
+
         new_id = transcript_id.split('.')[0]
         if not current_id:  # first gene
             add_exons(exonsDB, exons, graph, transcripts)
@@ -199,6 +199,7 @@ def main():
         if events:
             no_events[current_id] += 1
             write_GFF(events, exonsDB, no_events)
+    print >> sys.stderr, 'no. transcripts =  ', len(transcripts)
 
 if __name__ == '__main__':
     main()
