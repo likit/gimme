@@ -1,8 +1,7 @@
-import sys
 import unittest
 
 import networkx as nx
-from utils.find_AFE import get_exon_node, Exon, find_AFE
+from utils.find_AFE import Exon, find_AFE
 
 
 # class TestLoadData(unittest.TestCase):
@@ -54,6 +53,44 @@ class TestFindAFEPositive(unittest.TestCase):
 
         self.assertEqual(len(paths), 2)
         self.assertItemsEqual(num_paths, [2, 2])
+
+    def test_positive_no_AFE_with_ALE(self):
+        '''
+            []--------->[]--------->[]
+            []--------->[]----->[]
+        '''
+
+        path1 = ['start', str(self.ex1), str(self.ex5),
+                   str(self.ex3), 'end']
+        path2 = ['start', str(self.ex1), str(self.ex5),
+                   str(self.ex2), 'end']
+
+        self.graph.add_path(path1)
+        self.graph.add_path(path2)
+        self.transcripts = [path1, path2]
+        paths = find_AFE(self.graph, self.exonsDB, self.transcripts)
+
+        self.assertEqual(len(paths), 0)
+
+    def test_positive_single_AFE_with_ALE(self):
+        '''
+               []------>[]--------->[]
+            [*]--------->[]----->[]
+        '''
+
+        path1 = ['start', str(self.ex1), str(self.ex5),
+                   str(self.ex3), 'end']
+        path2 = ['start', str(self.ex4), str(self.ex5),
+                   str(self.ex2), 'end']
+
+        self.graph.add_path(path1)
+        self.graph.add_path(path2)
+        self.transcripts = [path1, path2]
+        paths = find_AFE(self.graph, self.exonsDB, self.transcripts)
+        num_exons = [len(path) for path in paths]
+
+        self.assertEqual(len(paths), 2)
+        self.assertItemsEqual(num_exons, [2, 2])
 
     def test_positive_two_path_two_exon(self):
         self.ex6 = Exon('chrX', 7000, 8000, 'ex1.1', '+')
@@ -148,7 +185,7 @@ class TestFindAFENegative(unittest.TestCase):
         self.exonsDB[str(self.ex4)] = self.ex4
         self.exonsDB[str(self.ex5)] = self.ex5
 
-    def test_negative_single_path_with_ALE(self):
+    def test_negative_no_AFE_with_ALE(self):
         path1 = (['end', str(self.ex4), str(self.ex1),
                     str(self.ex2), str(self.ex3), 'start'])
         path2 = (['end', str(self.ex4),
@@ -161,10 +198,34 @@ class TestFindAFENegative(unittest.TestCase):
         self.graph.add_path(path2)
         self.transcripts = [path1, path2]
         paths = find_AFE(self.graph, self.exonsDB, self.transcripts)
-        # num_paths = [len(path) for path in paths]
 
         self.assertEqual(len(paths), 0)
-        # self.assertItemsEqual(num_paths, [2, 2])
+
+    def test_negative_single_AFE_with_ALE(self):
+        '''
+               []<-------[]<-------[]
+                  []<----[]<----------[*]
+        '''
+
+        self.ex6 = Exon('chrX', 7000, 8000, 'ex1.1', '-')
+        self.exonsDB[str(self.ex6)] = self.ex6
+
+        path1 = (['end', str(self.ex1), str(self.ex2),
+                    str(self.ex3), 'start'])
+        path2 = (['end', str(self.ex4),
+                    str(self.ex2), str(self.ex6), 'start'])
+
+        path1.reverse()
+        path2.reverse()
+
+        self.graph.add_path(path1)
+        self.graph.add_path(path2)
+        self.transcripts = [path1, path2]
+        paths = find_AFE(self.graph, self.exonsDB, self.transcripts)
+        num_exons = [len(path) for path in paths]
+
+        self.assertEqual(len(paths), 2)
+        self.assertItemsEqual(num_exons, [2, 2])
 
     def test_negative_one_path_one_exon(self):
         path = ['end', str(self.ex1), str(self.ex2), 'start']
