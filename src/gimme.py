@@ -40,7 +40,6 @@ min_single_exon_len = 500  # a minimum length for a single exon(bp)
 max_isoforms = 20   # minimal isoforms will be searched
                     #if the number of isoforms exceed this number
 VERSION = '0.97'
-SHA = 'd604188'  # git commit SHA
 
 
 class ExonObj:
@@ -660,7 +659,7 @@ def detect_format(input_file):
 
 def main(input_files):
     print >> stderr, 'Gimme : Alignment-based assembler'
-    print >> stderr, 'Version : %s (%s)' % (VERSION, SHA)
+    print >> stderr, 'Version : %s' % (VERSION)
     print >> stderr, 'Source code : https://github.com/ged-lab/gimme.git\n'
 
     if args.debug:
@@ -791,7 +790,7 @@ if __name__ == '__main__':
     parser.add_argument('input', type=str, nargs='+',
             help='input file(s) in PSL/BED format')
     parser.add_argument('-v', '--version', action='version',
-            version='%(prog)s version ' + VERSION + ' (' + SHA + ')')
+            version='%(prog)s version ' + VERSION)
 
     args = parser.parse_args()
     if args.debug:
