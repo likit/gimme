@@ -1,3 +1,9 @@
+'''The script excludes genes that have more than a given number of isoforms.
+
+The default is 50.
+
+'''
+
 import sys
 import csv
 
