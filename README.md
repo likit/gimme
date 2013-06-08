@@ -1,43 +1,34 @@
-===================================================
-Gimme: A transcripts assembler based on alignments.
-===================================================
+#Gimme: A transcripts assembler based on alignments.
 
 
-Credits
--------
+##Credits
 
 The program is developed in laboratory of genomics, evolution
 and development (GED lab), Michigan State University.
 
-:Web site: http://ged.msu.edu.
+__Web site__ http://ged.msu.edu.
 
-:Author: Likit Preeyanon, preeyano@msu.edu
-:Advisor: C. Titus Brown, ctb@msu.edu
+__Author__ Likit Preeyanon, preeyano@msu.edu
 
-Copyright and license
----------------------
+##Copyright and license
 
 The prgram is Copyright Michigan State University.
 The code is freely available for use and re-use under GNU GPL license.
 See LICENSE.txt or http://www.gnu.org/licenses/.
 
-Publication
------------
+##Publication
 
 Gimme is unpublished. A manuscript is in preparation.
 
-Download
---------
+##Download
 
 Source code is available at https://github.com/ged-lab/gimme.git.
 
-Installation
-------------
+##Installation
 
 Run python setup.py in the main directory to download and install required packages.
 
-Running Gimme
--------------
+##Running Gimme
 
 Gimme should be able to run on any platform with Python 2.7 interpreter.
 
@@ -45,14 +36,12 @@ You can simply run
 
     python ./src/gimme.py <input file>
 
-Input
------
+##Input
 
 Gimme can read an input file in PSL or BED format.
 Use gff2bed.py in utils directory to convert GFF file to BED file.
 
-Output
-------
+##Output
 
 Output is written to standard output in BED format, which can be visualized
 on UCSC genome browser or other browsers.
@@ -62,31 +51,34 @@ Use --max or -x to force Gimme to report a maximum number of isoforms.
 You can also use a script in utils to find a minimum set of transcripts.
 See Utilities for more detail.
 
-Example
--------
+##Example
 
 1. Assemble transcripts from sample data
 
+    :::Bash
     python ./src/gimme.py sample_data/sample.psl > sample.bed
 
 2. Obtain a maximum number of isoforms
 
+    :::Bash
     python ./src/gimme.py -x sample_data/sample.psl > sample.max.bed
 
 3. Run Gimme with multiple input files
 
+    :::Bash
     python ./src/gimme.py sample1.psl sample2.psl sample3.psl > sample.all.bed
 
 4. Run Gimme with user defined parameters
 
+    :::Bash
     python ./src/gimme.py --min_utr=200 --max_intron=100000 --gap_size=15 sample.psl > sample.all.bed
 
 5. See a program's help
 
+    :::Bash
     python ./src/gimme.py -h or --help
 
-Parameters
-----------
+##Parameters
 
 GAP_SIZE, --gap_size=50
 Introns smaller than GAP_SIZE) are filled to construct a more complete exon.
@@ -120,13 +112,11 @@ Print out a version number.
 -h, --help
 Print out a help message.
 
-Running Tests
--------------
+##Running Tests
 
 Run nosetests in the main directory to run all tests.
 
-Utilities
----------
+##Utilities
 
 Gimme contains many useful utilities that work with PSL, BED and SAM format.
 Some programs are useful for building gene models.
