@@ -40,9 +40,10 @@ Running Gimme
 -------------
 
 Gimme should be able to run on any platform with Python 2.7 interpreter.
-You can simply run::
 
-    $ python ./src/gimme.py <input file>
+You can simply run
+
+    python ./src/gimme.py <input file>
 
 Input
 -----
@@ -64,25 +65,25 @@ See Utilities for more detail.
 Example
 -------
 
-1. Assemble transcripts from sample data::
+1. Assemble transcripts from sample data
 
-    $ python ./src/gimme.py sample_data/sample.psl > sample.bed
+    python ./src/gimme.py sample_data/sample.psl > sample.bed
 
-2. Obtain a maximum number of isoforms::
+2. Obtain a maximum number of isoforms
 
-    $ python ./src/gimme.py -x sample_data/sample.psl > sample.max.bed
+    python ./src/gimme.py -x sample_data/sample.psl > sample.max.bed
 
-3. Run Gimme with multiple input files::
+3. Run Gimme with multiple input files
 
-    $ python ./src/gimme.py sample1.psl sample2.psl sample3.psl > sample.all.bed
+    python ./src/gimme.py sample1.psl sample2.psl sample3.psl > sample.all.bed
 
-4. Run Gimme with user defined parameters::
+4. Run Gimme with user defined parameters
 
-    $ python ./src/gimme.py --min_utr=200 --max_intron=100000 --gap_size=15 sample.psl > sample.all.bed
+    python ./src/gimme.py --min_utr=200 --max_intron=100000 --gap_size=15 sample.psl > sample.all.bed
 
-5. See a program's help::
+5. See a program's help
 
-    $ python ./src/gimme.py -h or --help
+    python ./src/gimme.py -h or --help
 
 Parameters
 ----------
