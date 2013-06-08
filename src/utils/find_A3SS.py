@@ -140,6 +140,8 @@ def write_GFF(events, exonsDB, no_events, redundant):
 
 
 def main():
+    from find_A5SS import find_A5SS
+
     redundant = set()
     no_events = {}
     exonsDB = {}
@@ -149,6 +151,7 @@ def main():
     for exons, transcript_id in get_exon_node(infile):
         new_id = transcript_id.split('.')[0]
         if not current_id:  # first gene
+            strand = exons[0].strand
             for e in exons:
                 exonsDB[str(e)] = e
             graph.add_path([str(e) for e in exons])
@@ -158,7 +161,8 @@ def main():
         else:
             if new_id != current_id:
                 if len(graph.nodes()) > 1:
-                    for events in find_A3SS(graph, exonsDB):
+                    find_SS = find_A3SS if strand == "+" else find_A5SS
+                    for events in find_SS(graph, exonsDB):
                         no_events[current_id] += 1
                         write_GFF(events, exonsDB, no_events, redundant)
 
@@ -167,12 +171,14 @@ def main():
                 current_id = new_id
                 no_events[current_id] = 0
 
+            strand = exons[0].strand
             for e in exons:
                 exonsDB[str(e)] = e
             graph.add_path([str(e) for e in exons])
 
     if len(graph.nodes()) > 1:
-        for events in find_A3SS(graph, exonsDB):
+        find_SS = find_A3SS if strand == "+" else find_A5SS
+        for events in find_SS(graph, exonsDB):
             no_events[current_id] += 1
             write_GFF(events, exonsDB, no_events, redundant)
 
