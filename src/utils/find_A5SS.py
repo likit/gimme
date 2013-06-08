@@ -8,7 +8,6 @@ import sys
 import csv
 
 import networkx as nx
-from find_A3SS import find_A3SS
 
 
 class Exon(object):
@@ -141,6 +140,8 @@ def write_GFF(events, exonsDB, no_events, redundant):
 
 
 def main():
+    from find_A3SS import find_A3SS
+
     redundant = set()
     no_events = {}
     exonsDB = {}
