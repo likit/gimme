@@ -181,5 +181,6 @@ def main():
                 no_events[current_id] += 1
                 write_GFF(events, exonsDB, no_events)
 
+
 if __name__ == '__main__':
     main()
