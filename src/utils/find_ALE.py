@@ -86,7 +86,7 @@ def write_GFF(events, exonsDB, no_events):
     mrnaid = 1
     event_no = str(no_events[first_exon.geneID])
     geneID = first_exon.geneID + '.ev' + event_no
-    print "%s\tSE\tgene\t%d\t%d\t.\t%s\t.\tID=%s;Name=%s" % (
+    print "%s\tALE\tgene\t%d\t%d\t.\t%s\t.\tID=%s;Name=%s" % (
             first_exon.chrom, first_exon.start, last_exon.end,
             first_exon.strand, geneID, first_exon.geneID)
     for event in events:
@@ -94,12 +94,12 @@ def write_GFF(events, exonsDB, no_events):
                                                 key=lambda x: x.end)
         first_exon = event_exons[0]
         last_exon = event_exons[-1]
-        print "%s\tSE\tmRNA\t%d\t%d\t.\t%s\t.\tID=%s.%d;Parent=%s" % (
+        print "%s\tALE\tmRNA\t%d\t%d\t.\t%s\t.\tID=%s.%d;Parent=%s" % (
                         first_exon.chrom, first_exon.start, last_exon.end,
                         first_exon.strand, geneID, mrnaid, geneID)
         exonid = 1
         for exon in event_exons:
-            print "%s\tSE\texon\t%d\t%d\t.\t%s\t.\tID=%s.%d.%d;Parent=%s.%d" \
+            print "%s\tALE\texon\t%d\t%d\t.\t%s\t.\tID=%s.%d.%d;Parent=%s.%d" \
                             % (exon.chrom, exon.start, exon.end,
                                 exon.strand, geneID, mrnaid, exonid,
                                 geneID, mrnaid)
