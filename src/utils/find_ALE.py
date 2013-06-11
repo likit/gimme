@@ -50,42 +50,27 @@ def get_exon_node(infile):
 
 
 def find_ALE(graph, exonsDB, transcripts):
-    degrees = set()
-    for path in list(nx.all_simple_paths(graph, 'start', 'end')):
-        # print >> sys.stderr, path
-        for exon in path:
-            if exon == 'start' or exon == 'end':
-                continue
-            if graph.out_degree(exon) > 1:
-                degrees.add(exon)
-                break
-
-    # print >> sys.stderr, degrees
-
-    if not degrees:
-        return []
-
-    degrees = sorted(degrees, key=lambda x:exonsDB[x].start)
-
-    common_exon = degrees[-1]
-
     paths = []
-    ALE = set()
-    for tranx in transcripts:
-        try:
-            path = tranx[tranx.index(common_exon):-1]
-            if repr(path) not in ALE:
-                ALE.add(repr(path))
+    common_exons = set()
+    for path in list(nx.all_simple_paths(graph, 'start', 'end')):
+        if graph.out_degree(path[-3]) > 1:
+            common_exons.add(path[-3])
+
+    if not common_exons:
+        yield []
+
+    for ce in common_exons:
+        for tranx in transcripts:
+            try:
+                path = tranx[tranx.index(ce):-1]
                 paths.append(path)
-        except IndexError:
-            pass
-    # print >> sys.stderr, 'ALE =', ALE
+            except ValueError:
+                pass
 
     if len(paths) > 1:
-        # print >> sys.stderr, 'PATHS=', paths
-        return paths
+        yield paths
     else:
-        return []
+        yield []
 
 
 def write_GFF(events, exonsDB, no_events):
@@ -177,10 +162,10 @@ def main():
         else:
             if new_id != current_id:
                 if len(transcripts) > 1:
-                    events = find_ALE(graph, exonsDB, transcripts)
-                    if events:
-                        no_events[current_id] += 1
-                        write_GFF(events, exonsDB, no_events)
+                    for events in find_ALE(graph, exonsDB, transcripts):
+                        if events:
+                            no_events[current_id] += 1
+                            write_GFF(events, exonsDB, no_events)
 
                 graph = nx.DiGraph()
                 exonsDB = {}
@@ -191,11 +176,11 @@ def main():
             add_exons(exonsDB, exons, graph, transcripts)
 
     if len(transcripts) > 1:
-        events = find_ALE(graph, exonsDB, transcripts)
-        if events:
-            no_events[current_id] += 1
-            write_GFF(events, exonsDB, no_events)
-    print >> sys.stderr, 'no. transcripts =  ', len(transcripts)
+        for events in find_ALE(graph, exonsDB, transcripts):
+            if events:
+                no_events[current_id] += 1
+                write_GFF(events, exonsDB, no_events)
+
 
 if __name__ == '__main__':
     main()
