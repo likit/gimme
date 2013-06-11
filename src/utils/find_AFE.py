@@ -50,41 +50,27 @@ def get_exon_node(infile):
 
 
 def find_AFE(graph, exonsDB, transcripts):
-    degrees = set()
-    for path in list(nx.all_simple_paths(graph, 'start', 'end')):
-        # print >> sys.stderr, path
-        for exon in path:
-            if exon == 'start' or exon == 'end':
-                continue
-            if graph.in_degree(exon) > 1:
-                degrees.add(exon)
-                break
-
-    # print >> sys.stderr, degrees
-
-    if not degrees:
-        return []
-
-    degrees = sorted(degrees, key=lambda x:exonsDB[x].start)
-
-    common_exon = degrees[0]
-
     paths = []
-    AFE = set()
-    for tranx in transcripts:
-        try:
-            path = tranx[1:tranx.index(common_exon) + 1]
-            if repr(path) not in AFE:
-                AFE.add(repr(path))
-                paths.append(path)
-        except IndexError:
-            pass
-    # print >> sys.stderr, 'AFE =', AFE
+    common_exons = set()
+    for path in list(nx.all_simple_paths(graph, 'start', 'end')):
+        if graph.in_degree(path[2]) > 1:
+            common_exons.add(path[2])
+    # print >> sys.stderr, 'common_exons = ', common_exons
+    if not common_exons:
+        yield []
 
-    if len(paths) > 1:
-        return paths
-    else:
-        return []
+    for ce in common_exons:
+        for tranx in transcripts:
+            try:
+                path = tranx[1:tranx.index(ce) + 1]
+                paths.append(path)
+            except ValueError:
+                pass
+
+        if len(paths) > 1:
+            yield paths
+        else:
+            yield []
 
 
 def write_GFF(events, exonsDB, no_events):
@@ -176,10 +162,10 @@ def main():
         else:
             if new_id != current_id:
                 if len(transcripts) > 1:
-                    events = find_AFE(graph, exonsDB, transcripts)
-                    if events:
-                        no_events[current_id] += 1
-                        write_GFF(events, exonsDB, no_events)
+                    for events in find_AFE(graph, exonsDB, transcripts):
+                        if events:
+                            no_events[current_id] += 1
+                            write_GFF(events, exonsDB, no_events)
 
                 graph = nx.DiGraph()
                 exonsDB = {}
@@ -190,10 +176,10 @@ def main():
             add_exons(exonsDB, exons, graph, transcripts)
 
     if len(transcripts) > 1:
-        events = find_AFE(graph, exonsDB, transcripts)
-        if events:
-            no_events[current_id] += 1
-            write_GFF(events, exonsDB, no_events)
+        for events in find_AFE(graph, exonsDB, transcripts):
+            if events:
+                no_events[current_id] += 1
+                write_GFF(events, exonsDB, no_events)
 
 if __name__ == '__main__':
     main()
