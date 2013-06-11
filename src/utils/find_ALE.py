@@ -119,6 +119,8 @@ def write_GFF(events, exonsDB, no_events):
     #                 (exon.chrom, last_exon.start, last_exon.end,
     #                     last_exon.strand, geneID, mrnaid, 2,
     #                     geneID, mrnaid)
+
+
 def add_exons(exonsDB, exons, graph, transcripts):
         for e in exons:
             exonsDB[str(e)] = e
@@ -151,7 +153,8 @@ def main():
     current_id = None
     transcripts = []
     for exons, transcript_id in get_exon_node(infile):
-        if len(exons) == 1: continue
+        if len(exons) == 1:
+            continue
 
         new_id = transcript_id.split('.')[0]
         if not current_id:  # first gene

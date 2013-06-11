@@ -119,6 +119,8 @@ def write_GFF(events, exonsDB, no_events):
     #                 (exon.chrom, last_exon.start, last_exon.end,
     #                     last_exon.strand, geneID, mrnaid, 2,
     #                     geneID, mrnaid)
+
+
 def add_exons(exonsDB, exons, graph, transcripts):
         for e in exons:
             exonsDB[str(e)] = e

@@ -4,6 +4,7 @@ import networkx as nx
 
 table = string.maketrans('ACGT', 'TGCA')
 
+
 def get_splice_sites(genome, exon1, exon2):
     chrom, pos = exon1.split(':')
     start, end = [int(p) for p in pos.split('-')]
@@ -14,6 +15,7 @@ def get_splice_sites(genome, exon1, exon2):
     acceptor = genome[chrom][start - 2:start]
 
     return str(donor), str(acceptor)
+
 
 def identify_strand(splice_sites):
     donor, acceptor = splice_sites
@@ -27,8 +29,10 @@ def identify_strand(splice_sites):
     else:
         return 0
 
+
 def compare_edges(edge):
     return int(edge[0].split(':')[1].split('-')[0])
+
 
 def split(graph, genome):
     '''genome = pygr sequence DB object'''
@@ -56,7 +60,7 @@ def split(graph, genome):
     score_matrix = [sum(strand_scores[0:3]) / 3.0]
     i = 1
     while (i < len(sorted_edges) - 1):
-        score_matrix.append(sum(strand_scores[i-1:i+2]) / 3.0)
+        score_matrix.append(sum(strand_scores[i - 1:i + 2]) / 3.0)
         i += 1
     score_matrix.append(sum(strand_scores[-3:]) / 3.0)
 
@@ -74,9 +78,11 @@ def split(graph, genome):
         return (neutral_graph,)
 
     for i in range(len(sorted_edges)):
-        if score_matrix[i] >= 0: pos_graph.add_edge(*sorted_edges[i])
+        if score_matrix[i] >= 0:
+            pos_graph.add_edge(*sorted_edges[i])
     for i in range(len(sorted_edges)):
-        if score_matrix[i] <= 0: neg_graph.add_edge(*sorted_edges[i])
+        if score_matrix[i] <= 0:
+            neg_graph.add_edge(*sorted_edges[i])
 
     # neg_graph.remove_edges_from(pos_graph.edges())
     # pos_graph.remove_edges_from(neg_graph.edges())

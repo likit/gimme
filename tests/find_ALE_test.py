@@ -125,7 +125,7 @@ class TestFindALEPositive(unittest.TestCase):
 
     #     path1 = ['start', str(self.ex1), str(self.ex3),
     #                 str(self.ex6), str(self.ex7), 'end']
-    #     path2 = ['start', str(self.ex1), 
+    #     path2 = ['start', str(self.ex1),
     #                 str(self.ex5), str(self.ex2), 'end']
     #     self.graph.add_path(path1)
     #     self.graph.add_path(path2)
@@ -237,6 +237,7 @@ class TestFindALEPositive(unittest.TestCase):
 
         self.assertEqual(len(paths[0]), 2)
         self.assertItemsEqual(get_num_exons(paths), [2, 2])
+
 
 class TestFindALENegative(unittest.TestCase):
     def setUp(self):
