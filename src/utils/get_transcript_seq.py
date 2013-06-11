@@ -55,6 +55,7 @@ def write_seq(filename, genome, output, strand):
                 exon_sizes[i] for i in range(len(exon_starts))]
         exons = [Exon(chrom, exon_starts[i], exon_ends[i]) for i in \
                 range(len(exon_starts))]
+        strand = 'negative' if line[5] == '-' else 'positive'
 
         if output == 'transcript':
             seq = get_sequence_transcript(genome, exons, strand)
