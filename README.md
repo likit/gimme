@@ -26,7 +26,7 @@ Source code is available at https://github.com/ged-lab/gimme.git.
 
 ##Installation
 
-Run python setup.py in the main directory to download and install required packages.
+Run python setup.py install in the main directory to download and install required packages.
 
 ##Running Gimme
 
