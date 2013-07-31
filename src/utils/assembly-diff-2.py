@@ -18,14 +18,10 @@ kh.consume_fasta(filename1)
 for record in screed.open(filename2):
     seq = record.sequence
     paths = kh.extract_unique_paths(seq, UNIQUE_LEN, UNIQUE_F)
-    try:
-        kh.consume(seq)
-    except:
-        pass
-    else:
+    kh.consume(seq)
 
-        n = 0
-        for path in paths:
-            name = '%s-%d' % (record.name, n)
-            print >> uniq2, '>%s\n%s' % (name, path)
-            n += 1
+    n = 0
+    for path in paths:
+        name = '%s-%d' % (record.name, n)
+        print >> uniq2, '>%s\n%s' % (name, path)
+        n += 1
