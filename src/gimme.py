@@ -41,7 +41,7 @@ min_transcript_len = 300  # a minimum length for multiple exon transcript(bp)
 min_single_exon_len = 500  # a minimum length for a single exon(bp)
 max_isoforms = 20   # minimal isoforms will be searched
                     #if the number of isoforms exceed this number
-VERSION = '0.97'
+VERSION = '0.98'
 
 
 class ExonObj:
