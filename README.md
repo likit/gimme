@@ -1,4 +1,4 @@
-#Gimme: A transcripts assembler based on alignments.
+#Gimme: A lightweight reference-guided transcripts assembler.
 
 
 ##Credits
@@ -40,6 +40,7 @@ You can simply run
 
 Gimme can read an input file in PSL or BED format.
 Use gff2bed.py in utils directory to convert GFF file to BED file.
+***Note, Gimme does not yet support strand-specific assembled transcripts***
 
 ##Output
 
