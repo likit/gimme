@@ -41,7 +41,8 @@ You can simply run
 Gimme can read an input file in PSL or BED format.
 Use gff2bed.py in utils directory to convert GFF file to BED file.
 
-***Note, Gimme currently ignores strandedness of a transcript. All predicted gene models are in positive strand
+***Note, Gimme currently ignores strandedness of a transcript.
+All predicted gene models are in positive strand.
 Strandedness will be supported in the next release.***
 
 ##Output
