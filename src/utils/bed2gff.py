@@ -43,9 +43,10 @@ def printGFF(transcript, source="custom"):
     exon_id = 0
     for exon in exons:
         exon_id += 1
-        attributes = 'gene_id \"%s\"; transcript_id \"%s\"; ' + \
-                'exon_number \"%d\"; gene_name \"%s\"; ' + \
-                'transcript_name \"%s\"' % \
+        attributes = 'gene_id \"%s\"; transcript_id \"%s\"; '
+        attributes += 'exon_number \"%d\"; gene_name \"%s\"; '
+        attributes += 'transcript_name \"%s\"'
+        attributes = attributes % \
                 (gene_id, transcript_id, exon_id, gene_id, transcript_id)
         print "%s\t%s\t%s\t%d\t%d\t%s\t%s\t%s\t%s" % (chrom,
                                                         source,
