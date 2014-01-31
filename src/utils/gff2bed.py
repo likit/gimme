@@ -24,10 +24,11 @@ def parse(filename):
         if row[2] == 'exon':
             transId = eval(row[-1].split('; ')[1].split(' ')[-1])
             geneId = eval(row[-1].split('; ')[0].split(' ')[-1])
+            #print transId, geneId
 
             if not name:
                 name = transId
-                gene_name = transId
+                gene_name = geneId
 
             if transId == name:
                 chrom = row[0]
