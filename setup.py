@@ -13,5 +13,6 @@ setup(
                             'networkx == 1.7',
                             'pygr == 0.8.2',
                             'bx-python == 0.7.1',
+                            'bsddb3 == 6.0.1',
                             ]
         )
